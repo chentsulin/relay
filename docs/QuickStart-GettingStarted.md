@@ -7,30 +7,30 @@ permalink: docs/getting-started.html
 next: tutorial
 ---
 
-To get started building Relay applications, you will need three things:
+要入門建構 Relay 應用程式，你將會需要三個東西：
 
-1. **A GraphQL Schema**
+1. **一個 GraphQL Schema**
 
-  A description of your data model with an associated set of resolve methods that know how to fetch any data your application could ever need.
+  對你的資料模型的描述與相關聯的一組知道要如何抓取應用程式可能會需要的任何資料的 resolve 方法。
 
-  GraphQL is designed to support a wide range of data access patterns. In order to understand the structure of an application's data, Relay requires that you follow certain conventions when defining your schema. These are documented in the [GraphQL Relay Specification](graphql-relay-specification.html#content).
+  GraphQL 被設計用來支援廣泛的資料存取模式。為了了解應用程式資料的架構，Relay 需要你在定義 schema 時遵照某些規定。這些文件都提供在 [GraphQL Relay Specification](graphql-relay-specification.html#content) 裡。
 
   - **[graphql-js](https://github.com/graphql/graphql-js)** on [npm](https://www.npmjs.com/package/graphql)
 
-    General-purpose tools for building a GraphQL schema using JavaScript
+    使用 JavaScript 來建構 GraphQL schema 的通用工具
 
   - **[graphql-relay-js](https://github.com/graphql/graphql-relay-js)** on [npm](https://www.npmjs.com/package/graphql-relay)
 
-    JavaScript helpers for defining connections between data, and mutations, in a way that smoothly integrates with Relay.
+    用一個跟 Relay 流暢整合的方式，來定義資料之間的 connections 和 mutations 的 JavaScript helpers
 
-2. **A GraphQL Server**
+2. **一個 GraphQL 伺服器**
 
-  Any server can be taught to load a schema and speak GraphQL. Our bundled [examples](https://github.com/facebook/relay/tree/master/examples) use Express.
+  任何伺服器都可以學習載入 schema 並用 GraphQL 溝通。我們附帶的[範例](https://github.com/facebook/relay/tree/master/examples)使用 Express。
 
-  - **[express-graphql](https://github.com/graphql/express-graphql)** on [npm](https://www.npmjs.com/package/express-graphql)
+  - 在 [npm](https://www.npmjs.com/package/express-graphql) 上的 **[express-graphql](https://github.com/graphql/express-graphql)**
 
 3. **Relay**
 
-  Relay speaks to GraphQL servers through a network layer. The [network layer](https://github.com/facebook/relay/tree/master/src/network-layer/default) that ships with Relay is compatible with express-graphql out of the box, and will continue to evolve as we add new features to the transport.
+  Relay 透過一個 network layer 來跟 GraphQL 伺服器溝通。Relay 附帶的 [network layer](https://github.com/facebook/relay/tree/master/src/network-layer/default) 直接與 express-graphql 相容，並將會持續在我們添加新功能到 transport 之後進化。
 
-The best way to get started right now is to take a look at how these three parts come together to form a working example. The tutorial on the next page will lead you through an example application, using the [Relay Starter Kit](https://github.com/facebook/relay-starter-kit), to give you an idea of how you can start using Relay on yours.
+要現在馬上入門的最好方式輔助就是看一下這三個部分如何結合在一起來行成一個可運作的範例。下一頁的教學將會使用 [Relay Starter Kit](https://github.com/facebook/relay-starter-kit)，引導你走過一個範例應用程式，給你關於你可以如何開始使用 Relay 在自己的應用程式上的想法。

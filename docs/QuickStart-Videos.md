@@ -22,5 +22,4 @@ next: guides-containers
 ## [React.js Conf January 2015](http://conf.reactjs.com/)
 
 <iframe width="640" height="360" src="https://www.youtube-nocookie.com/embed/9sc8Pyc51uU?rel=0&amp;showinfo=0" frameborder="0" allowfullscreen></iframe>
-
-Now that we've gone end-to-end with Relay, let's dive into more detail in the guides section.
+現在我們已經完整的把 Relay 帶過，讓我們在指南部分來深入更多的細節。
