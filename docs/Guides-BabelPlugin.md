@@ -7,11 +7,11 @@ permalink: docs/guides-babel-plugin.html
 next: graphql-relay-specification
 ---
 
-Relay uses a **babel** plugin to convert from `Relay.QL` string templates to
-JavaScript code that describes each query and includes data from the GraphQL
-schema.
+Relay 使用 **babel** plugin 來把 `Relay.QL` 字串模板轉換成
+描述每個 query 並從 GraphQL schema 載入資料的
+JavaScript 程式碼。
 
-While you type queries as follows:
+當你像下面這樣輸入 queries：
 
 ```
 Relay.QL`
@@ -21,33 +21,33 @@ Relay.QL`
 `
 ```
 
-This gets converted into an immediately-invoked function:
+這個會被轉換成一個立即調用函式：
 
 ```
 (function() {
-  // Return a description of the query ...
+  // 回傳這個 query 的描述 ...
 })();
 ```
 
-## Usage
+## 用法
 
-The easiest way to get started for now is with the [Relay Starter Kit](https://github.com/facebook/relay-starter-kit) - this includes an example schema file and configures the [`babel-relay-plugin`](https://www.npmjs.com/package/babel-relay-plugin) npm module to transpile queries.
+現在要上手最簡單的方式是使用 [Relay Starter Kit](https://github.com/facebook/relay-starter-kit) - 這裡面包含一個範例 schema 檔並設定好了 [`babel-relay-plugin`](https://www.npmjs.com/package/babel-relay-plugin) npm 模組來 transpile queries。
 
-## Advanced Usage
+## 進階用法
 
-If you're not using the starter kit, you'll have to configure `babel` to use the `babel-relay-plugin`. The steps are as follows:
+如果你不是使用 starter kit，你會需要設定 `babel` 以使用 `babel-relay-plugin`。步驟如下：
 
 ```javascript
-// `babel-relay-plugin` returns a function for creating plugin instances
+// `babel-relay-plugin` 回傳一個用來建立 plugin 實體的函式
 var getBabelRelayPlugin = require('babel-relay-plugin');
 
-// load previously saved schema data (see "Schema JSON" below)
+// 載入先前儲存的 schema 資料 (參閱下面的「Schema JSON」)
 var schemaData = require('schema.json');
 
-// create a plugin instance
+// 建立一個 plugin 實體
 var plugin = getBabelRelayPlugin(schemaData);
 
-// compile code with babel using the plugin
+// 藉由 babel 使用 plugin 來編譯程式碼
 return babel.transform(source, {
   plugins: [plugin],
 });
@@ -55,22 +55,22 @@ return babel.transform(source, {
 
 ## Schema JSON
 
-The plugin needs to understand your schema - `schemaData` in the above snippet. There are two ways to get this information, depending on the GraphQL implementation.
+這個 plugin 需要了解你的 schema - 也就是上面片段中的 `schemaData`。有兩個方式可以得到這個資訊，取決於 GraphQL 的實作。
 
-### Using `graphql`
+### 使用 `graphql`
 
-An example of how to load a `schema.js` file, run the introspection query to get schema information, and save it to a JSON file can be found in the [starter kit](https://github.com/relayjs/relay-starter-kit/blob/master/scripts/updateSchema.js).
+如何載入 `schema.js` 檔，執行 introspection query 來得到 schema 資訊，並把它存成一個 JSON 檔的範例可以在 [starter kit](https://github.com/relayjs/relay-starter-kit/blob/master/scripts/updateSchema.js) 中找到。
 
-### Using Other GraphQL Implementations
+### 使用其他的 GraphQL 實作
 
-If you're using a different GraphQL server implementation, we recommend adapting the above example to load the schema from your GraphQL server (e.g. via an HTTP request) and then save the result as JSON.
+如果你是使用不同的 GraphQL 伺服器實作，我們建議調整上面的範例成從你的 GraphQL 伺服器載入 schema (例如，藉由一個 HTTP 請求) 並接著把結果存成 JSON。
 
 
-## Additional Options
+## 額外的選項
 
-By default, `babel-relay-plugin` catches GraphQL validation errors and logs them without exiting. The compiled code will also throw the same errors at runtime, making it obvious that something went wrong whether you're looking at your terminal or browser console.
+`babel-relay-plugin` 預設會捕捉 GraphQL 驗證錯誤並印出它們而不會退出程序。編譯後的程式碼也會在執行期 throw 一樣的錯誤，讓它無論你是看 terminal 還是瀏覽器 console 都很明顯有東西出問題了。
 
-When compiling code for production deployment, the plugin can be configured to immediately throw upon encountering a validation problem:
+當在為產品環境部署變異程式碼時，這個 plugin 可以設定成遇到驗證問題時立刻 throw：
 
 ```javascript
 var plugin = getBabelRelayPlugin(schemaData, {
