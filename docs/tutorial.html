@@ -1,0 +1,342 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"><title>Tutorial | Relay Docs</title><meta name="viewport" content="width=device-width"><meta property="og:title" content="Tutorial | Relay Docs"><meta property="og:type" content="website"><meta property="og:url" content="http://facebook.github.io/relay/index.html"><meta property="og:description" content="A JavaScript framework for building data-driven React applications"><link rel="shortcut icon" href="/relay/img/favicon.png"><link rel="stylesheet" href="/relay/css/relay.css"><script type="text/javascript" src="//use.typekit.net/vqa1hcx.js"></script><script type="text/javascript">try{Typekit.load();}catch(e){}</script></head><body><div class="container"><div class="nav-main"><div class="wrap"><a class="nav-home" href="/relay/"><img class="nav-logo" src="/relay/img/logo.svg" width="50" height="50">Relay</a><ul class="nav-site"><li><a href="/relay/prototyping/playground.html" class="">Try it out</a></li><li><a href="/relay/docs/getting-started.html#content" class="active">Docs</a></li><li><a href="/relay/support.html" class="">Support</a></li><li><a href="https://github.com/facebook/relay" class="">GitHub</a></li></ul></div></div><section class="content wrap documentationContent"><div class="nav-docs"><div class="nav-docs-section"><h3>Quick Start</h3><ul><li><a style="margin-left:0;" class="" href="/relay/docs/getting-started.html#content">Getting Started</a></li><li><a style="margin-left:0;" class="active" href="/relay/docs/tutorial.html#content">Tutorial</a></li><li><a style="margin-left:0;" class="" href="/relay/docs/thinking-in-graphql.html#content">Thinking in GraphQL</a></li><li><a style="margin-left:0;" class="" href="/relay/docs/thinking-in-relay.html#content">Thinking In Relay</a></li><li><a style="margin-left:0;" class="" href="/relay/docs/videos.html#content">Videos</a></li></ul></div><div class="nav-docs-section"><h3>Guides</h3><ul><li><a style="margin-left:0;" class="" href="/relay/docs/guides-containers.html#content">Containers</a></li><li><a style="margin-left:0;" class="" href="/relay/docs/guides-routes.html#content">Routes</a></li><li><a style="margin-left:0;" class="" href="/relay/docs/guides-root-container.html#content">Root Container</a></li><li><a style="margin-left:0;" class="" href="/relay/docs/guides-ready-state.html#content">Ready State</a></li><li><a style="margin-left:0;" class="" href="/relay/docs/guides-mutations.html#content">Mutations</a></li><li><a style="margin-left:0;" class="" href="/relay/docs/guides-network-layer.html#content">Network Layer</a></li><li><a style="margin-left:0;" class="" href="/relay/docs/guides-babel-plugin.html#content">Babel Relay Plugin</a></li></ul></div><div class="nav-docs-section"><h3>GraphQL</h3><ul><li><a style="margin-left:0;" class="" href="/relay/docs/graphql-relay-specification.html#content">GraphQL Relay Specification</a></li><li><a style="margin-left:20px;" class="" href="/relay/docs/graphql-object-identification.html#content">Object Identification</a></li><li><a style="margin-left:20px;" class="" href="/relay/docs/graphql-connections.html#content">Connection</a></li><li><a style="margin-left:20px;" class="" href="/relay/docs/graphql-mutations.html#content">Mutations</a></li><li><a style="margin-left:20px;" class="" href="/relay/docs/graphql-further-reading.html#content">Further Reading</a></li></ul></div><div class="nav-docs-section"><h3>API Reference</h3><ul><li><a style="margin-left:0;" class="" href="/relay/docs/api-reference-relay.html#content">Relay</a></li><li><a style="margin-left:0;" class="" href="/relay/docs/api-reference-relay-container.html#content">RelayContainer</a></li><li><a style="margin-left:0;" class="" href="/relay/docs/api-reference-relay-route.html#content">Relay.Route</a></li><li><a style="margin-left:0;" class="" href="/relay/docs/api-reference-relay-root-container.html#content">Relay.RootContainer</a></li><li><a style="margin-left:0;" class="" href="/relay/docs/api-reference-relay-ql.html#content">Relay.QL</a></li><li><a style="margin-left:0;" class="" href="/relay/docs/api-reference-relay-mutation.html#content">Relay.Mutation</a></li><li><a style="margin-left:0;" class="" href="/relay/docs/api-reference-relay-proptypes.html#content">Relay.PropTypes</a></li><li><a style="margin-left:0;" class="" href="/relay/docs/api-reference-relay-store.html#content">Relay.Store</a></li></ul></div><div class="nav-docs-section"><h3>Interfaces</h3><ul><li><a style="margin-left:0;" class="" href="/relay/docs/interfaces-relay-network-layer.html#content">RelayNetworkLayer</a></li><li><a style="margin-left:20px;" class="" href="/relay/docs/interfaces-relay-mutation-request.html#content">RelayMutationRequest</a></li><li><a style="margin-left:20px;" class="" href="/relay/docs/interfaces-relay-query-request.html#content">RelayQueryRequest</a></li></ul></div></div><div class="inner-content"><a id="content"></a><a class="edit-page-link" href="https://github.com/facebook/relay/blob/master/docs/QuickStart-Tutorial.md" target="_blank">Edit on GitHub</a><h1>Tutorial</h1><div><p>在這份教學中，我們將會使用 GraphQL mutations 來建置一個遊戲。這個遊戲的目標是在九個正方形的網格中尋找一份藏起來的寶藏。我們將會給玩家們三次嘗試去找寶藏。這應該可以給我們 Relay 完整的樣貌 – 從在伺服器上的 GraphQL schema，到客戶端上的 React 應用程式。</p><h2><a class="anchor" name=""></a>暖身 <a class="hash-link" href="#">#</a></h2><p>讓我們使用 <a href="https://github.com/relayjs/relay-starter-kit" target="_blank">Relay Starter Kit</a> 作為基底來開始一個專案。</p><pre class="prism language-javascript">
+git clone https<span class="token punctuation">:</span><span class="token operator">/</span><span class="token operator">/</span>github<span class="token punctuation">.</span>com<span class="token operator">/</span>relayjs<span class="token operator">/</span>relay<span class="token operator">-</span>starter<span class="token operator">-</span>kit<span class="token punctuation">.</span>git relay<span class="token operator">-</span>treasurehunt
+cd relay<span class="token operator">-</span>treasurehunt
+npm install</pre><h2><a class="anchor" name=""></a>一個簡單的資料庫 <a class="hash-link" href="#">#</a></h2><p>我們需要一個地方來藏我們的寶藏，一個檢查寶藏藏匿點的方法，還有一個追蹤我們剩餘的回合數的方法。為了教學的目的，我們會把這些資料藏在記憶體中。</p><pre class="prism language-javascript">
+<span spellcheck="true" class="token comment">/**
+ * ./data/database.js
+ */</span>
+
+<span spellcheck="true" class="token comment">// Model types</span>
+<span class="token keyword">export</span> <span class="token keyword">class</span> <span class="token class-name">Game</span> <span class="token punctuation">{</span><span class="token punctuation">}</span>
+<span class="token keyword">export</span> <span class="token keyword">class</span> <span class="token class-name">HidingSpot</span> <span class="token punctuation">{</span><span class="token punctuation">}</span>
+
+<span spellcheck="true" class="token comment">// Mock data</span>
+<span class="token keyword">var</span> game <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Game</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+game<span class="token punctuation">.</span>id <span class="token operator">=</span> <span class="token string">&#x27;1&#x27;</span><span class="token punctuation">;</span>
+
+<span class="token keyword">var</span> hidingSpots <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+<span class="token punctuation">(</span><span class="token keyword">function</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">var</span> hidingSpot<span class="token punctuation">;</span>
+  <span class="token keyword">var</span> indexOfSpotWithTreasure <span class="token operator">=</span> Math<span class="token punctuation">.</span><span class="token function">floor</span><span class="token punctuation">(</span>Math<span class="token punctuation">.</span><span class="token function">random</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">*</span> <span class="token number">9</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">var</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> <span class="token number">9</span><span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    hidingSpot <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">HidingSpot</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    hidingSpot<span class="token punctuation">.</span>id <span class="token operator">=</span> <span class="token template-string"><span class="token string">`</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>i<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">`</span></span><span class="token punctuation">;</span>
+    hidingSpot<span class="token punctuation">.</span>hasTreasure <span class="token operator">=</span> <span class="token punctuation">(</span>i <span class="token operator">===</span> indexOfSpotWithTreasure<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    hidingSpot<span class="token punctuation">.</span>hasBeenChecked <span class="token operator">=</span> <span class="token keyword">false</span><span class="token punctuation">;</span>
+    hidingSpots<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>hidingSpot<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">var</span> turnsRemaining <span class="token operator">=</span> <span class="token number">3</span><span class="token punctuation">;</span>
+
+<span class="token keyword">export</span> <span class="token keyword">function</span> <span class="token function">checkHidingSpotForTreasure</span><span class="token punctuation">(</span>id<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">if</span> <span class="token punctuation">(</span>hidingSpots<span class="token punctuation">.</span><span class="token function">some</span><span class="token punctuation">(</span>hs <span class="token operator">=</span><span class="token operator">&gt;</span> hs<span class="token punctuation">.</span>hasTreasure <span class="token operator">&amp;&amp;</span> hs<span class="token punctuation">.</span>hasBeenChecked<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  turnsRemaining<span class="token operator">--</span><span class="token punctuation">;</span>
+  <span class="token keyword">var</span> hidingSpot <span class="token operator">=</span> <span class="token function">getHidingSpot</span><span class="token punctuation">(</span>id<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  hidingSpot<span class="token punctuation">.</span>hasBeenChecked <span class="token operator">=</span> <span class="token keyword">true</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token keyword">export</span> <span class="token keyword">function</span> <span class="token function">getHidingSpot</span><span class="token punctuation">(</span>id<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">return</span> hidingSpots<span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span>hs <span class="token operator">=</span><span class="token operator">&gt;</span> hs<span class="token punctuation">.</span>id <span class="token operator">===</span> id<span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+<span class="token keyword">export</span> <span class="token keyword">function</span> <span class="token function">getGame</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token keyword">return</span> game<span class="token punctuation">;</span> <span class="token punctuation">}</span>
+<span class="token keyword">export</span> <span class="token keyword">function</span> <span class="token function">getHidingSpots</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token keyword">return</span> hidingSpots<span class="token punctuation">;</span> <span class="token punctuation">}</span>
+<span class="token keyword">export</span> <span class="token keyword">function</span> <span class="token function">getTurnsRemaining</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token keyword">return</span> turnsRemaining<span class="token punctuation">;</span> <span class="token punctuation">}</span></pre><p>我們目前為止寫在這邊的是一個 mock 資料庫介面。我們可以想像把這個綁上到一個真實的資料庫，不過現在讓我們繼續往下。</p><h2><a class="anchor" name="schema"></a>編寫 schema <a class="hash-link" href="#schema">#</a></h2><p>GraphQL schema 描述你的資料模型，並提供一個 GraphQL 伺服器與相關聯的一組知道要如何抓取資料的 resolve 方法。我們將會使用
+<a href="https://github.com/graphql/graphql-js" target="_blank">graphql-js</a> 和
+<a href="https://github.com/graphql/graphql-relay-js" target="_blank">graphql-relay-js</a> 來建構我們的
+schema。</p><p>讓我們來打開 starter kit 的 schema，並用我們剛建立的那一個來置換資料庫的 import：</p><pre class="prism language-javascript">
+<span spellcheck="true" class="token comment">/**
+ * ./data/schema.js
+ */</span>
+
+<span spellcheck="true" class="token comment">/* ... */</span>
+
+<span class="token keyword">import</span> <span class="token punctuation">{</span>
+  Game<span class="token punctuation">,</span>
+  HidingSpot<span class="token punctuation">,</span>
+  checkHidingSpotForTreasure<span class="token punctuation">,</span>
+  getGame<span class="token punctuation">,</span>
+  getHidingSpot<span class="token punctuation">,</span>
+  getHidingSpots<span class="token punctuation">,</span>
+  getTurnsRemaining<span class="token punctuation">,</span>
+<span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">&#x27;./database&#x27;</span><span class="token punctuation">;</span></pre><p>在此刻，你可以刪除 <code>./data/schema.js</code> 中直到 <code>queryType</code> 之前的所有東西。</p><p>接著，讓我們來定義一個 node interface 和 type。我們只需要提供一個方式讓 Relay 能從一個 object 映射到與那個 object 相關聯的 GraphQL type，並從一個 global ID 映射到它指向的 object：</p><pre class="prism language-javascript">
+<span class="token keyword">var</span> <span class="token punctuation">{</span>nodeInterface<span class="token punctuation">,</span> nodeField<span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token function">nodeDefinitions</span><span class="token punctuation">(</span>
+  <span class="token punctuation">(</span>globalId<span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token punctuation">{</span>
+    <span class="token keyword">var</span> <span class="token punctuation">{</span>type<span class="token punctuation">,</span> id<span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token function">fromGlobalId</span><span class="token punctuation">(</span>globalId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>type <span class="token operator">===</span> <span class="token string">&#x27;Game&#x27;</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">return</span> <span class="token function">getGame</span><span class="token punctuation">(</span>id<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>type <span class="token operator">===</span> <span class="token string">&#x27;HidingSpot&#x27;</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">return</span> <span class="token function">getHidingSpot</span><span class="token punctuation">(</span>id<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+      <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token punctuation">(</span>obj<span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token punctuation">{</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>obj <span class="token keyword">instanceof</span> <span class="token class-name">Game</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">return</span> gameType<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>obj <span class="token keyword">instanceof</span> <span class="token class-name">HidingSpot</span><span class="token punctuation">)</span>  <span class="token punctuation">{</span>
+      <span class="token keyword">return</span> hidingSpotType<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+      <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">)</span><span class="token punctuation">;</span></pre><p>再下來，讓我們來定義我們的 game 和 hiding spot types，還有在它們上面可以存取的 fields。</p><pre class="prism language-javascript">
+<span class="token keyword">var</span> gameType <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">GraphQLObjectType</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  name<span class="token punctuation">:</span> <span class="token string">&#x27;Game&#x27;</span><span class="token punctuation">,</span>
+  description<span class="token punctuation">:</span> <span class="token string">&#x27;A treasure search game&#x27;</span><span class="token punctuation">,</span>
+  fields<span class="token punctuation">:</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token punctuation">(</span><span class="token punctuation">{</span>
+    id<span class="token punctuation">:</span> <span class="token function">globalIdField</span><span class="token punctuation">(</span><span class="token string">&#x27;Game&#x27;</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    hidingSpots<span class="token punctuation">:</span> <span class="token punctuation">{</span>
+      type<span class="token punctuation">:</span> hidingSpotConnection<span class="token punctuation">,</span>
+      description<span class="token punctuation">:</span> <span class="token string">&#x27;Places where treasure might be hidden&#x27;</span><span class="token punctuation">,</span>
+      args<span class="token punctuation">:</span> connectionArgs<span class="token punctuation">,</span>
+      resolve<span class="token punctuation">:</span> <span class="token punctuation">(</span>game<span class="token punctuation">,</span> args<span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token function">connectionFromArray</span><span class="token punctuation">(</span><span class="token function">getHidingSpots</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> args<span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    turnsRemaining<span class="token punctuation">:</span> <span class="token punctuation">{</span>
+      type<span class="token punctuation">:</span> GraphQLInt<span class="token punctuation">,</span>
+      description<span class="token punctuation">:</span> <span class="token string">&#x27;The number of turns a player has left to find the treasure&#x27;</span><span class="token punctuation">,</span>
+      resolve<span class="token punctuation">:</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token function">getTurnsRemaining</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+  interfaces<span class="token punctuation">:</span> <span class="token punctuation">[</span>nodeInterface<span class="token punctuation">]</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">var</span> hidingSpotType <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">GraphQLObjectType</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  name<span class="token punctuation">:</span> <span class="token string">&#x27;HidingSpot&#x27;</span><span class="token punctuation">,</span>
+  description<span class="token punctuation">:</span> <span class="token string">&#x27;A place where you might find treasure&#x27;</span><span class="token punctuation">,</span>
+  fields<span class="token punctuation">:</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token punctuation">(</span><span class="token punctuation">{</span>
+    id<span class="token punctuation">:</span> <span class="token function">globalIdField</span><span class="token punctuation">(</span><span class="token string">&#x27;HidingSpot&#x27;</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    hasBeenChecked<span class="token punctuation">:</span> <span class="token punctuation">{</span>
+      type<span class="token punctuation">:</span> GraphQLBoolean<span class="token punctuation">,</span>
+      description<span class="token punctuation">:</span> <span class="token string">&#x27;True if this spot has already been checked for treasure&#x27;</span><span class="token punctuation">,</span>
+      resolve<span class="token punctuation">:</span> <span class="token punctuation">(</span>hidingSpot<span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> hidingSpot<span class="token punctuation">.</span>hasBeenChecked<span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    hasTreasure<span class="token punctuation">:</span> <span class="token punctuation">{</span>
+      type<span class="token punctuation">:</span> GraphQLBoolean<span class="token punctuation">,</span>
+      description<span class="token punctuation">:</span> <span class="token string">&#x27;True if this hiding spot holds treasure&#x27;</span><span class="token punctuation">,</span>
+      resolve<span class="token punctuation">:</span> <span class="token punctuation">(</span>hidingSpot<span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>hidingSpot<span class="token punctuation">.</span>hasBeenChecked<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+          <span class="token keyword">return</span> hidingSpot<span class="token punctuation">.</span>hasTreasure<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+          <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>  <span spellcheck="true" class="token comment">// 噓... 這是秘密！</span>
+        <span class="token punctuation">}</span>
+      <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+  interfaces<span class="token punctuation">:</span> <span class="token punctuation">[</span>nodeInterface<span class="token punctuation">]</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></pre><p>因為一個 game 可以有許多個 hiding spots，我們需要建立一個 connection，讓我們可以使用來 把他們連結在一起。</p><pre class="prism language-javascript">
+<span class="token keyword">var</span> <span class="token punctuation">{</span>connectionType<span class="token punctuation">:</span> hidingSpotConnection<span class="token punctuation">}</span> <span class="token operator">=</span>
+  <span class="token function">connectionDefinitions</span><span class="token punctuation">(</span><span class="token punctuation">{</span>name<span class="token punctuation">:</span> <span class="token string">&#x27;HidingSpot&#x27;</span><span class="token punctuation">,</span> nodeType<span class="token punctuation">:</span> hidingSpotType<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></pre><p>現在讓我們來把這些 types 連結到 root query type。</p><pre class="prism language-javascript">
+<span class="token keyword">var</span> queryType <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">GraphQLObjectType</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  name<span class="token punctuation">:</span> <span class="token string">&#x27;Query&#x27;</span><span class="token punctuation">,</span>
+  fields<span class="token punctuation">:</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token punctuation">(</span><span class="token punctuation">{</span>
+    node<span class="token punctuation">:</span> nodeField<span class="token punctuation">,</span>
+    game<span class="token punctuation">:</span> <span class="token punctuation">{</span>
+      type<span class="token punctuation">:</span> gameType<span class="token punctuation">,</span>
+      resolve<span class="token punctuation">:</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token function">getGame</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></pre><p>隨著 queries 已經完成，讓我們開始著手我們唯一的 mutation：消耗一個回合來檢查一個 spot 有沒有寶藏的那一個。在這裡，我們定義給 mutation 的 input (spot 的 id 用來檢查寶藏) 和在 mutation 發生之後所有客戶端可能會可能想要更新的 fields 清單。最後，我們實作一個方法來執行背後的 mutation。</p><pre class="prism language-javascript">
+<span class="token keyword">var</span> CheckHidingSpotForTreasureMutation <span class="token operator">=</span> <span class="token function">mutationWithClientMutationId</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  name<span class="token punctuation">:</span> <span class="token string">&#x27;CheckHidingSpotForTreasure&#x27;</span><span class="token punctuation">,</span>
+  inputFields<span class="token punctuation">:</span> <span class="token punctuation">{</span>
+    id<span class="token punctuation">:</span> <span class="token punctuation">{</span> type<span class="token punctuation">:</span> <span class="token keyword">new</span> <span class="token class-name">GraphQLNonNull</span><span class="token punctuation">(</span>GraphQLID<span class="token punctuation">)</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  outputFields<span class="token punctuation">:</span> <span class="token punctuation">{</span>
+    hidingSpot<span class="token punctuation">:</span> <span class="token punctuation">{</span>
+      type<span class="token punctuation">:</span> hidingSpotType<span class="token punctuation">,</span>
+      resolve<span class="token punctuation">:</span> <span class="token punctuation">(</span><span class="token punctuation">{</span>localHidingSpotId<span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token function">getHidingSpot</span><span class="token punctuation">(</span>localHidingSpotId<span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    game<span class="token punctuation">:</span> <span class="token punctuation">{</span>
+      type<span class="token punctuation">:</span> gameType<span class="token punctuation">,</span>
+      resolve<span class="token punctuation">:</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token function">getGame</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  mutateAndGetPayload<span class="token punctuation">:</span> <span class="token punctuation">(</span><span class="token punctuation">{</span>id<span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token punctuation">{</span>
+    <span class="token keyword">var</span> localHidingSpotId <span class="token operator">=</span> <span class="token function">fromGlobalId</span><span class="token punctuation">(</span>id<span class="token punctuation">)</span><span class="token punctuation">.</span>id<span class="token punctuation">;</span>
+    <span class="token function">checkHidingSpotForTreasure</span><span class="token punctuation">(</span>localHidingSpotId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> <span class="token punctuation">{</span>localHidingSpotId<span class="token punctuation">}</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></pre><p>讓我們來把剛建立的 mutation 連結到 root mutation type：</p><pre class="prism language-javascript">
+<span class="token keyword">var</span> mutationType <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">GraphQLObjectType</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  name<span class="token punctuation">:</span> <span class="token string">&#x27;Mutation&#x27;</span><span class="token punctuation">,</span>
+  fields<span class="token punctuation">:</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token punctuation">(</span><span class="token punctuation">{</span>
+    checkHidingSpotForTreasure<span class="token punctuation">:</span> CheckHidingSpotForTreasureMutation<span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></pre><p>最後，建構我們的 schema (它的起始 query type 是我們先前定義過的 query type) 並 export 它。</p><pre class="prism language-javascript">
+<span class="token keyword">export</span> <span class="token keyword">var</span> Schema <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">GraphQLSchema</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  query<span class="token punctuation">:</span> queryType<span class="token punctuation">,</span>
+  mutation<span class="token punctuation">:</span> mutationType
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></pre><h2><a class="anchor" name="schema"></a>處理 schema <a class="hash-link" href="#schema">#</a></h2><p>在我們更深入之前，我們需要把我們的可執行 schema serialize 成 JSON，才能讓 Relay.QL transpiler 使用，接著啟動伺服器。從 command line：</p><pre class="prism language-javascript">
+npm run update<span class="token operator">-</span>schema
+npm start</pre><h2><a class="anchor" name=""></a>撰寫遊戲 <a class="hash-link" href="#">#</a></h2><p>讓我們微調一下檔案 <code>./js/routes/AppHomeRoute.js</code>，以把我們的 game 綁到 schema 的 <code>game</code> root field：</p><pre class="prism language-javascript">
+<span class="token keyword">export</span> <span class="token keyword">default</span> <span class="token keyword">class</span> <span class="token class-name">extends</span> Relay<span class="token punctuation">.</span>Route <span class="token punctuation">{</span>
+  <span class="token keyword">static</span> path <span class="token operator">=</span> <span class="token string">&#x27;/&#x27;</span><span class="token punctuation">;</span>
+  <span class="token keyword">static</span> queries <span class="token operator">=</span> <span class="token punctuation">{</span>
+    game<span class="token punctuation">:</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> Relay<span class="token punctuation">.</span>QL<span class="token template-string"><span class="token string">`query { game }`</span></span><span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">;</span>
+  <span class="token keyword">static</span> routeName <span class="token operator">=</span> <span class="token string">&#x27;AppHomeRoute&#x27;</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></pre><p>接下來，讓我們在 <code>./js/mutations/CheckHidingSpotForTreasureMutation.js</code> 建立一個檔案並建立 <code>Relay.Mutation</code> 的子類別叫做 <code>CheckHidingSpotForTreasureMutation</code> 來放我們的 mutation 實作：</p><pre class="prism language-javascript">
+<span class="token keyword">import</span> Relay <span class="token keyword">from</span> <span class="token string">&#x27;react-relay&#x27;</span><span class="token punctuation">;</span>
+
+<span class="token keyword">export</span> <span class="token keyword">default</span> <span class="token keyword">class</span> <span class="token class-name">CheckHidingSpotForTreasureMutation</span> <span class="token keyword">extends</span> <span class="token class-name">Relay<span class="token punctuation">.</span>Mutation</span> <span class="token punctuation">{</span>
+  <span class="token keyword">static</span> fragments <span class="token operator">=</span> <span class="token punctuation">{</span>
+    game<span class="token punctuation">:</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> Relay<span class="token punctuation">.</span>QL<span class="token template-string"><span class="token string">`
+      fragment on Game {
+        id,
+        turnsRemaining,
+      }
+    `</span></span><span class="token punctuation">,</span>
+    hidingSpot<span class="token punctuation">:</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> Relay<span class="token punctuation">.</span>QL<span class="token template-string"><span class="token string">`
+      fragment on HidingSpot {
+        id,
+      }
+    `</span></span><span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">;</span>
+  <span class="token function">getMutation</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> Relay<span class="token punctuation">.</span>QL<span class="token template-string"><span class="token string">`mutation{checkHidingSpotForTreasure}`</span></span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token function">getCollisionKey</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token template-string"><span class="token string">`check_</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span><span class="token keyword">this</span><span class="token punctuation">.</span>props<span class="token punctuation">.</span>game<span class="token punctuation">.</span>id<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">`</span></span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token function">getFatQuery</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> Relay<span class="token punctuation">.</span>QL<span class="token template-string"><span class="token string">`
+      fragment on CheckHidingSpotForTreasurePayload {
+        hidingSpot {
+          hasBeenChecked,
+          hasTreasure,
+        },
+        game {
+          turnsRemaining,
+        },
+      }
+    `</span></span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token function">getConfigs</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token punctuation">[</span><span class="token punctuation">{</span>
+      type<span class="token punctuation">:</span> <span class="token string">&#x27;FIELDS_CHANGE&#x27;</span><span class="token punctuation">,</span>
+      fieldIDs<span class="token punctuation">:</span> <span class="token punctuation">{</span>
+        hidingSpot<span class="token punctuation">:</span> <span class="token keyword">this</span><span class="token punctuation">.</span>props<span class="token punctuation">.</span>hidingSpot<span class="token punctuation">.</span>id<span class="token punctuation">,</span>
+        game<span class="token punctuation">:</span> <span class="token keyword">this</span><span class="token punctuation">.</span>props<span class="token punctuation">.</span>game<span class="token punctuation">.</span>id<span class="token punctuation">,</span>
+      <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token function">getVariables</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token punctuation">{</span>
+      id<span class="token punctuation">:</span> <span class="token keyword">this</span><span class="token punctuation">.</span>props<span class="token punctuation">.</span>hidingSpot<span class="token punctuation">.</span>id<span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token function">getOptimisticResponse</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token punctuation">{</span>
+      game<span class="token punctuation">:</span> <span class="token punctuation">{</span>
+        turnsRemaining<span class="token punctuation">:</span> <span class="token keyword">this</span><span class="token punctuation">.</span>props<span class="token punctuation">.</span>game<span class="token punctuation">.</span>turnsRemaining <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">,</span>
+      <span class="token punctuation">}</span><span class="token punctuation">,</span>
+      hidingSpot<span class="token punctuation">:</span> <span class="token punctuation">{</span>
+        id<span class="token punctuation">:</span> <span class="token keyword">this</span><span class="token punctuation">.</span>props<span class="token punctuation">.</span>hidingSpot<span class="token punctuation">.</span>id<span class="token punctuation">,</span>
+        hasBeenChecked<span class="token punctuation">:</span> <span class="token keyword">true</span><span class="token punctuation">,</span>
+      <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></pre><p>最後，讓我們在 <code>./js/components/App.js</code> 中把它們全部結合在一起：</p><pre class="prism language-javascript">
+<span class="token keyword">import</span> CheckHidingSpotForTreasureMutation <span class="token keyword">from</span> <span class="token string">&#x27;../mutations/CheckHidingSpotForTreasureMutation&#x27;</span><span class="token punctuation">;</span>
+
+<span class="token keyword">class</span> <span class="token class-name">App</span> <span class="token keyword">extends</span> <span class="token class-name">React<span class="token punctuation">.</span>Component</span> <span class="token punctuation">{</span>
+  <span class="token function">_getHidingSpotStyle</span><span class="token punctuation">(</span>hidingSpot<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">var</span> color<span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>props<span class="token punctuation">.</span>relay<span class="token punctuation">.</span><span class="token function">hasOptimisticUpdate</span><span class="token punctuation">(</span>hidingSpot<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      color <span class="token operator">=</span> <span class="token string">&#x27;lightGrey&#x27;</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>hidingSpot<span class="token punctuation">.</span>hasBeenChecked<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>hidingSpot<span class="token punctuation">.</span>hasTreasure<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        color <span class="token operator">=</span> <span class="token string">&#x27;blue&#x27;</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+        color <span class="token operator">=</span> <span class="token string">&#x27;red&#x27;</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+      color <span class="token operator">=</span> <span class="token string">&#x27;black&#x27;</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> <span class="token punctuation">{</span>
+      backgroundColor<span class="token punctuation">:</span> color<span class="token punctuation">,</span>
+      cursor<span class="token punctuation">:</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">_isGameOver</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">?</span> <span class="token keyword">null</span> <span class="token punctuation">:</span> <span class="token string">&#x27;pointer&#x27;</span><span class="token punctuation">,</span>
+      display<span class="token punctuation">:</span> <span class="token string">&#x27;inline-block&#x27;</span><span class="token punctuation">,</span>
+      height<span class="token punctuation">:</span> <span class="token number">100</span><span class="token punctuation">,</span>
+      marginRight<span class="token punctuation">:</span> <span class="token number">10</span><span class="token punctuation">,</span>
+      width<span class="token punctuation">:</span> <span class="token number">100</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token function">_handleHidingSpotClick</span><span class="token punctuation">(</span>hidingSpot<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">_isGameOver</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">return</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    Relay<span class="token punctuation">.</span>Store<span class="token punctuation">.</span><span class="token function">commitUpdate</span><span class="token punctuation">(</span>
+      <span class="token keyword">new</span> <span class="token class-name">CheckHidingSpotForTreasureMutation</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+        game<span class="token punctuation">:</span> <span class="token keyword">this</span><span class="token punctuation">.</span>props<span class="token punctuation">.</span>game<span class="token punctuation">,</span>
+        hidingSpot<span class="token punctuation">,</span>
+      <span class="token punctuation">}</span><span class="token punctuation">)</span>
+    <span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token function">_hasFoundTreasure</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token punctuation">(</span>
+      <span class="token keyword">this</span><span class="token punctuation">.</span>props<span class="token punctuation">.</span>game<span class="token punctuation">.</span>hidingSpots<span class="token punctuation">.</span>edges<span class="token punctuation">.</span><span class="token function">some</span><span class="token punctuation">(</span>edge <span class="token operator">=</span><span class="token operator">&gt;</span> edge<span class="token punctuation">.</span>node<span class="token punctuation">.</span>hasTreasure<span class="token punctuation">)</span>
+    <span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token function">_isGameOver</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token operator">!</span><span class="token keyword">this</span><span class="token punctuation">.</span>props<span class="token punctuation">.</span>game<span class="token punctuation">.</span>turnsRemaining <span class="token operator">||</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">_hasFoundTreasure</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token function">renderGameBoard</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token keyword">this</span><span class="token punctuation">.</span>props<span class="token punctuation">.</span>game<span class="token punctuation">.</span>hidingSpots<span class="token punctuation">.</span>edges<span class="token punctuation">.</span><span class="token function">map</span><span class="token punctuation">(</span>edge <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token punctuation">{</span>
+      <span class="token keyword">return</span> <span class="token punctuation">(</span>
+        <span class="token operator">&lt;</span>div
+          key<span class="token operator">=</span><span class="token punctuation">{</span>edge<span class="token punctuation">.</span>node<span class="token punctuation">.</span>id<span class="token punctuation">}</span>
+          onClick<span class="token operator">=</span><span class="token punctuation">{</span><span class="token keyword">this</span><span class="token punctuation">.</span>_handleHidingSpotClick<span class="token punctuation">.</span><span class="token function">bind</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">,</span> edge<span class="token punctuation">.</span>node<span class="token punctuation">)</span><span class="token punctuation">}</span>
+          style<span class="token operator">=</span><span class="token punctuation">{</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">_getHidingSpotStyle</span><span class="token punctuation">(</span>edge<span class="token punctuation">.</span>node<span class="token punctuation">)</span><span class="token punctuation">}</span>
+        <span class="token operator">/</span><span class="token operator">&gt;</span>
+      <span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token function">render</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">var</span> headerText<span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>props<span class="token punctuation">.</span>relay<span class="token punctuation">.</span><span class="token function">getPendingTransactions</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>props<span class="token punctuation">.</span>game<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      headerText <span class="token operator">=</span> <span class="token string">&#x27;\u2026&#x27;</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">_hasFoundTreasure</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      headerText <span class="token operator">=</span> <span class="token string">&#x27;You win!&#x27;</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">_isGameOver</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      headerText <span class="token operator">=</span> <span class="token string">&#x27;Game over!&#x27;</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+      headerText <span class="token operator">=</span> <span class="token string">&#x27;Find the treasure!&#x27;</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> <span class="token punctuation">(</span>
+      <span class="token operator">&lt;</span>div<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span>h1<span class="token operator">&gt;</span><span class="token punctuation">{</span>headerText<span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>h1<span class="token operator">&gt;</span>
+        <span class="token punctuation">{</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">renderGameBoard</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">}</span>
+        <span class="token operator">&lt;</span>p<span class="token operator">&gt;</span>Turns remaining<span class="token punctuation">:</span> <span class="token punctuation">{</span><span class="token keyword">this</span><span class="token punctuation">.</span>props<span class="token punctuation">.</span>game<span class="token punctuation">.</span>turnsRemaining<span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>p<span class="token operator">&gt;</span>
+      <span class="token operator">&lt;</span><span class="token operator">/</span>div<span class="token operator">&gt;</span>
+    <span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">export</span> <span class="token keyword">default</span> Relay<span class="token punctuation">.</span><span class="token function">createContainer</span><span class="token punctuation">(</span>App<span class="token punctuation">,</span> <span class="token punctuation">{</span>
+  fragments<span class="token punctuation">:</span> <span class="token punctuation">{</span>
+    game<span class="token punctuation">:</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> Relay<span class="token punctuation">.</span>QL`
+      fragment on Game <span class="token punctuation">{</span>
+        turnsRemaining<span class="token punctuation">,</span>
+        <span class="token function">hidingSpots</span><span class="token punctuation">(</span>first<span class="token punctuation">:</span> <span class="token number">9</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+          edges <span class="token punctuation">{</span>
+            node <span class="token punctuation">{</span>
+              hasBeenChecked<span class="token punctuation">,</span>
+              hasTreasure<span class="token punctuation">,</span>
+              id<span class="token punctuation">,</span>
+              $<span class="token punctuation">{</span>CheckHidingSpotForTreasureMutation<span class="token punctuation">.</span><span class="token function">getFragment</span><span class="token punctuation">(</span><span class="token string">&#x27;hidingSpot&#x27;</span><span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+            <span class="token punctuation">}</span>
+          <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span><span class="token punctuation">,</span>
+        $<span class="token punctuation">{</span>CheckHidingSpotForTreasureMutation<span class="token punctuation">.</span><span class="token function">getFragment</span><span class="token punctuation">(</span><span class="token string">&#x27;game&#x27;</span><span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+      <span class="token punctuation">}</span>
+    `<span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></pre><p>在 Relay repository 中的 <a href="https://github.com/facebook/relay/tree/master/examples" target="_blank"><code>./examples/</code></a> 目錄下可以找到一份可運作的 treasure hunt 副本。</p><p>現在，我們現在已經完成這份教學，讓我們深入一些介紹並解釋 GraphQL 和 Relay 的 conference 影片。</p></div><div class="docs-prevnext"><a class="docs-next" href="thinking-in-graphql.html#content">Next →</a></div></div></section><footer class="wrap"><div class="right">©2015 Facebook Inc.</div></footer></div><div id="fb-root"></div><script>
+            !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+"://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+              ga('create', 'UA-71174216-1', 'auto');
+              ga('send', 'pageview');
+          </script></body></html>
