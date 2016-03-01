@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<!-- Built with spec-md -->
+
+<head>
+  <meta charset="utf-8">
+  <title>Relay Input Object Mutations Specification</title>
+  <link href="spec.css" rel="stylesheet">
+  <link href="highlight.css" rel="stylesheet">
+</head>
+
+<body>
+  <header>
+    <h1>Relay Input Object Mutations Specification</h1>
+    <section id="intro">
+      <p>Relay&rsquo;s support for mutations relies on the GraphQL server exposing mutation fields in a standardized way. These mutations accept and emit a identifier string, which allows Relay to track mutations and responses.</p>
+      <p>All mutations include in their input a <code>clientMutationId</code> string, which is then returned as part of the object returned by the mutation field.</p>
+      <p>An example of this is the following query:</p><pre><code>mutation M {
+  updateStatus(input: $input) {
+    clientMutationId
+    status {
+      text
+    }
+  }
+}
+</code></pre>
+      <p>where the provided parameters are:</p><pre><code>{
+  "<span class="hljs-attribute">input</span>": <span class="hljs-value">{
+    "<span class="hljs-attribute">clientMutationId</span>": <span class="hljs-value"><span class="hljs-string">"549b5e7c-0516-4fc9-8944-125401211590"</span></span>,
+    "<span class="hljs-attribute">text</span>": <span class="hljs-value"><span class="hljs-string">"Hello World!"</span>
+  </span>}
+</span>}
+</code></pre>
+      <p>and the response is:</p><pre><code>{
+  "<span class="hljs-attribute">updateStatus</span>": <span class="hljs-value">{
+    "<span class="hljs-attribute">clientMutationId</span>": <span class="hljs-value"><span class="hljs-string">"549b5e7c-0516-4fc9-8944-125401211590"</span></span>,
+    "<span class="hljs-attribute">status</span>": <span class="hljs-value">{
+      "<span class="hljs-attribute">text</span>": <span class="hljs-value"><span class="hljs-string">"Hello World!"</span>
+    </span>}
+  </span>}
+</span>}
+</code></pre>
+      <p>This section of the spec describes the formal requirements around mutations.</p>
+    </section>
+    <div class="spec-toc">
+      <ol>
+        <li><a href="#sec-Mutation-inputs"><span class="spec-secnum">1</span>Mutation inputs</a></li>
+        <li><a href="#sec-Mutation-fields"><span class="spec-secnum">2</span>Mutation fields</a></li>
+        <li><a href="#sec-Introspection"><span class="spec-secnum">3</span>Introspection</a></li>
+      </ol>
+    </div>
+  </header>
+  <section id="sec-Mutation-inputs">
+    <h2><span class="spec-secnum" title="link to this section"><a href="#sec-Mutation-inputs">1</a></span>Mutation inputs</h2>
+    <p>In particular, all mutations must expose exactly one argument, named <code>input</code>. This argument&rsquo;s type must be a <code>NON_NULL</code> wrapper around an <code>INPUT_OBJECT</code>. That input object type must contain an argument named
+      <code>clientMutationId</code>. That argument must be a <code>String</code>. That argument may be non&#8208;null.</p>
+    <p>Clients may use whatever identifier they see fit for their <code>clientMutationId</code>s; Version 4 UUIDs are a reasonable choice.</p>
+  </section>
+  <section id="sec-Mutation-fields">
+    <h2><span class="spec-secnum" title="link to this section"><a href="#sec-Mutation-fields">2</a></span>Mutation fields</h2>
+    <p>The return type of any mutation field must be an object. That object must contain a field named <code>clientMutationId</code> which is a <code>String</code>. If <code>input</code> <code>clientMutationId</code> is non&#8208;null, then mutation <code>clientMutationId</code>      must also be non&#8208;null. The value of this field must be the value of the <code>clientMutationId</code> input argument defined above.</p>
+  </section>
+  <section id="sec-Introspection">
+    <h2><span class="spec-secnum" title="link to this section"><a href="#sec-Introspection">3</a></span>Introspection</h2>
+    <p>A server that correctly implements the above requirement will accept the following introspection query, and return a response that contains the provided response.</p><pre><code>{
+  __schema {
+    mutationType {
+      fields {
+        type {
+          kind
+          fields {
+            name
+            type {
+              kind
+              ofType {
+                name
+                kind
+              }
+            }
+          }
+        }
+        args {
+          name
+          type {
+            kind
+            ofType {
+              kind
+              inputFields {
+                name
+                type {
+                  kind
+                  ofType {
+                    name
+                    kind
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+</code></pre>
+    <p>yields</p><pre><code>{
+  "__schema": {
+    "mutationType": {
+      "fields": [
+        // May contain many instances of this
+        {
+          "type": {
+            "kind": "OBJECT",
+            "fields": [
+              // May contain more fields here.
+              {
+                "name": "clientMutationId",
+                // May also be NON_NULL, must match args
+                "type": {
+                  "name": "String",
+                  "kind": "SCALAR"
+                }
+              }
+            ]
+          },
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "inputFields": [
+                    // May contain more fields here
+                    {
+                      "name": "clientMutationId",
+                      // May also be NON_NULL, must match payload
+                      "type": {
+                        "name": "String",
+                        "kind": "SCALAR"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+</code></pre></section>
+  <footer>Written in <a href="http://leebyron.com/spec-md/" target="_blank">Spec Markdown</a>.</footer>
+</body>
+
+</html>
