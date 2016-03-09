@@ -15,7 +15,6 @@
 
 const GraphQLRange = require('GraphQLRange');
 import type {DataID} from 'RelayInternalTypes';
-const RelayQueryPath = require('RelayQueryPath');
 const RelayRecord = require('RelayRecord');
 import type RelayStoreData from 'RelayStoreData';
 
@@ -208,7 +207,7 @@ class RelayGarbageCollector {
 
   _traverseRecord(record: {[key: string]: mixed}): void {
     forEachObject(record, (value, storageKey) => {
-      if (value instanceof RelayQueryPath) {
+      if (storageKey === RelayRecord.MetadataKey.PATH) {
         return;
       } else if (value instanceof GraphQLRange) {
         value.getEdgeIDs().forEach(id => {

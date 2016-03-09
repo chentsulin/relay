@@ -20,7 +20,9 @@ var x = (function () {
   return {
     calls: [{
       kind: 'Call',
-      metadata: {},
+      metadata: {
+        type: 'ID!'
+      },
       name: 'id',
       value: {
         kind: 'CallValue',
@@ -135,7 +137,7 @@ var x = (function () {
         },
         type: 'String'
       }],
-      id: '3D6pywLnanwh:5',
+      id: Relay.QL.__id(),
       kind: 'Fragment',
       metadata: {},
       name: 'User',
@@ -145,7 +147,8 @@ var x = (function () {
     kind: 'Query',
     metadata: {
       isAbstract: true,
-      identifyingArgName: 'id'
+      identifyingArgName: 'id',
+      identifyingArgType: 'ID!'
     },
     name: 'ConnectionWithoutNodeID',
     type: 'Node'

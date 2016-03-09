@@ -31,7 +31,7 @@ Relay.QL`
 
 ## 用法
 
-現在要上手最簡單的方式是使用 [Relay Starter Kit](https://github.com/facebook/relay-starter-kit) - 這裡面包含一個範例 schema 檔並設定好了 [`babel-relay-plugin`](https://www.npmjs.com/package/babel-relay-plugin) npm 模組來 transpile queries。
+現在要上手最簡單的方式是使用 [Relay Starter Kit](https://github.com/relayjs/relay-starter-kit) - 這裡面包含一個範例 schema 檔並設定好了 [`babel-relay-plugin`](https://www.npmjs.com/package/babel-relay-plugin) npm 模組來 transpile queries。
 
 ## 進階用法
 
@@ -39,13 +39,13 @@ Relay.QL`
 
 ```javascript
 // `babel-relay-plugin` 回傳一個用來建立 plugin 實體的函式
-var getBabelRelayPlugin = require('babel-relay-plugin');
+const getBabelRelayPlugin = require('babel-relay-plugin');
 
 // 載入先前儲存的 schema 資料 (參閱下面的「Schema JSON」)
-var schemaData = require('schema.json');
+const schemaData = require('schema.json');
 
 // 建立一個 plugin 實體
-var plugin = getBabelRelayPlugin(schemaData);
+const plugin = getBabelRelayPlugin(schemaData);
 
 // 藉由 babel 使用 plugin 來編譯程式碼
 return babel.transform(source, {
@@ -59,7 +59,34 @@ return babel.transform(source, {
 
 ### 使用 `graphql`
 
-如何載入 `schema.js` 檔，執行 introspection query 來得到 schema 資訊，並把它存成一個 JSON 檔的範例可以在 [starter kit](https://github.com/relayjs/relay-starter-kit/blob/master/scripts/updateSchema.js) 中找到。
+使用 `introspectionQuery` 來產生一份 Schema JSON 給 Babel Relay Plugin，並使用 `printSchema` 來產生一份使用者可讀的 type system shorthand：
+
+```javascript
+import fs from 'fs';
+import path from 'path';
+import {graphql}  from 'graphql';
+import {introspectionQuery, printSchema} from 'graphql/utilities';
+
+// 假設你的 schema 放在 ../data/schema
+import {schema} from '../data/schema';
+const yourSchemaPath = path.join(__dirname, '../data/schema');
+
+// 儲存整個 schema introspection 的 JSON 讓 Babel Relay Plugin 去使用
+graphql(schema, introspectionQuery).then(result => {
+  fs.writeFileSync(
+    `${yourSchemaPath}.json`,
+    JSON.stringify(result, null, 2)
+  );
+});
+
+// 儲存使用者可讀的 schema 的 type system shorthand
+fs.writeFileSync(
+  `${yourSchemaPath}.graphql`,
+  printSchema(schema)
+);
+```
+
+關於如何載入 `schema.js` 檔，執行 introspection query 來得到 schema 資訊，並把它存成一個 JSON 檔的完整範例，請查看 [starter kit](https://github.com/relayjs/relay-starter-kit/blob/master/scripts/updateSchema.js)。
 
 ### 使用其他的 GraphQL 實作
 
@@ -73,7 +100,9 @@ return babel.transform(source, {
 當在為產品環境部署變異程式碼時，這個 plugin 可以設定成遇到驗證問題時立刻 throw：
 
 ```javascript
-var plugin = getBabelRelayPlugin(schemaData, {
-  abortOnError: true,
+babel.transform(source, {
+  plugins: [
+    [getBabelRelayPlugin(schemaData), {enforceSchema: true}],
+  ],
 });
 ```

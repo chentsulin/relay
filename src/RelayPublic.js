@@ -15,13 +15,11 @@
 
 const RelayContainer = require('RelayContainer');
 const RelayMutation = require('RelayMutation');
-const RelayNetworkLayer = require('RelayNetworkLayer');
 const RelayPropTypes = require('RelayPropTypes');
 const RelayQL = require('RelayQL');
 const RelayRootContainer = require('RelayRootContainer');
 const RelayRoute = require('RelayRoute');
 const RelayStore = require('RelayStore');
-const RelayTaskScheduler = require('RelayTaskScheduler');
 const RelayInternals = require('RelayInternals');
 
 const createRelayQuery = require('createRelayQuery');
@@ -36,7 +34,7 @@ if (typeof global.__REACT_DEVTOOLS_GLOBAL_HOOK__ !== 'undefined') {
  * Relay contains the set of public methods used to initialize and orchestrate
  * a React application that uses GraphQL to declare data dependencies.
  */
-var RelayPublic = {
+const RelayPublic = {
   Mutation: RelayMutation,
   PropTypes: RelayPropTypes,
   QL: RelayQL,
@@ -47,8 +45,8 @@ var RelayPublic = {
   createContainer: RelayContainer.create,
   createQuery: createRelayQuery,
   getQueries: getRelayQueries,
-  injectNetworkLayer: RelayNetworkLayer.injectNetworkLayer,
-  injectTaskScheduler: RelayTaskScheduler.injectScheduler,
+  injectNetworkLayer: RelayStore.injectNetworkLayer.bind(RelayStore),
+  injectTaskScheduler: RelayStore.injectTaskScheduler.bind(RelayStore),
   isContainer: isRelayContainer,
 };
 

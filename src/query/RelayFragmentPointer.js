@@ -17,6 +17,7 @@ const RelayQuery = require('RelayQuery');
 const RelayRecord = require('RelayRecord');
 import type RelayRecordStore from 'RelayRecordStore';
 
+const forEachRootCallArg = require('forEachRootCallArg');
 const invariant = require('invariant');
 
 import type {DataID} from 'RelayInternalTypes';
@@ -61,11 +62,20 @@ const RelayFragmentPointer = {
     record: Record,
     fragment: RelayQuery.Fragment
   ): ?DataID {
-    let fragmentMap = record.__fragments__;
+    const fragmentMap = record.__fragments__;
     if (typeof fragmentMap === 'object' && fragmentMap != null) {
       return fragmentMap[fragment.getConcreteFragmentID()];
     }
     return null;
+  },
+
+  create(
+    dataID: DataID,
+    fragment: RelayQuery.Fragment
+  ): FragmentProp {
+    const record = RelayRecord.create(dataID);
+    RelayFragmentPointer.addFragment(record, fragment, dataID);
+    return record;
   },
 
   createForRoot(
@@ -77,37 +87,23 @@ const RelayFragmentPointer = {
       return null;
     }
     const storageKey = query.getStorageKey();
+    const pointers = [];
+    forEachRootCallArg(query, ({identifyingArgKey}) => {
+      const dataID = store.getDataID(storageKey, identifyingArgKey);
+      if (dataID == null) {
+        pointers.push(null);
+      } else {
+        pointers.push(RelayFragmentPointer.create(dataID, fragment));
+      }
+    });
+    // Distinguish between singular/plural queries.
     const identifyingArg = query.getIdentifyingArg();
     const identifyingArgValue =
       (identifyingArg && identifyingArg.value) || null;
     if (Array.isArray(identifyingArgValue)) {
-      return identifyingArgValue.map(singleIdentifyingArgValue => {
-        const dataID = store.getDataID(storageKey, singleIdentifyingArgValue);
-        if (!dataID) {
-          return null;
-        }
-        const record = RelayRecord.create(dataID);
-        RelayFragmentPointer.addFragment(record, fragment, dataID);
-        return record;
-      });
+      return pointers;
     }
-    invariant(
-      typeof identifyingArgValue === 'string' || identifyingArgValue == null,
-      'RelayFragmentPointer: Value for the argument to `%s` on query `%s` ' +
-      'should be a string, but it was set to `%s`. Check that the value is a ' +
-      'string.',
-      query.getFieldName(),
-      query.getName(),
-      identifyingArgValue
-    );
-    const dataID = store.getDataID(storageKey, identifyingArgValue);
-    if (!dataID) {
-      // TODO(t7765591): Throw if `fragment` is not optional.
-      return null;
-    }
-    const record = RelayRecord.create(dataID);
-    RelayFragmentPointer.addFragment(record, fragment, dataID);
-    return record;
+    return pointers[0];
   },
 };
 

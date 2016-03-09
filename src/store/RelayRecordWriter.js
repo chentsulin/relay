@@ -25,7 +25,7 @@ import type {
   RootCallMap,
 } from 'RelayInternalTypes';
 const RelayNodeInterface = require('RelayNodeInterface');
-import type RelayQueryPath from 'RelayQueryPath';
+import type {QueryPath} from 'RelayQueryPath';
 const RelayRecord = require('RelayRecord');
 import type {
   Record,
@@ -48,6 +48,10 @@ const RESOLVED_FRAGMENT_MAP_GENERATION = '__resolvedFragmentMapGeneration__';
 const PATH = '__path__';
 const {APPEND, PREPEND, REMOVE} = GraphQLMutatorConstants;
 
+import type {
+  PageInfo,
+} from 'RelayConnectionInterface';
+
 type EdgeData = {
   __dataID__: DataID;
   cursor: mixed;
@@ -55,7 +59,6 @@ type EdgeData = {
     __dataID__: DataID;
   };
 };
-type PageInfo = {[key: string]: mixed};
 
 type RangeOperation = $Keys<GraphQLMutatorConstants.RANGE_OPERATIONS>;
 
@@ -161,7 +164,7 @@ class RelayRecordWriter {
   putRecord(
     dataID: DataID,
     typeName: ?string,
-    path?: RelayQueryPath
+    path?: QueryPath
   ): void {
     const prevRecord = this._getRecordForWrite(dataID);
     if (prevRecord) {
@@ -194,7 +197,7 @@ class RelayRecordWriter {
    */
   getPathToRecord(
     dataID: DataID
-  ): ?RelayQueryPath {
+  ): ?QueryPath {
     return (this._getField(dataID, PATH): any);
   }
 
@@ -334,7 +337,8 @@ class RelayRecordWriter {
     invariant(
       typeof field === 'object' &&
         field !== null &&
-        !Array.isArray(field),
+        !Array.isArray(field) &&
+        (field.__dataID__ == null || typeof field.__dataID__ === 'string'),
       'RelayRecordWriter.getLinkedRecordID(): Expected field `%s` for record ' +
       '`%s` to have a linked record.',
       storageKey,

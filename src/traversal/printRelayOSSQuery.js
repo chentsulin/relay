@@ -65,7 +65,9 @@ function printRelayOSSQuery(node: RelayQuery.Node): PrintedQuery {
     'printRelayOSSQuery(): Unsupported node type.'
   );
   const variables = {};
-  variableMap.forEach(({value, variableID}) => variables[variableID] = value);
+  variableMap.forEach(({value, variableID}) => {
+    variables[variableID] = value;
+  });
 
   return {
     text: [queryText, ...fragmentTexts].join(' '),
@@ -139,13 +141,24 @@ function printMutation(
 function printVariableDefinitions({variableMap}: PrinterState): string {
   let argStrings = null;
   variableMap.forEach(({type, variableID}) => {
+    // To ensure that the value can flow into a nullable or non-nullable
+    // argument, print it as non-nullable. Note that variables are not created
+    // for null values (the argument is omitted instead).
+    const nonNullType = printNonNullType(type);
     argStrings = argStrings || [];
-    argStrings.push('$' + variableID + ':' + type);
+    argStrings.push('$' + variableID + ':' + nonNullType);
   });
   if (argStrings) {
     return '(' + argStrings.join(',') + ')';
   }
   return '';
+}
+
+function printNonNullType(type: string): string {
+  if (type.endsWith('!')) {
+    return type;
+  }
+  return type + '!';
 }
 
 function printFragment(
@@ -299,6 +312,11 @@ function createVariable(
   type: string,
   printerState: PrinterState
 ): string {
+  invariant(
+    value != null,
+    'printRelayOSSQuery: Expected a non-null value for variable `%s`.',
+    name
+  );
   const valueKey = JSON.stringify(value);
   const existingVariable = printerState.variableMap.get(valueKey);
   if (existingVariable) {

@@ -22,6 +22,7 @@ import type {
 } from 'RelayInternalTypes';
 const RelayProfiler = require('RelayProfiler');
 const RelayQuery = require('RelayQuery');
+import type {QueryPath} from 'RelayQueryPath';
 const RelayQueryPath = require('RelayQueryPath');
 const RelayRecord = require('RelayRecord');
 import type {RecordMap} from 'RelayRecord';
@@ -53,7 +54,7 @@ const RelayDiskCacheReader = {
   readFragment(
     dataID: DataID,
     fragment: RelayQuery.Fragment,
-    path: RelayQueryPath,
+    path: QueryPath,
     store: RelayRecordStore,
     cachedRecords: RecordMap,
     cachedRootCallMap: RootCallMap,
@@ -62,7 +63,7 @@ const RelayDiskCacheReader = {
     changeTracker: RelayChangeTracker,
     callbacks: CacheReadCallbacks,
   ): Abortable {
-    var reader = new RelayCacheReader(
+    const reader = new RelayCacheReader(
       store,
       cachedRecords,
       cachedRootCallMap,
@@ -90,7 +91,7 @@ const RelayDiskCacheReader = {
     changeTracker: RelayChangeTracker,
     callbacks: CacheReadCallbacks,
   ): Abortable {
-    var reader = new RelayCacheReader(
+    const reader = new RelayCacheReader(
       store,
       cachedRecords,
       cachedRootCallMap,
@@ -163,12 +164,12 @@ class RelayCacheReader {
       }
       if (query) {
         const storageKey = query.getStorageKey();
-        forEachRootCallArg(query, identifyingArgValue => {
+        forEachRootCallArg(query, ({identifyingArgKey}) => {
           if (this._state === 'COMPLETED') {
             return;
           }
-          identifyingArgValue = identifyingArgValue || '';
-          this.visitRoot(storageKey, identifyingArgValue, query);
+          identifyingArgKey = identifyingArgKey || '';
+          this.visitRoot(storageKey, identifyingArgKey, query);
         });
       }
     });
@@ -181,7 +182,7 @@ class RelayCacheReader {
   readFragment(
     dataID: DataID,
     fragment: RelayQuery.Fragment,
-    path: RelayQueryPath
+    path: QueryPath
   ): void {
     invariant(
       this._state === 'PENDING',
@@ -204,27 +205,27 @@ class RelayCacheReader {
 
   visitRoot(
     storageKey: string,
-    identifyingArgValue: string,
+    identifyingArgKey: string,
     query: RelayQuery.Root
   ): void {
-    var dataID = this._store.getDataID(storageKey, identifyingArgValue);
+    const dataID = this._store.getDataID(storageKey, identifyingArgKey);
     if (dataID == null) {
       if (this._cachedRootCallMap.hasOwnProperty(storageKey) &&
           this._cachedRootCallMap[storageKey].hasOwnProperty(
-            identifyingArgValue
+            identifyingArgKey
           )
       ) {
         // Already attempted to read this root from cache.
         this._handleFailed();
       } else {
-        this.queueRoot(storageKey, identifyingArgValue, query);
+        this.queueRoot(storageKey, identifyingArgKey, query);
       }
     } else {
       this.visitNode(
         dataID,
         {
           node: query,
-          path: new RelayQueryPath(query),
+          path: RelayQueryPath.create(query),
           rangeCalls: undefined,
         }
       );
@@ -233,17 +234,17 @@ class RelayCacheReader {
 
   queueRoot(
     storageKey: string,
-    identifyingArgValue: string,
+    identifyingArgKey: string,
     query: RelayQuery.Root
   ) {
-    var rootKey = storageKey + '*' + identifyingArgValue;
+    const rootKey = storageKey + '*' + identifyingArgKey;
     if (this._pendingRoots.hasOwnProperty(rootKey)) {
       this._pendingRoots[rootKey].push(query);
     } else {
       this._pendingRoots[rootKey] = [query];
       this._cacheManager.readRootCall(
         storageKey,
-        identifyingArgValue,
+        identifyingArgKey,
         (error, value) => {
           if (this._state === 'COMPLETED') {
             return;
@@ -252,13 +253,13 @@ class RelayCacheReader {
             this._handleFailed();
             return;
           }
-          var roots = this._pendingRoots[rootKey];
+          const roots = this._pendingRoots[rootKey];
           delete this._pendingRoots[rootKey];
 
           this._cachedRootCallMap[storageKey] =
             this._cachedRootCallMap[storageKey] || {};
-          this._cachedRootCallMap[storageKey][identifyingArgValue] = value;
-          if (this._cachedRootCallMap[storageKey][identifyingArgValue] ==
+          this._cachedRootCallMap[storageKey][identifyingArgKey] = value;
+          if (this._cachedRootCallMap[storageKey][identifyingArgKey] ==
               null) {
             // Read from cache and we still don't have valid `dataID`.
             this._handleFailed();
@@ -272,7 +273,7 @@ class RelayCacheReader {
                 dataID,
                 {
                   node: root,
-                  path: new RelayQueryPath(root),
+                  path: RelayQueryPath.create(root),
                   rangeCalls: undefined,
                 }
               );
@@ -287,7 +288,7 @@ class RelayCacheReader {
   }
 
   visitNode(dataID: DataID, pendingItem: PendingItem): void {
-    var {missingData, pendingNodes} = findRelayQueryLeaves(
+    const {missingData, pendingNodes} = findRelayQueryLeaves(
       this._store,
       this._cachedRecords,
       pendingItem.node,
@@ -300,8 +301,8 @@ class RelayCacheReader {
       this._handleFailed();
       return;
     }
-    forEachObject(pendingNodes, (pendingItems, dataID) => {
-      this.queueNode(dataID, pendingItems);
+    forEachObject(pendingNodes, (pendingItems, pendingDataID) => {
+      this.queueNode(pendingDataID, pendingItems);
     });
   }
 
@@ -343,7 +344,7 @@ class RelayCacheReader {
             this._changeTracker.updateID(dataID);
           }
           this._cachedRecords[dataID] = value;
-          var items = this._pendingNodes[dataID];
+          const items = this._pendingNodes[dataID];
           delete this._pendingNodes[dataID];
           if (this._cachedRecords[dataID] === undefined) {
             // We are out of luck if disk doesn't have the node either.

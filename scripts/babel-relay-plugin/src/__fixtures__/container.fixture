@@ -10,7 +10,7 @@ Output:
 var Relay = require('react-relay');
 Relay.createContainer(Component, {
   queries: {
-    viewer: function viewer() {
+    viewer: function () {
       return (function () {
         return {
           children: [{
@@ -31,10 +31,10 @@ Relay.createContainer(Component, {
             },
             type: 'User'
           }],
-          id: 'okH/bEm+BsZO:6',
+          id: Relay.QL.__id(),
           kind: 'Fragment',
           metadata: {},
-          name: 'ContainerRelayQL',
+          name: 'Container_ViewerRelayQL',
           type: 'Viewer'
         };
       })();

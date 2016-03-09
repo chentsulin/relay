@@ -9,4 +9,4 @@
 
 'use strict';
 
-module.exports = require.requireActual('RelayTaskScheduler');
+module.exports = require.requireActual('isRelayEnvironment');

@@ -150,15 +150,17 @@ module.exports = function(t: any, options: PrinterOptions): Function {
         // a 1-1 correspondence with a Relay record, or null) has a formal type,
         // assume that the lone arg in a root field's call is the identifying one.
         const identifyingArg = rootFieldArgs[0];
-        metadata.identifyingArgName = identifyingArg.getName();
-        metadata.identifyingArgType =
-          this.printArgumentTypeForMetadata(identifyingArg.getType());
+        const identifyingArgName = identifyingArg.getName();
+        const identifyingArgType =
+          identifyingArg.getType().getName({modifiers: true});
+        metadata.identifyingArgName = identifyingArgName;
+        metadata.identifyingArgType = identifyingArgType;
         calls = t.arrayExpression([codify({
           kind: t.valueToNode('Call'),
           metadata: objectify({
-            type: this.printArgumentTypeForMetadata(identifyingArg.getType()),
+            type: identifyingArgType,
           }),
-          name: t.valueToNode(identifyingArg.getName()),
+          name: t.valueToNode(identifyingArgName),
           value: this.printArgumentValue(identifyingArg),
         })]);
       }
@@ -201,12 +203,27 @@ module.exports = function(t: any, options: PrinterOptions): Function {
       return codify({
         children: selections,
         directives: this.printDirectives(fragment.getDirectives()),
-        id: t.valueToNode(fragment.getFragmentID()),
+        id: this.printFragmentID(fragment),
         kind: t.valueToNode('Fragment'),
         metadata,
         name: t.valueToNode(fragment.getName()),
         type: t.valueToNode(fragmentType.getName({modifiers: false})),
       });
+    }
+
+    printFragmentID(fragment: RelayQLFragment): Printable {
+      const staticFragmentID = fragment.getStaticFragmentID();
+      if (staticFragmentID == null) {
+        return t.callExpression(
+          t.memberExpression(
+            identify(this.tagName),
+            t.identifier('__id')
+          ),
+          []
+        );
+      } else {
+        return t.valueToNode(staticFragmentID);
+      }
     }
 
     printMutation(mutation: RelayQLMutation): Printable {
@@ -537,7 +554,7 @@ module.exports = function(t: any, options: PrinterOptions): Function {
       }
       return codify({
         kind: t.valueToNode('CallValue'),
-        callValue: t.valueToNode(value),
+        callValue: printLiteralValue(value),
       });
     }
 
@@ -793,6 +810,21 @@ module.exports = function(t: any, options: PrinterOptions): Function {
 
   function property(name: string, value: mixed): Printable {
     return t.objectProperty(t.identifier(name), value);
+  }
+
+  function printLiteralValue(value: mixed): Printable {
+    if (value == null) {
+      return NULL;
+    } else if (Array.isArray(value)) {
+      return t.arrayExpression(value.map(printLiteralValue));
+    } else if (typeof value === 'object' && value != null) {
+      const objectValue = value;
+      return t.objectExpression(Object.keys(objectValue).map(key =>
+        property(key, printLiteralValue(objectValue[key]))
+      ));
+    } else {
+      return t.valueToNode(value);
+    }
   }
 
   function shallowFlatten(arr: mixed) {

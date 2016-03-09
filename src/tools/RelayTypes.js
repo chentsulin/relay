@@ -23,7 +23,9 @@ import type {
 } from 'RelayInternalTypes';
 import type RelayFragmentReference from 'RelayFragmentReference';
 import type RelayMetaRoute from 'RelayMetaRoute';
+import type RelayMutationRequest from 'RelayMutationRequest';
 import type RelayMutationTransaction from 'RelayMutationTransaction';
+import type RelayQueryRequest from 'RelayQueryRequest';
 import type {Record} from 'RelayRecord';
 import type {RelayConcreteNode} from 'RelayQL';
 
@@ -57,7 +59,7 @@ export type ReadyState = {
 export type ReadyStateChangeCallback = (readyState: ReadyState) => void;
 
 // Containers
-export type RelayContainer = ReactClass<any, any, any>;
+export type RelayContainer = ReactClass<any>;
 
 export type RelayProp = {
   forceFetch: (
@@ -101,7 +103,7 @@ export type RelayMutationConfig = {
 } | {
   type: 'RANGE_ADD',
   parentName: string,
-  parentID: string,
+  parentID?: string,
   connectionName: string,
   edgeName: string,
   // from GraphQLMutatorConstants.RANGE_OPERATIONS
@@ -109,13 +111,13 @@ export type RelayMutationConfig = {
 } | {
   type: 'NODE_DELETE',
   parentName: string;
-  parentID: string;
+  parentID?: string;
   connectionName: string;
   deletedIDFieldName: string;
 } | {
   type: 'RANGE_DELETE';
   parentName: string;
-  parentID: string;
+  parentID?: string;
   connectionName: string;
   deletedIDFieldName: string;
   pathToConnection: Array<string>;
@@ -188,6 +190,11 @@ export type CacheWriter = {
 };
 
 // Network requests
+export type NetworkLayer = {
+  sendMutation: (request: RelayMutationRequest) => ?Promise;
+  sendQueries: (requests: Array<RelayQueryRequest>) => ?Promise;
+  supports: (...options: Array<string>) => boolean;
+};
 export type RequestOptions = {
   data?: ?{[key: string]: mixed};
   errorHandler?: ?(error: XHRErrorData) => void;

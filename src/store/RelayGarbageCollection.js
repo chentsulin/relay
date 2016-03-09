@@ -15,7 +15,6 @@
 
 import type {DataID} from 'RelayInternalTypes';
 const RelayStore = require('RelayStore');
-const RelayTaskScheduler = require('RelayTaskScheduler');
 
 const invariant = require('invariant');
 const warning = require('warning');
@@ -28,13 +27,13 @@ let _stepLength = -1; // collect in a single pass by default
  * Provides methods to control the garbage collection of records in
  * `RelayStoreData`.
  */
-var RelayGarbageCollection = {
+const RelayGarbageCollection = {
   /**
    * Initializes garbage collection: must be called before any records are
    * fetched. When records are collected after calls to `scheduleCollection` or
    * `scheduleCollectionFromNode`, records are collected in steps, with a
    * maximum of `stepLength` records traversed in a step. Steps are scheduled
-   * via `RelayTaskScheduler`.
+   * via the `RelayStore` task queue (using the injected scheduler).
    */
   initialize(stepLength: number): void {
     invariant(
@@ -51,7 +50,7 @@ var RelayGarbageCollection = {
    * Collects any un-referenced records in the store.
    */
   scheduleCollection(): void {
-    var garbageCollector = RelayStore.getStoreData().getGarbageCollector();
+    const garbageCollector = RelayStore.getStoreData().getGarbageCollector();
 
     if (garbageCollector) {
       garbageCollector.collect();
@@ -65,7 +64,7 @@ var RelayGarbageCollection = {
    * NOTE: If the given record is still referenced, no records are collected.
    */
   scheduleCollectionFromNode(dataID: DataID): void {
-    var garbageCollector = RelayStore.getStoreData().getGarbageCollector();
+    const garbageCollector = RelayStore.getStoreData().getGarbageCollector();
 
     if (garbageCollector) {
       garbageCollector.collectFromNode(dataID);
@@ -91,10 +90,14 @@ function scheduler(run: () => boolean): void {
     }
     // This is effectively a (possibly async) `while` loop
     if (hasNext) {
-      RelayTaskScheduler.enqueue(runIteration);
+      enqueue(runIteration);
     }
   };
-  RelayTaskScheduler.enqueue(runIteration);
+  enqueue(runIteration);
+}
+
+function enqueue(fn: () => void): void {
+  RelayStore.getStoreData().getTaskQueue().enqueue(fn);
 }
 
 module.exports = RelayGarbageCollection;

@@ -17,6 +17,7 @@ const path = require('path');
 function babelAdapter(
   Plugin: ?Function,
   t: any,
+  babelVersion: string,
   name: string,
   visitorsBuilder: (t: any) => {
     visitor: {
@@ -24,7 +25,7 @@ function babelAdapter(
     };
   }
 ): mixed {
-  if (Plugin == null) {
+  if (Plugin == null || /^6\./.test(babelVersion)) {
     // Babel 6.
     return visitorsBuilder(t);
   }

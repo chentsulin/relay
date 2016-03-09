@@ -16,15 +16,15 @@ require('configureForRelayOSS');
 const GraphQLStoreQueryResolver = require('GraphQLStoreQueryResolver');
 const React = require('React');
 const Relay = require('Relay');
-const RelayContext = require('RelayContext');
+const RelayEnvironment = require('RelayEnvironment');
 const RelayTestUtils = require('RelayTestUtils');
 const reactComponentExpect = require('reactComponentExpect');
 
 describe('RelayContainer', function() {
-  var MockComponent;
-  var MockContainer;
-  var mockCreateContainer;
-  var mockRender;
+  let MockComponent;
+  let MockContainer;
+  let mockCreateContainer;
+  let mockRender;
 
   beforeEach(function() {
     jest.resetModuleRegistry();
@@ -52,18 +52,18 @@ describe('RelayContainer', function() {
       return {__dataID__: '42', id: '42', url: null};
     });
 
-    const relayContext = new RelayContext();
-    var RelayTestRenderer = RelayTestUtils.createRenderer();
+    const environment = new RelayEnvironment();
+    const RelayTestRenderer = RelayTestUtils.createRenderer();
     mockRender = () => {
       return RelayTestRenderer.render(
         genMockPointer => <MockContainer foo={genMockPointer('42')} />,
-        relayContext
+        environment
       );
     };
   });
 
   it('creates and instance and renders', () => {
-    var instance;
+    let instance;
     expect(() => {
       instance = mockRender();
     }).not.toThrow();
@@ -96,7 +96,7 @@ describe('RelayContainer', function() {
 
     mockCreateContainer(MyComponent);
 
-    var instance = mockRender();
+    const instance = mockRender();
 
     reactComponentExpect(instance)
       .toBeCompositeComponentWithType(MockContainer)

@@ -9,9 +9,9 @@
 
 /* eslint-disable no-unused-vars, no-eval */
 
-import babel from 'babel-core/browser';
+import {transform} from 'babel-core';
 
-var GraphQL = require('graphql');
+const GraphQL = require('graphql');
 var GraphQLRelay = require('graphql-relay');
 
 export default function(source) {
@@ -24,6 +24,6 @@ export default function(source) {
       default: throw new Error(`Cannot find module "${path}"`);
     }
   }
-  var {code} = babel.transform(source, {code: true, ast: false});
+  const {code} = transform(source, {ast: false, code: true});
   return eval(code);
 }

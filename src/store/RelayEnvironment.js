@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @providesModule RelayContext
+ * @providesModule RelayEnvironment
  * @typechecks
  * @flow
  */
@@ -19,6 +19,8 @@ import type RelayMutationTransaction from 'RelayMutationTransaction';
 import type RelayQuery from 'RelayQuery';
 const RelayQueryResultObservable = require('RelayQueryResultObservable');
 const RelayStoreData = require('RelayStoreData');
+import type {TaskScheduler} from 'RelayTaskQueue';
+import type {NetworkLayer} from 'RelayTypes';
 
 const forEachRootCallArg = require('forEachRootCallArg');
 const readRelayQueryData = require('readRelayQueryData');
@@ -47,7 +49,7 @@ export type FragmentResolver = {
   ) => ?(StoreReaderData | Array<?StoreReaderData>);
 };
 
-export type RelayContextInterface = {
+export type RelayEnvironmentInterface = {
   forceFetch: (
     querySet: RelayQuerySet,
     onReadyStateChange: ReadyStateChangeCallback
@@ -61,44 +63,29 @@ export type RelayContextInterface = {
     querySet: RelayQuerySet,
     onReadyStateChange: ReadyStateChangeCallback
   ) => Abortable;
+  read: (
+    node: RelayQuery.Node,
+    dataID: DataID,
+    options?: StoreReaderOptions
+  ) => ?StoreReaderData;
 };
 
 /**
  * @public
  *
- * RelayContext is a caching layer that records GraphQL response data and
- * enables resolving and subscribing to queries.
+ * `RelayEnvironment` is the public API for Relay core. Each instance provides
+ * an isolated environment with:
+ * - Methods for fetchng and updating data.
+ * - An in-memory cache of fetched data.
+ * - A configurable network layer for resolving queries/mutations.
+ * - A configurable task scheduler to control when internal tasks are executed.
+ * - A configurable cache manager for persisting data between sessions.
  *
- * === onReadyStateChange ===
- *
- * Whenever Relay sends a request for data via GraphQL, an "onReadyStateChange"
- * callback can be supplied. This callback is called one or more times with a
- * `readyState` object with the following properties:
- *
- *   aborted: Whether the request was aborted.
- *   done: Whether all response data has been fetched.
- *   error: An error in the event of a failure, or null if none.
- *   ready: Whether the queries are at least partially resolvable.
- *   stale: When resolvable during `forceFetch`, whether data is stale.
- *
- * If the callback is invoked with `aborted`, `done`, or a non-null `error`, the
- * callback will never be called again. Example usage:
- *
- *  function onReadyStateChange(readyState) {
- *    if (readyState.aborted) {
- *      // Request was aborted.
- *    } else if (readyState.error) {
- *      // Failure occurred.
- *    } else if (readyState.ready) {
- *      // Queries are at least partially resolvable.
- *      if (readyState.done) {
- *        // Queries are completely resolvable.
- *      }
- *    }
- *  }
- *
+ * No data or configuration is shared between instances. We recommend creating
+ * one `RelayEnvironment` instance per user: client apps may share a single
+ * instance, server apps may create one instance per HTTP request.
  */
-class RelayContext {
+class RelayEnvironment {
   _storeData: RelayStoreData;
 
   constructor() {
@@ -113,6 +100,14 @@ class RelayContext {
    */
   getStoreData(): RelayStoreData {
     return this._storeData;
+  }
+
+  injectNetworkLayer(networkLayer: ?NetworkLayer) {
+    this._storeData.getNetworkLayer().injectNetworkLayer(networkLayer);
+  }
+
+  injectTaskScheduler(scheduler: ?TaskScheduler): void {
+    this._storeData.injectTaskScheduler(scheduler);
   }
 
   /**
@@ -172,10 +167,10 @@ class RelayContext {
   ): Array<?StoreReaderData> {
     const queuedStore = this._storeData.getQueuedStore();
     const storageKey = root.getStorageKey();
-    var results = [];
-    forEachRootCallArg(root, identifyingArgValue => {
+    const results = [];
+    forEachRootCallArg(root, ({identifyingArgKey}) => {
       let data;
-      const dataID = queuedStore.getDataID(storageKey, identifyingArgValue);
+      const dataID = queuedStore.getDataID(storageKey, identifyingArgKey);
       if (dataID != null) {
         data = this.read(root, dataID, options);
       }
@@ -221,6 +216,7 @@ class RelayContext {
     mutation: RelayMutation,
     callbacks?: RelayMutationTransactionCommitCallbacks
   ): RelayMutationTransaction {
+    mutation.bindContext(this);
     return this._storeData.getMutationQueue().createTransaction(
       mutation,
       callbacks
@@ -258,4 +254,4 @@ class RelayContext {
   }
 }
 
-module.exports = RelayContext;
+module.exports = RelayEnvironment;

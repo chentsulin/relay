@@ -39,10 +39,11 @@ function callsFromGraphQL(
   variables: Variables
 ): Array<Call> {
   // $FlowIssue: ConcreteCall should flow into CallOrDirective
-  var callsOrDirectives: Array<CallOrDirective> = (concreteCalls: $FlowIssue);
-  var orderedCalls = [];
-  for (var ii = 0; ii < callsOrDirectives.length; ii++) {
-    var {name, value} = callsOrDirectives[ii];
+  const callsOrDirectives: Array<CallOrDirective> = (concreteCalls: $FlowIssue);
+  const orderedCalls = [];
+  for (let ii = 0; ii < callsOrDirectives.length; ii++) {
+    const callOrDirective = callsOrDirectives[ii];
+    let {value} = callOrDirective;
     if (value != null) {
       if (Array.isArray(value)) {
         value = value.map(arg => getCallValue(arg, variables));
@@ -53,26 +54,41 @@ function callsFromGraphQL(
         value = getCallValue(value, variables);
       }
     }
-    orderedCalls.push({name, value});
+    orderedCalls.push({name: callOrDirective.name, value});
   }
   return orderedCalls;
 }
 
 function getCallValue(
-  value: ConcreteCallValue | ConcreteCallVariable,
+  concreteValue: ConcreteCallValue | ConcreteCallVariable,
   variables: Variables
 ): ?CallValue {
-  if (value.kind === 'CallValue') {
-    return value.callValue;
+  let callValue;
+  if (concreteValue.kind === 'CallValue') {
+    callValue = concreteValue.callValue;
   } else {
-    var variableName = value.callVariableName;
+    const variableName = concreteValue.callVariableName;
     invariant(
       variables.hasOwnProperty(variableName),
       'callsFromGraphQL(): Expected a declared value for variable, `$%s`.',
       variableName
     );
-    return variables[variableName];
+    callValue = variables[variableName];
   }
+  // Perform a shallow check to ensure the value conforms to `CallValue` type:
+  // For performance reasons, skip recursively testing array/object values.
+  const valueType = typeof callValue;
+  invariant(
+    callValue == null ||
+    valueType === 'boolean' ||
+    valueType === 'number' ||
+    valueType === 'string' ||
+    valueType === 'object',
+    'callsFromGraphQL(): Expected argument value `%s` to either be null or a ' +
+    'boolean, number, string, or array/object.',
+    JSON.stringify(callValue)
+  );
+  return (callValue: any);
 }
 
 module.exports = callsFromGraphQL;

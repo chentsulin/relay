@@ -26,14 +26,14 @@ const flattenArray = require('flattenArray');
  * Serializes a query "call" (a legacy combination of field and argument value).
  */
 function serializeRelayQueryCall(call: Call): string {
-  var {value} = call;
-  var valueString;
+  const {value} = call;
+  let valueString;
   if (Array.isArray(value)) {
     valueString = flattenArray(value).map(serializeCallValue).join(',');
   } else {
     valueString = serializeCallValue(value);
   }
-  return '.' + call.name + '(' + valueString +')';
+  return '.' + call.name + '(' + valueString + ')';
 }
 
 function serializeCallValue(value: ?CallValue): string {

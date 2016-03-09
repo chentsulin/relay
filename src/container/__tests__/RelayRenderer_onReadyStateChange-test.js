@@ -18,27 +18,28 @@ jest.dontMock('RelayRenderer');
 const React = require('React');
 const ReactDOM = require('ReactDOM');
 const Relay = require('Relay');
+const RelayEnvironment = require('RelayEnvironment');
 const RelayQueryConfig = require('RelayQueryConfig');
 const RelayRenderer = require('RelayRenderer');
-const RelayStore = require('RelayStore');
 
 describe('RelayRenderer.onReadyStateChange', () => {
-  let MockComponent;
   let MockContainer;
 
   let container;
   let queryConfig;
+  let environment;
 
   beforeEach(() => {
     jest.resetModuleRegistry();
 
-    MockComponent = React.createClass({render: () => <div />});
+    const MockComponent = React.createClass({render: () => <div />});
     MockContainer = Relay.createContainer(MockComponent, {
       fragments: {},
     });
 
     container = document.createElement('div');
     queryConfig = RelayQueryConfig.genMockInstance();
+    environment = new RelayEnvironment();
   });
 
   let onReadyStateChange;
@@ -49,6 +50,7 @@ describe('RelayRenderer.onReadyStateChange', () => {
       <RelayRenderer
         Container={MockContainer}
         queryConfig={queryConfig}
+        environment={environment}
         onReadyStateChange={onReadyStateChange}
       />,
       container
@@ -65,7 +67,7 @@ describe('RelayRenderer.onReadyStateChange', () => {
       toTriggerReadyStateChanges() {
         return {
           compare(requestCallback, expected) {
-            const request = RelayStore.primeCache.mock.requests[0];
+            const request = environment.primeCache.mock.requests[0];
             requestCallback(request);
             jest.runAllTimers();
 
@@ -168,6 +170,7 @@ describe('RelayRenderer.onReadyStateChange', () => {
         <RelayRenderer
           Container={MockContainer}
           queryConfig={RelayQueryConfig.genMockInstance()}
+          environment={environment}
           onReadyStateChange={onReadyStateChange}
         />,
         container

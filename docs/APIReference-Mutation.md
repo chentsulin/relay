@@ -198,7 +198,7 @@ See also:
 
 ### constructor
 
-Create a mutation instance using the `new` keyword, optionally passing it some props.
+Create a mutation instance using the `new` keyword, optionally passing it some props. Note that `this.props` is *not* available inside the constructor function, but are set for all the methods mentioned below (`getCollisionKey`, `getOptimisticResponse`, etc). This restriction is due to the fact that mutation props may depend on data from the RelayEnvironment, which isn't known until the mutation is applied with `applyUpdate` or `commitUpdate`.
 
 #### Example
 

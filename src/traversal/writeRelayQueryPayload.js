@@ -33,14 +33,14 @@ function writeRelayQueryPayload(
 ): void {
   const store = writer.getRecordStore();
   const recordWriter = writer.getRecordWriter();
-  const path = new RelayQueryPath(query);
+  const path = RelayQueryPath.create(query);
 
   RelayNodeInterface.getResultsFromPayload(store, query, payload)
     .forEach(({dataID, result, rootCallInfo}) => {
       if (rootCallInfo) {
         recordWriter.putDataID(
           rootCallInfo.storageKey,
-          rootCallInfo.identifyingArgValue,
+          rootCallInfo.identifyingArgKey,
           dataID
         );
       }

@@ -49,7 +49,7 @@ type PayloadArray = Array<Payload>;
 type PayloadObject = {[key: string]: Payload};
 
 const {CLIENT_MUTATION_ID, EDGES} = RelayConnectionInterface;
-const {ANY_TYPE, ID, ID_TYPE, NODE, NODE_TYPE} = RelayNodeInterface;
+const {ANY_TYPE, ID, NODE} = RelayNodeInterface;
 const {APPEND, PREPEND, REMOVE} = GraphQLMutatorConstants;
 
 const EDGES_FIELD = RelayQuery.Field.build({
@@ -244,26 +244,11 @@ function mergeField(
   let path;
 
   if (recordID != null) {
-    path = new RelayQueryPath(
-      RelayQuery.Root.build(
-        'writeRelayUpdatePayload',
-        NODE,
-        recordID,
-        null,
-        {
-          identifyingArgName: ID,
-          identifyingArgType: ID_TYPE,
-          isAbstract: true,
-          isDeferred: false,
-          isPlural: false,
-        },
-        NODE_TYPE
-      )
-    );
+    path = RelayQueryPath.createForID(recordID, 'writeRelayUpdatePayload');
   } else {
     recordID = store.getDataID(fieldName);
     // Root fields that do not accept arguments
-    path = new RelayQueryPath(RelayQuery.Root.build(
+    path = RelayQueryPath.create(RelayQuery.Root.build(
       'writeRelayUpdatePayload',
       fieldName,
       null,
@@ -446,7 +431,7 @@ function addRangeNode(
     'writeRelayUpdatePayload(): Expected a path for connection record, `%s`.',
     connectionID
   );
-  path = path.getPath(EDGES_FIELD, edgeID);
+  path = RelayQueryPath.getPath(path, EDGES_FIELD, edgeID);
 
   // create the edge record
   writer.createRecordIfMissing(EDGES_FIELD, edgeID, path, edgeData);
@@ -605,8 +590,8 @@ function getIDFromPath(
       return rootCallID;
     }
   }
-  const payloadItem = path.reduce((payloadItem, step) => {
-    return payloadItem ? getObject(payloadItem, step) : null;
+  const payloadItem = path.reduce((item, step) => {
+    return item ? getObject(item, step) : null;
   }, payload);
   if (payloadItem) {
     const id = getString(payloadItem, ID);

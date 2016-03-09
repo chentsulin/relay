@@ -27,7 +27,7 @@ var x = (function (RQL_0) {
       },
       type: 'String'
     }, Relay.QL.__frag(RQL_0)]),
-    id: 'sSd9IuTSjyA+:p',
+    id: Relay.QL.__id(),
     kind: 'Fragment',
     metadata: {
       isAbstract: true

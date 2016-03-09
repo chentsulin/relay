@@ -17,12 +17,10 @@ const RelayFetchMode = require('RelayFetchMode');
 import type {FetchMode} from 'RelayFetchMode';
 import type {RelayQuerySet} from 'RelayInternalTypes';
 import type {PendingFetch} from 'RelayPendingQueryTracker';
-const RelayNetworkLayer = require('RelayNetworkLayer');
 const RelayProfiler = require('RelayProfiler');
 import type RelayQuery from 'RelayQuery';
 const RelayReadyState = require('RelayReadyState');
 import type RelayStoreData from 'RelayStoreData';
-const RelayTaskScheduler = require('RelayTaskScheduler');
 
 const checkRelayQueryData = require('checkRelayQueryData');
 const diffRelayQuery = require('diffRelayQuery');
@@ -40,8 +38,6 @@ import type {
   Abortable,
   ReadyStateChangeCallback,
 } from 'RelayTypes';
-
-type RelayProfileHandler = {stop: () => void};
 
 /**
  * This is the high-level entry point for sending queries to the GraphQL
@@ -68,39 +64,9 @@ class GraphQLQueryRunner {
   run(
     querySet: RelayQuerySet,
     callback: ReadyStateChangeCallback,
-    fetchMode?: FetchMode
+    fetchMode?: FetchMode = RelayFetchMode.CLIENT
   ): Abortable {
-    fetchMode = fetchMode || RelayFetchMode.CLIENT;
-    var profiler = fetchMode === RelayFetchMode.REFETCH ?
-      RelayProfiler.profile('GraphQLQueryRunner.forceFetch') :
-      RelayProfiler.profile('GraphQLQueryRunner.primeCache');
-
-    var diffQueries = [];
-    if (fetchMode === RelayFetchMode.CLIENT) {
-      forEachObject(querySet, query => {
-        if (query) {
-          diffQueries.push(...diffRelayQuery(
-            query,
-            this._storeData.getRecordStore(),
-            this._storeData.getQueryTracker()
-          ));
-        }
-      });
-    } else {
-      forEachObject(querySet, query => {
-        if (query) {
-          diffQueries.push(query);
-        }
-      });
-    }
-
-    return runQueries(
-      this._storeData,
-      diffQueries,
-      callback,
-      fetchMode,
-      profiler
-    );
+    return runQueries(this._storeData, querySet, callback, fetchMode);
   }
 
   /**
@@ -114,14 +80,8 @@ class GraphQLQueryRunner {
     querySet: RelayQuerySet,
     callback: ReadyStateChangeCallback
   ): Abortable {
-    var fetchMode = RelayFetchMode.REFETCH;
-    var profiler = RelayProfiler.profile('GraphQLQueryRunner.forceFetch');
-    var queries = [];
-    forEachObject(querySet, query => {
-      query && queries.push(query);
-    });
-
-    return runQueries(this._storeData, queries, callback, fetchMode, profiler);
+    const fetchMode = RelayFetchMode.REFETCH;
+    return runQueries(this._storeData, querySet, callback, fetchMode);
   }
 }
 
@@ -130,9 +90,10 @@ function hasItems(map: Object): boolean {
 }
 
 function splitAndFlattenQueries(
+  storeData: RelayStoreData,
   queries: Array<RelayQuery.Root>
 ): Array<RelayQuery.Root> {
-  if (!RelayNetworkLayer.supports('defer')) {
+  if (!storeData.getNetworkLayer().supports('defer')) {
     if (__DEV__) {
       queries.forEach(query => {
         warning(
@@ -147,7 +108,7 @@ function splitAndFlattenQueries(
     return queries;
   }
 
-  var flattenedQueries = [];
+  const flattenedQueries = [];
   queries.forEach(query => {
     return flattenedQueries.push(
       ...flattenSplitRelayQueries(
@@ -160,19 +121,22 @@ function splitAndFlattenQueries(
 
 function runQueries(
   storeData: RelayStoreData,
-  queries: Array<RelayQuery.Root>,
+  querySet: RelayQuerySet,
   callback: ReadyStateChangeCallback,
-  fetchMode: FetchMode,
-  profiler: RelayProfileHandler
+  fetchMode: FetchMode
 ): Abortable {
+  const profiler = fetchMode === RelayFetchMode.REFETCH ?
+    RelayProfiler.profile('GraphQLQueryRunner.forceFetch') :
+    RelayProfiler.profile('GraphQLQueryRunner.primeCache');
+
   const readyState = new RelayReadyState(callback);
 
-  var remainingFetchMap: {[queryID: string]: PendingFetch} = {};
-  var remainingRequiredFetchMap: {[queryID: string]: PendingFetch} = {};
+  const remainingFetchMap: {[queryID: string]: PendingFetch} = {};
+  const remainingRequiredFetchMap: {[queryID: string]: PendingFetch} = {};
 
   function onResolved(pendingFetch: PendingFetch) {
-    var pendingQuery = pendingFetch.getQuery();
-    var pendingQueryID = pendingQuery.getID();
+    const pendingQuery = pendingFetch.getQuery();
+    const pendingQueryID = pendingQuery.getID();
     delete remainingFetchMap[pendingQueryID];
     if (!pendingQuery.isDeferred()) {
       delete remainingRequiredFetchMap[pendingQueryID];
@@ -198,8 +162,8 @@ function runQueries(
   function onRejected(pendingFetch: PendingFetch, error: Error) {
     readyState.update({error});
 
-    var pendingQuery = pendingFetch.getQuery();
-    var pendingQueryID = pendingQuery.getID();
+    const pendingQuery = pendingFetch.getQuery();
+    const pendingQueryID = pendingQuery.getID();
     delete remainingFetchMap[pendingQueryID];
     if (!pendingQuery.isDeferred()) {
       delete remainingRequiredFetchMap[pendingQueryID];
@@ -213,15 +177,35 @@ function runQueries(
     );
   }
 
-  RelayTaskScheduler.enqueue(() => {
-    var forceIndex = fetchMode === RelayFetchMode.REFETCH ?
-      generateForceIndex() : null;
+  storeData.getTaskQueue().enqueue(() => {
+    const forceIndex = fetchMode === RelayFetchMode.REFETCH ?
+      generateForceIndex() :
+      null;
 
-    splitAndFlattenQueries(queries).forEach(query => {
-      var pendingFetch = storeData.getPendingQueryTracker().add(
+    const queries = [];
+    if (fetchMode === RelayFetchMode.CLIENT) {
+      forEachObject(querySet, query => {
+        if (query) {
+          queries.push(...diffRelayQuery(
+            query,
+            storeData.getRecordStore(),
+            storeData.getQueryTracker()
+          ));
+        }
+      });
+    } else {
+      forEachObject(querySet, query => {
+        if (query) {
+          queries.push(query);
+        }
+      });
+    }
+
+    splitAndFlattenQueries(storeData, queries).forEach(query => {
+      const pendingFetch = storeData.getPendingQueryTracker().add(
         {query, fetchMode, forceIndex, storeData}
       );
-      var queryID = query.getID();
+      const queryID = query.getID();
       remainingFetchMap[queryID] = pendingFetch;
       if (!query.isDeferred()) {
         remainingRequiredFetchMap[queryID] = pendingFetch;
@@ -241,7 +225,7 @@ function runQueries(
         readyState.update({ready: false});
         resolveImmediate(() => {
           if (storeData.hasCacheManager()) {
-            var requiredQueryMap = mapObject(
+            const requiredQueryMap = mapObject(
               remainingRequiredFetchMap,
               value => value.getQuery()
             );

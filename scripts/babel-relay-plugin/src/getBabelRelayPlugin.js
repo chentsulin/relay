@@ -34,7 +34,6 @@ type GraphQLSchemaProvider = (Object | () => Object);
 function getBabelRelayPlugin(
   schemaProvider: GraphQLSchemaProvider,
   pluginOptions?: ?{
-    abortOnError?: ?boolean;
     debug?: ?boolean;
     inputArgumentName?: ?string;
     snakeCase?: ?boolean;
@@ -56,8 +55,8 @@ function getBabelRelayPlugin(
     validator: options.validator,
   });
 
-  return function({Plugin, types}) {
-    return babelAdapter(Plugin, types, 'relay-query', t => ({
+  return function({Plugin, types, version}) {
+    return babelAdapter(Plugin, types, version, 'relay-query', t => ({
       visitor: {
         /**
          * Extract the module name from `@providesModule`.
@@ -203,7 +202,7 @@ function getBabelRelayPlugin(
             if (options.debug) {
               console.error(error.stack);
             }
-            if (options.abortOnError) {
+            if (state.opts && state.opts.enforceSchema) {
               throw new Error(
                 'Aborting due to GraphQL validation/transform error(s).'
               );

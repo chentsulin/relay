@@ -9,9 +9,8 @@
 
 'use strict';
 
-const RelayContext = require.requireActual('RelayContext');
+const RelayEnvironment = require.requireActual('RelayEnvironment');
 const RelayRecordStore = require('RelayRecordStore');
-const RelayStoreData = require('RelayStoreData');
 
 const resolveImmediate = require('resolveImmediate');
 
@@ -29,7 +28,7 @@ const resolveImmediate = require('resolveImmediate');
  *
  */
 function genMockRequest(args) {
-  var ready = false;
+  let ready = false;
   return {
     abort() {
       args[1]({aborted: true, done: false, error: null, ready, stale: false});
@@ -38,7 +37,7 @@ function genMockRequest(args) {
       args[1]({aborted: false, done: false, error: null, ready, stale: false});
     },
     resolve(config) {
-      var stale = config ? !!config.stale : false;
+      const stale = config ? !!config.stale : false;
       ready = true;
       args[1]({aborted: false, done: false, error: null, ready, stale});
     },
@@ -52,13 +51,13 @@ function genMockRequest(args) {
   };
 }
 
-class MockRelayContext extends RelayContext {
+class MockRelayEnvironment extends RelayEnvironment {
   constructor() {
     super();
 
     for (const method of ['getFragmentResolver', 'read']) {
       this[method] = jest.genMockFn().mockImplementation(
-        RelayContext.prototype[method]
+        RelayEnvironment.prototype[method]
       );
     }
 
@@ -101,4 +100,4 @@ class MockRelayContext extends RelayContext {
   }
 }
 
-module.exports = MockRelayContext;
+module.exports = MockRelayEnvironment;

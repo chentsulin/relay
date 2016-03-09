@@ -18,13 +18,13 @@ jest.dontMock('RelayContainer');
 const GraphQLStoreQueryResolver = require('GraphQLStoreQueryResolver');
 const React = require('React');
 const Relay = require('Relay');
-const RelayContext = require('RelayContext');
+const RelayEnvironment = require('RelayEnvironment');
 const RelayTestUtils = require('RelayTestUtils');
 
 describe('RelayContainer.hasOptimisticUpdate', () => {
-  var MockContainer;
-  var relayContext;
-  var RelayTestRenderer;
+  let MockContainer;
+  let environment;
+  let RelayTestRenderer;
 
   beforeEach(() => {
     jest.resetModuleRegistry();
@@ -37,7 +37,7 @@ describe('RelayContainer.hasOptimisticUpdate', () => {
     MockContainer = Relay.createContainer(MockComponent, {
       fragments: {foo: () => Relay.QL`fragment on Node{id}`},
     });
-    relayContext = new RelayContext();
+    environment = new RelayEnvironment();
     RelayTestRenderer = RelayTestUtils.createRenderer();
 
     GraphQLStoreQueryResolver.mockDefaultResolveImplementation((_, dataID) => {
@@ -48,9 +48,9 @@ describe('RelayContainer.hasOptimisticUpdate', () => {
   });
 
   it('throws for invalid records', () => {
-    var instance = RelayTestRenderer.render(
+    const instance = RelayTestRenderer.render(
       genMockPointer => <MockContainer foo={genMockPointer('123')} />,
-      relayContext
+      environment
     );
 
     expect(() => {
@@ -62,25 +62,25 @@ describe('RelayContainer.hasOptimisticUpdate', () => {
   });
 
   it('is only true for queued records', () => {
-    var storeData = relayContext.getStoreData();
-    var recordWriter =
+    const storeData = environment.getStoreData();
+    const recordWriter =
       storeData.getRecordWriterForOptimisticMutation('mutation');
     recordWriter.putRecord('123', 'Type');
-    var instance = RelayTestRenderer.render(
+    const instance = RelayTestRenderer.render(
       genMockPointer => <MockContainer foo={genMockPointer('123')} />,
-      relayContext
+      environment
     );
 
     expect(instance.hasOptimisticUpdate({__dataID__: '123'})).toBe(true);
   });
 
   it('is false for non-queued records', () => {
-    relayContext.getStoreData().getRecordWriter()
+    environment.getStoreData().getRecordWriter()
       .putRecord('123', 'Type');
 
-    var instance = RelayTestRenderer.render(
+    const instance = RelayTestRenderer.render(
       genMockPointer => <MockContainer foo={genMockPointer('123')} />,
-      relayContext
+      environment
     );
     expect(instance.hasOptimisticUpdate({__dataID__: '123'})).toBe(false);
   });

@@ -21,7 +21,6 @@ const RelayMutationQuery = require('RelayMutationQuery');
 const RelayMutationRequest = require('RelayMutationRequest');
 const RelayMutationTransaction = require('RelayMutationTransaction');
 const RelayMutationTransactionStatus = require('RelayMutationTransactionStatus');
-const RelayNetworkLayer = require('RelayNetworkLayer');
 import type RelayStoreData from 'RelayStoreData';
 import type {FileMap} from 'RelayMutation';
 import type RelayMutation from 'RelayMutation';
@@ -134,6 +133,19 @@ class RelayMutationQueue {
 
   rollback(id: ClientMutationID): void {
     const transaction = this._get(id);
+    const collisionKey = transaction.getCollisionKey();
+    if (collisionKey) {
+      const collisionQueue = this._collisionQueueMap[collisionKey];
+      if (collisionQueue) {
+        const index = collisionQueue.indexOf(transaction);
+        if (index !== -1) {
+          collisionQueue.splice(index, 1);
+        }
+        if (collisionQueue.length === 0) {
+          delete this._collisionQueueMap[collisionKey];
+        }
+      }
+    }
     this._handleRollback(transaction);
   }
 
@@ -177,7 +189,7 @@ class RelayMutationQueue {
     let shouldRollback = true;
     const onFailure = transaction.onFailure;
     if (onFailure) {
-      var preventAutoRollback = function() { shouldRollback = false; };
+      const preventAutoRollback = function() { shouldRollback = false; };
       ErrorUtils.applyWithGuard(
         onFailure,
         null,
@@ -238,7 +250,7 @@ class RelayMutationQueue {
       transaction.getQuery(this._storeData),
       transaction.getFiles(),
     );
-    RelayNetworkLayer.sendMutation(request);
+    this._storeData.getNetworkLayer().sendMutation(request);
 
     request.getPromise().done(
       result => this._handleCommitSuccess(transaction, result.response),
@@ -259,7 +271,7 @@ class RelayMutationQueue {
   _advanceCollisionQueue(transaction: PendingTransaction): void {
     const collisionKey = transaction.getCollisionKey();
     if (collisionKey) {
-      var collisionQueue = nullthrows(this._collisionQueueMap[collisionKey]);
+      const collisionQueue = nullthrows(this._collisionQueueMap[collisionKey]);
       // Remove the transaction that called this function.
       collisionQueue.shift();
 
@@ -278,7 +290,7 @@ class RelayMutationQueue {
       // Remove the transaction that called this function.
       collisionQueue.shift();
       collisionQueue.forEach(
-        transaction => this._handleCommitFailure(transaction, null)
+        queuedTransaction => this._handleCommitFailure(queuedTransaction, null)
       );
       delete this._collisionQueueMap[collisionKey];
     }
@@ -374,7 +386,19 @@ class PendingTransaction {
       this._fatQuery = nullthrows(flattenRelayQuery(
         fragment,
         {
-          preserveEmptyNodes: fragment.isPattern(),
+          // TODO #10341736
+          // This used to be `preserveEmptyNodes: fragment.isPattern()`. We
+          // discovered that products were not marking their fat queries as
+          // patterns (by adding `@relay(pattern: true)`) which was causing
+          // `preserveEmptyNodes` to be false. This meant that empty fields,
+          // would be stripped instead of being used to produce an intersection
+          // with the tracked query. Products were able to do this because the
+          // Babel Relay plugin doesn't produce validation errors for empty
+          // fields. It should, and we will make it do so, but for now we're
+          // going to set this to `true` always, and make the plugin warn when
+          // it encounters an empty field that supports subselections in a
+          // non-pattern fragment. Revert this when done.
+          preserveEmptyNodes: true,
           shouldRemoveFragments: true,
         }
       ));
@@ -391,7 +415,7 @@ class PendingTransaction {
 
   getInputVariable(): Variables  {
     if (!this._inputVariable) {
-      var inputVariable = {
+      const inputVariable = {
         ...this.mutation.getVariables(),
         [CLIENT_MUTATION_ID]: this.id,
       };
@@ -422,9 +446,9 @@ class PendingTransaction {
 
   getOptimisticQuery(storeData: RelayStoreData): ?RelayQuery.Mutation {
     if (this._optimisticQuery === undefined) {
-      var optimisticResponse = this.getOptimisticResponse();
+      const optimisticResponse = this.getOptimisticResponse();
       if (optimisticResponse) {
-        var optimisticConfigs = this.getOptimisticConfigs();
+        const optimisticConfigs = this.getOptimisticConfigs();
         if (optimisticConfigs) {
           this._optimisticQuery = RelayMutationQuery.buildQuery({
             configs: optimisticConfigs,
@@ -452,7 +476,7 @@ class PendingTransaction {
 
   getOptimisticResponse(): ?Object {
     if (this._optimisticResponse === undefined) {
-      var optimisticResponse = this.mutation.getOptimisticResponse() || null;
+      const optimisticResponse = this.mutation.getOptimisticResponse() || null;
       if (optimisticResponse) {
         optimisticResponse[CLIENT_MUTATION_ID] = this.id;
       }

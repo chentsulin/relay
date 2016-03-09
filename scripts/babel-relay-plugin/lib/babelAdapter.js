@@ -17,20 +17,20 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 
 var path = require('path');
 
-function babelAdapter(Plugin, t, name, visitorsBuilder) {
-  if (Plugin == null) {
+function babelAdapter(Plugin, t, babelVersion, name, visitorsBuilder) {
+  if (Plugin == null || /^6\./.test(babelVersion)) {
     // Babel 6.
     return visitorsBuilder(t);
   }
   // Babel 5.
   var legacyT = _extends({}, t, {
-    nullLiteral: function nullLiteral() {
+    nullLiteral: function () {
       return t.literal(null);
     },
-    valueToNode: function valueToNode(value) {
+    valueToNode: function (value) {
       return t.literal(value);
     },
-    objectProperty: function objectProperty(ident, value) {
+    objectProperty: function (ident, value) {
       return t.property('init', ident, value);
     }
   });
@@ -42,7 +42,7 @@ function babelAdapter(Plugin, t, name, visitorsBuilder) {
       var _this = this;
 
       var compatPath = {
-        get: function get() {
+        get: function () {
           return _this.get.apply(_this, arguments);
         },
         node: node,

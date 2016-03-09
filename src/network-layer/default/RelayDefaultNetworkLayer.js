@@ -37,20 +37,18 @@ class RelayDefaultNetworkLayer {
     this._uri = uri;
     this._init = {...init};
 
-    // Bind instance methods to facilitate reuse when creating custom network
-    // layers.
-    var self: any = this;
-    self.sendMutation = this.sendMutation.bind(this);
-    self.sendQueries = this.sendQueries.bind(this);
-    self.supports = this.supports.bind(this);
+    // Facilitate reuse when creating custom network layers.
+    this.sendMutation = this.sendMutation.bind(this);
+    this.sendQueries = this.sendQueries.bind(this);
+    this.supports = this.supports.bind(this);
   }
 
-  sendMutation(request: RelayMutationRequest): Promise {
+  sendMutation(request: RelayMutationRequest): ?Promise {
     return this._sendMutation(request).then(
       result => result.json()
     ).then(payload => {
       if (payload.hasOwnProperty('errors')) {
-        var error = new Error(
+        const error = new Error(
           'Server request for mutation `' + request.getDebugName() + '` ' +
           'failed for the following reasons:\n\n' +
           formatRequestErrors(request, payload.errors)
@@ -65,13 +63,13 @@ class RelayDefaultNetworkLayer {
     );
   }
 
-  sendQueries(requests: Array<RelayQueryRequest>): Promise {
+  sendQueries(requests: Array<RelayQueryRequest>): ?Promise {
     return Promise.all(requests.map(request => (
       this._sendQuery(request).then(
         result => result.json()
       ).then(payload => {
         if (payload.hasOwnProperty('errors')) {
-          var error = new Error(
+          const error = new Error(
             'Server request for query `' + request.getDebugName() + '` ' +
             'failed for the following reasons:\n\n' +
             formatRequestErrors(request, payload.errors)
@@ -101,16 +99,16 @@ class RelayDefaultNetworkLayer {
    * Sends a POST request with optional files.
    */
   _sendMutation(request: RelayMutationRequest): Promise {
-    var init;
-    var files = request.getFiles();
+    let init;
+    const files = request.getFiles();
     if (files) {
       if (!global.FormData) {
         throw new Error('Uploading files without `FormData` not supported.');
       }
-      var formData = new FormData();
+      const formData = new FormData();
       formData.append('query', request.getQueryString());
       formData.append('variables', JSON.stringify(request.getVariables()));
-      for (var filename in files) {
+      for (const filename in files) {
         if (files.hasOwnProperty(filename)) {
           formData.append(filename, files[filename]);
         }
@@ -177,19 +175,19 @@ function formatRequestErrors(
   request: RelayMutationRequest | RelayQueryRequest,
   errors: Array<GraphQLError>
 ): string {
-  var CONTEXT_BEFORE = 20;
-  var CONTEXT_LENGTH = 60;
+  const CONTEXT_BEFORE = 20;
+  const CONTEXT_LENGTH = 60;
 
-  var queryLines = request.getQueryString().split('\n');
+  const queryLines = request.getQueryString().split('\n');
   return errors.map(({locations, message}, ii) => {
-    var prefix = (ii + 1) + '. ';
-    var indent = ' '.repeat(prefix.length);
+    const prefix = (ii + 1) + '. ';
+    const indent = ' '.repeat(prefix.length);
 
     //custom errors thrown in graphql-server may not have locations
-    var locationMessage = locations ?
+    const locationMessage = locations ?
       ('\n' + locations.map(({column, line}) => {
-        var queryLine = queryLines[line - 1];
-        var offset = Math.min(column - 1, CONTEXT_BEFORE);
+        const queryLine = queryLines[line - 1];
+        const offset = Math.min(column - 1, CONTEXT_BEFORE);
         return [
           queryLine.substr(column - 1 - offset, CONTEXT_LENGTH),
           ' '.repeat(offset) + '^^^',

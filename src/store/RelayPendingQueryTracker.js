@@ -19,12 +19,10 @@ const RelayFetchMode = require('RelayFetchMode');
 import type {FetchMode} from 'RelayFetchMode';
 import type RelayQuery from 'RelayQuery';
 import type RelayStoreData from 'RelayStoreData';
-const RelayTaskScheduler = require('RelayTaskScheduler');
 import type {QueryResult} from 'RelayTypes';
 
 const containsRelayQueryRootCall = require('containsRelayQueryRootCall');
 const everyObject = require('everyObject');
-const fetchRelayQuery = require('fetchRelayQuery');
 const invariant = require('invariant');
 const subtractRelayQuery = require('subtractRelayQuery');
 
@@ -126,7 +124,7 @@ class PendingFetch {
       storeData: RelayStoreData;
     }
   ) {
-    var queryID = query.getID();
+    const queryID = query.getID();
     this._dependents = [];
     this._forceIndex = forceIndex;
     this._pendingDependencyMap = {};
@@ -137,14 +135,14 @@ class PendingFetch {
     this._resolvedSubtractedQuery = false;
     this._storeData = storeData;
 
-    var subtractedQuery;
+    let subtractedQuery;
     if (fetchMode === RelayFetchMode.PRELOAD) {
       subtractedQuery = query;
       this._fetchSubtractedQueryPromise = this._preloadQueryMap.get(queryID);
     } else {
       subtractedQuery = this._subtractPending(query);
       this._fetchSubtractedQueryPromise = subtractedQuery ?
-        fetchRelayQuery(subtractedQuery) :
+        storeData.getNetworkLayer().fetchRelayQuery(subtractedQuery) :
         Promise.resolve();
     }
 
@@ -210,7 +208,7 @@ class PendingFetch {
         return false;
       }
       if (containsRelayQueryRootCall(pending.query, query)) {
-        var subtractedQuery = subtractRelayQuery(query, pending.query);
+        const subtractedQuery = subtractRelayQuery(query, pending.query);
         if (subtractedQuery !== query) {
           query = subtractedQuery;
           this._addPendingDependency(pending.fetch);
@@ -222,7 +220,7 @@ class PendingFetch {
   }
 
   _addPendingDependency(pendingFetch: PendingFetch): void {
-    var queryID = pendingFetch.getQuery().getID();
+    const queryID = pendingFetch.getQuery().getID();
     this._pendingDependencyMap[queryID] = pendingFetch;
     pendingFetch._addDependent(this);
   }
@@ -237,8 +235,8 @@ class PendingFetch {
   ): void {
     this._fetchedSubtractedQuery = true;
 
-    RelayTaskScheduler.enqueue(() => {
-      var response = result.response;
+    this._storeData.getTaskQueue().enqueue(() => {
+      const response = result.response;
       invariant(
         response && typeof response === 'object',
         'RelayPendingQueryTracker: Expected response to be an object, got ' +
@@ -264,7 +262,7 @@ class PendingFetch {
   }
 
   _markSubtractedQueryAsResolved(): void {
-    var queryID = this.getQuery().getID();
+    const queryID = this.getQuery().getID();
     delete this._pendingFetchMap[queryID];
 
     this._resolvedSubtractedQuery = true;
@@ -276,7 +274,7 @@ class PendingFetch {
   }
 
   _markAsRejected(error: Error): void {
-    var queryID = this.getQuery().getID();
+    const queryID = this.getQuery().getID();
     delete this._pendingFetchMap[queryID];
 
     console.warn(error.message);

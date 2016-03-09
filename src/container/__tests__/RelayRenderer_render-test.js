@@ -19,17 +19,17 @@ const React = require('React');
 const ReactDOM = require('ReactDOM');
 const ReactTestUtils = require('ReactTestUtils');
 const Relay = require('Relay');
+const RelayEnvironment = require('RelayEnvironment');
 const RelayQueryConfig = require('RelayQueryConfig');
 const RelayRenderer = require('RelayRenderer');
-const RelayStore = require('RelayStore');
 const StaticContainer = require('StaticContainer.react');
 
 describe('RelayRenderer.render', () => {
-  let MockComponent;
   let MockContainer;
 
   let container;
   let queryConfig;
+  let environment;
   let renderedComponent;
 
   function renderElement(element) {
@@ -46,13 +46,14 @@ describe('RelayRenderer.render', () => {
   beforeEach(() => {
     jest.resetModuleRegistry();
 
-    MockComponent = React.createClass({render: () => <div />});
+    const MockComponent = React.createClass({render: () => <div />});
     MockContainer = Relay.createContainer(MockComponent, {
       fragments: {},
     });
 
     container = document.createElement('div');
     queryConfig = RelayQueryConfig.genMockInstance();
+    environment = new RelayEnvironment();
 
     jasmine.addMatchers({
       toBeUpdated() {
@@ -78,16 +79,24 @@ describe('RelayRenderer.render', () => {
 
   it('defaults to null if unready and `render` is not supplied', () => {
     renderElement(
-      <RelayRenderer Container={MockContainer} queryConfig={queryConfig} />
+      <RelayRenderer
+        Container={MockContainer}
+        queryConfig={queryConfig}
+        environment={environment}
+      />
     );
     expect(null).toBeRenderedChild();
   });
 
   it('defaults to component if ready and `render` is not supplied', () => {
     renderElement(
-      <RelayRenderer Container={MockContainer} queryConfig={queryConfig} />
+      <RelayRenderer
+        Container={MockContainer}
+        queryConfig={queryConfig}
+        environment={environment}
+      />
     );
-    RelayStore.primeCache.mock.requests[0].resolve();
+    environment.primeCache.mock.requests[0].resolve();
 
     const output = getRenderOutput().props.children;
     expect(output.type).toBe(MockContainer);
@@ -99,10 +108,11 @@ describe('RelayRenderer.render', () => {
       <RelayRenderer
         Container={MockContainer}
         queryConfig={queryConfig}
+        environment={environment}
         render={() => null}
       />
     );
-    RelayStore.primeCache.mock.requests[0].block();
+    environment.primeCache.mock.requests[0].block();
     expect(null).toBeRenderedChild();
   });
 
@@ -112,16 +122,18 @@ describe('RelayRenderer.render', () => {
       <RelayRenderer
         Container={MockContainer}
         queryConfig={queryConfig}
+        environment={environment}
         render={() => prevView}
       />
     );
-    RelayStore.primeCache.mock.requests[0].block();
+    environment.primeCache.mock.requests[0].block();
     expect(prevView).toBeRenderedChild();
 
     renderElement(
       <RelayRenderer
         Container={MockContainer}
         queryConfig={queryConfig}
+        environment={environment}
         render={() => undefined}
       />
     );
@@ -134,10 +146,11 @@ describe('RelayRenderer.render', () => {
       <RelayRenderer
         Container={MockContainer}
         queryConfig={queryConfig}
+        environment={environment}
         render={() => prevView}
       />
     );
-    RelayStore.primeCache.mock.requests[0].block();
+    environment.primeCache.mock.requests[0].block();
     expect(prevView).toBeRenderedChild();
 
     const nextView = <div />;
@@ -145,6 +158,7 @@ describe('RelayRenderer.render', () => {
       <RelayRenderer
         Container={MockContainer}
         queryConfig={queryConfig}
+        environment={environment}
         render={() => nextView}
       />
     );
@@ -158,6 +172,7 @@ describe('RelayRenderer.render', () => {
       <RelayRenderer
         Container={MockContainer}
         queryConfig={queryConfig}
+        environment={environment}
         render={render}
       />
     );
@@ -167,13 +182,18 @@ describe('RelayRenderer.render', () => {
 
   it('renders when updated before the initial request is sent', () => {
     renderElement(
-      <RelayRenderer Container={MockContainer} queryConfig={queryConfig} />
+      <RelayRenderer
+        Container={MockContainer}
+        queryConfig={queryConfig}
+        environment={environment}
+      />
     );
     const loadingView = <div />;
     renderElement(
       <RelayRenderer
         Container={MockContainer}
         queryConfig={RelayQueryConfig.genMockInstance()}
+        environment={environment}
         render={() => loadingView}
       />
     );
@@ -183,22 +203,27 @@ describe('RelayRenderer.render', () => {
 
   it('does not render when updated after the initial request is sent', () => {
     renderElement(
-      <RelayRenderer Container={MockContainer} queryConfig={queryConfig} />
+      <RelayRenderer
+        Container={MockContainer}
+        queryConfig={queryConfig}
+        environment={environment}
+      />
     );
-    RelayStore.primeCache.mock.requests[0].block();
+    environment.primeCache.mock.requests[0].block();
 
     const loadingView = <div />;
     renderElement(
       <RelayRenderer
         Container={MockContainer}
         queryConfig={RelayQueryConfig.genMockInstance()}
+        environment={environment}
         render={() => loadingView}
       />
     );
     // RelayRenderer does not synchronously update because the ready state (and
     // therefore render arguments) for the new `queryConfig` is not yet known.
     expect(getRenderOutput()).not.toBeUpdated();
-    RelayStore.primeCache.mock.requests[1].block();
+    environment.primeCache.mock.requests[1].block();
     expect(loadingView).toBeRenderedChild();
   });
 
@@ -209,12 +234,13 @@ describe('RelayRenderer.render', () => {
         <RelayRenderer
           Container={MockContainer}
           queryConfig={queryConfig}
+          environment={environment}
           render={render}
         />
       );
     }
     update();
-    RelayStore.primeCache.mock.requests[0].block();
+    environment.primeCache.mock.requests[0].block();
 
     expect(render.mock.calls.length).toBe(2);
 
@@ -232,11 +258,12 @@ describe('RelayRenderer.render', () => {
       <RelayRenderer
         Container={MockContainer}
         queryConfig={queryConfig}
+        environment={environment}
         render={render}
       />
     );
 
-    const request = RelayStore.primeCache.mock.requests[0];
+    const request = environment.primeCache.mock.requests[0];
 
     expect(render.mock.calls.length).toBe(1);
 
@@ -254,7 +281,7 @@ describe('RelayRenderer.render', () => {
     let garbageCollector;
 
     beforeEach(() => {
-      const storeData = RelayStore.getStoreData();
+      const storeData = environment.getStoreData();
       storeData.initializeGarbageCollector(jest.genMockFunction());
       garbageCollector = storeData.getGarbageCollector();
     });
@@ -262,7 +289,11 @@ describe('RelayRenderer.render', () => {
     it('acquires a GC hold when mounted', () => {
       garbageCollector.acquireHold = jest.genMockFunction();
       renderElement(
-        <RelayRenderer Container={MockContainer} queryConfig={queryConfig} />
+        <RelayRenderer
+          Container={MockContainer}
+          queryConfig={queryConfig}
+          environment={environment}
+        />
       );
       expect(garbageCollector.acquireHold).toBeCalled();
     });
@@ -272,7 +303,11 @@ describe('RelayRenderer.render', () => {
       garbageCollector.acquireHold =
         jest.genMockFunction().mockReturnValue({release});
       renderElement(
-        <RelayRenderer Container={MockContainer} queryConfig={queryConfig} />
+        <RelayRenderer
+          Container={MockContainer}
+          queryConfig={queryConfig}
+          environment={environment}
+        />
       );
       expect(release).not.toBeCalled();
       ReactDOM.unmountComponentAtNode(container);

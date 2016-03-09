@@ -22,10 +22,8 @@ const QueryBuilder = require('QueryBuilder');
 import type {RelayConcreteNode} from 'RelayQL';
 const RelayProfiler = require('RelayProfiler');
 import type {RelayContainer, Variables} from 'RelayTypes';
-const Set = require('Set');
 
 const filterObject = require('filterObject');
-const generateConcreteFragmentID = require('generateConcreteFragmentID');
 const invariant = require('invariant');
 const mapObject = require('mapObject');
 
@@ -36,7 +34,6 @@ export type RelayQLQueryBuilder =
 
 // Cache results of executing fragment query builders.
 const fragmentCache = new Map();
-const concreteFragmentIDSet = new Set();
 
 // Cache results of executing component-specific route query builders.
 const queryCache = new Map();
@@ -45,9 +42,9 @@ function isDeprecatedCallWithArgCountGreaterThan(
   nodeBuilder: Function,
   count: number
 ): boolean {
-  var argLength = nodeBuilder.length;
+  let argLength = nodeBuilder.length;
   if (__DEV__) {
-    var mockImpl = nodeBuilder;
+    let mockImpl = nodeBuilder;
     while (mockImpl && mockImpl._getMockImplementation) {
       mockImpl = mockImpl._getMockImplementation();
     }
@@ -68,7 +65,7 @@ function isDeprecatedCallWithArgCountGreaterThan(
  * node type), these will return `undefined`. This is not to be confused with
  * a return value of `null`, which may result from the lack of a node.
  */
-var buildRQL = {
+const buildRQL = {
   Fragment(
     fragmentBuilder: RelayQLFragmentBuilder,
     values: Variables
@@ -84,19 +81,12 @@ var buildRQL = {
       'fragment, use `variables => Relay.QL`.'
     );
     node = fragmentBuilder(variables);
-    let fragment = node != null ?
+    const fragment = node != null ?
       QueryBuilder.getFragment(node) :
       null;
     if (!fragment) {
       return fragment;
     }
-    if (concreteFragmentIDSet.has(fragment.id)) {
-      fragment = {
-        ...fragment,
-        id: generateConcreteFragmentID(),
-      };
-    }
-    concreteFragmentIDSet.add(fragment.id);
     fragmentCache.set(fragmentBuilder, fragment);
     return fragment;
   },

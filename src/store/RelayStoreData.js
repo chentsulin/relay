@@ -32,17 +32,21 @@ import type {
   RootCallMap,
   UpdateOptions,
 } from 'RelayInternalTypes';
+const RelayNetworkLayer = require('RelayNetworkLayer');
 const RelayNodeInterface = require('RelayNodeInterface');
 const RelayPendingQueryTracker = require('RelayPendingQueryTracker');
 const RelayProfiler = require('RelayProfiler');
 const RelayQuery = require('RelayQuery');
-import type RelayQueryPath from 'RelayQueryPath';
+import type {QueryPath} from 'RelayQueryPath';
+const RelayQueryPath = require('RelayQueryPath');
 const RelayQueryTracker = require('RelayQueryTracker');
 const RelayQueryWriter = require('RelayQueryWriter');
 const RelayRecord = require('RelayRecord');
 import type {RecordMap} from 'RelayRecord';
 const RelayRecordStore = require('RelayRecordStore');
 const RelayRecordWriter = require('RelayRecordWriter');
+const RelayTaskQueue = require('RelayTaskQueue');
+import type {TaskScheduler} from 'RelayTaskQueue';
 import type {CacheManager, CacheReadCallbacks} from 'RelayTypes';
 
 const forEachObject = require('forEachObject');
@@ -52,8 +56,8 @@ const warning = require('warning');
 const writeRelayQueryPayload = require('writeRelayQueryPayload');
 const writeRelayUpdatePayload = require('writeRelayUpdatePayload');
 
-var {CLIENT_MUTATION_ID} = RelayConnectionInterface;
-var {ID, ID_TYPE, NODE, NODE_TYPE, TYPENAME} = RelayNodeInterface;
+const {CLIENT_MUTATION_ID} = RelayConnectionInterface;
+const {ID, ID_TYPE, NODE, NODE_TYPE, TYPENAME} = RelayNodeInterface;
 
 const idField = RelayQuery.Field.build({
   fieldName: ID,
@@ -78,6 +82,7 @@ class RelayStoreData {
   _changeEmitter: GraphQLStoreChangeEmitter;
   _garbageCollector: ?RelayGarbageCollector;
   _mutationQueue: RelayMutationQueue;
+  _networkLayer: RelayNetworkLayer;
   _nodeRangeMap: NodeRangeMap;
   _pendingQueryTracker: RelayPendingQueryTracker;
   _records: RecordMap;
@@ -88,6 +93,7 @@ class RelayStoreData {
   _queryRunner: GraphQLQueryRunner;
   _rangeData: GraphQLStoreRangeUtils;
   _rootCallMap: RootCallMap;
+  _taskQueue: RelayTaskQueue;
 
   constructor() {
     const cachedRecords: RecordMap = {};
@@ -117,6 +123,7 @@ class RelayStoreData {
     this._cachedStore = cachedStore;
     this._changeEmitter = new GraphQLStoreChangeEmitter(rangeData);
     this._mutationQueue = new RelayMutationQueue(this);
+    this._networkLayer = new RelayNetworkLayer();
     this._nodeRangeMap = nodeRangeMap;
     this._pendingQueryTracker = new RelayPendingQueryTracker(this);
     this._queryRunner = new GraphQLQueryRunner(this);
@@ -127,6 +134,7 @@ class RelayStoreData {
     this._recordStore = recordStore;
     this._rangeData = rangeData;
     this._rootCallMap = rootCallMap;
+    this._taskQueue = new RelayTaskQueue();
   }
 
   /**
@@ -139,7 +147,7 @@ class RelayStoreData {
       !this._garbageCollector,
       'RelayStoreData: Garbage collector is already initialized.'
     );
-    var shouldInitialize = this._isStoreDataEmpty();
+    const shouldInitialize = this._isStoreDataEmpty();
     warning(
       shouldInitialize,
       'RelayStoreData: Garbage collection can only be initialized when no ' +
@@ -148,6 +156,14 @@ class RelayStoreData {
     if (shouldInitialize) {
       this._garbageCollector = new RelayGarbageCollector(this, scheduler);
     }
+  }
+
+  /**
+   * Sets/clears the scheduling function used by the internal task queue to
+   * schedule units of work for execution.
+   */
+  injectTaskScheduler(scheduler: ?TaskScheduler): void {
+    this._taskQueue.injectScheduler(scheduler);
   }
 
   /**
@@ -266,7 +282,7 @@ class RelayStoreData {
   readFragmentFromDiskCache(
     dataID: DataID,
     fragment: RelayQuery.Fragment,
-    path: RelayQueryPath,
+    path: QueryPath,
     callbacks: CacheReadCallbacks
   ): void {
     const cacheManager = this._cacheManager;
@@ -311,9 +327,9 @@ class RelayStoreData {
     response: QueryPayload,
     forceIndex: ?number
   ): void {
-    var profiler = RelayProfiler.profile('RelayStoreData.handleQueryPayload');
-    var changeTracker = new RelayChangeTracker();
-    var writer = new RelayQueryWriter(
+    const profiler = RelayProfiler.profile('RelayStoreData.handleQueryPayload');
+    const changeTracker = new RelayChangeTracker();
+    const writer = new RelayQueryWriter(
       this._recordStore,
       this.getRecordWriter(),
       this._queryTracker,
@@ -340,12 +356,12 @@ class RelayStoreData {
     payload: {[key: string]: mixed},
     {configs, isOptimisticUpdate}: UpdateOptions
   ): void {
-    var profiler = RelayProfiler.profile('RelayStoreData.handleUpdatePayload');
-    var changeTracker = new RelayChangeTracker();
-    var store;
-    var recordWriter;
+    const profiler = RelayProfiler.profile('RelayStoreData.handleUpdatePayload');
+    const changeTracker = new RelayChangeTracker();
+    let store;
+    let recordWriter;
     if (isOptimisticUpdate) {
-      var clientMutationID = payload[CLIENT_MUTATION_ID];
+      const clientMutationID = payload[CLIENT_MUTATION_ID];
       invariant(
         typeof clientMutationID === 'string',
         'RelayStoreData.handleUpdatePayload(): Expected optimistic payload ' +
@@ -359,7 +375,7 @@ class RelayStoreData {
       store = this._getRecordStoreForMutation();
       recordWriter = this._getRecordWriterForMutation();
     }
-    var writer = new RelayQueryWriter(
+    const writer = new RelayQueryWriter(
       store,
       recordWriter,
       this._queryTracker,
@@ -398,7 +414,11 @@ class RelayStoreData {
         'record `%s` without a path.',
         dataID
       );
-      return path.getQuery(this._cachedStore, fragment);
+      return RelayQueryPath.getQuery(
+        this._cachedStore,
+        path,
+        fragment
+      );
     }
     // Fragment fields cannot be spread directly into the root because they
     // may not exist on the `Node` type.
@@ -443,6 +463,10 @@ class RelayStoreData {
 
   getMutationQueue(): RelayMutationQueue {
     return this._mutationQueue;
+  }
+
+  getNetworkLayer(): RelayNetworkLayer {
+    return this._networkLayer;
   }
 
   /**
@@ -501,6 +525,10 @@ class RelayStoreData {
     return this._pendingQueryTracker;
   }
 
+  getTaskQueue(): RelayTaskQueue {
+    return this._taskQueue;
+  }
+
   /**
    * @deprecated
    *
@@ -524,18 +552,18 @@ class RelayStoreData {
    * and registers new DataIDs with the garbage collector.
    */
   _handleChangedAndNewDataIDs(changeSet: ChangeSet): void {
-    var updatedDataIDs = Object.keys(changeSet.updated);
+    const updatedDataIDs = Object.keys(changeSet.updated);
     updatedDataIDs.forEach(id => this._changeEmitter.broadcastChangeForID(id));
     if (this._garbageCollector) {
-      var createdDataIDs = Object.keys(changeSet.created);
-      var garbageCollector = this._garbageCollector;
+      const createdDataIDs = Object.keys(changeSet.created);
+      const garbageCollector = this._garbageCollector;
       createdDataIDs.forEach(dataID => garbageCollector.register(dataID));
     }
   }
 
   _getRecordStoreForMutation(): RelayRecordStore {
-    var records = this._records;
-    var rootCallMap = this._rootCallMap;
+    const records = this._records;
+    const rootCallMap = this._rootCallMap;
 
     return new RelayRecordStore(
       {records},
@@ -559,11 +587,11 @@ class RelayStoreData {
   getRecordStoreForOptimisticMutation(
     clientMutationID: ClientMutationID
   ): RelayRecordStore {
-    var cachedRecords = this._cachedRecords;
-    var cachedRootCallMap = this._cachedRootCallMap;
-    var rootCallMap = this._rootCallMap;
-    var queuedRecords = this._queuedRecords;
-    var records = this._records;
+    const cachedRecords = this._cachedRecords;
+    const cachedRootCallMap = this._cachedRootCallMap;
+    const rootCallMap = this._rootCallMap;
+    const queuedRecords = this._queuedRecords;
+    const records = this._records;
 
     return new RelayRecordStore(
       {cachedRecords, queuedRecords, records},

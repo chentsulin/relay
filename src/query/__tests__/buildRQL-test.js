@@ -24,13 +24,13 @@ const RelayTestUtils = require('RelayTestUtils');
 const buildRQL = require('buildRQL');
 
 describe('buildRQL', () => {
-  var {getNode} = RelayTestUtils;
+  const {getNode} = RelayTestUtils;
 
-  var MockComponent;
-  var MockContainer;
+  let MockComponent;
+  let MockContainer;
 
   beforeEach(() => {
-    var render = jest.genMockFunction().mockImplementation(function() {
+    const render = jest.genMockFunction().mockImplementation(function() {
       // Make it easier to expect prop values.
       render.mock.calls[render.mock.calls.length - 1].props = this.props;
       return <div />;
@@ -47,7 +47,7 @@ describe('buildRQL', () => {
 
   describe('Fragment()', () => {
     it('returns undefined if the node is not a fragment', () => {
-      var builder = () => Relay.QL`
+      const builder = () => Relay.QL`
         query {
           node(id:"123") {
             id,
@@ -58,8 +58,8 @@ describe('buildRQL', () => {
     });
 
     it('throws if fragment substitutions are invalid', () => {
-      var invalid = {};
-      var builder = () => Relay.QL`
+      const invalid = {};
+      const builder = () => Relay.QL`
         fragment on Node {
           ${invalid},
         }
@@ -71,7 +71,7 @@ describe('buildRQL', () => {
     });
 
     it('creates fragments with variables', () => {
-      var builder = () => Relay.QL`
+      const builder = () => Relay.QL`
         fragment on Node {
           id,
           profilePicture(size:$sizeVariable) {
@@ -79,16 +79,16 @@ describe('buildRQL', () => {
           },
         }
       `;
-      var node = buildRQL.Fragment(builder, {sizeVariable: null});
+      const node = buildRQL.Fragment(builder, {sizeVariable: null});
       expect(!!QueryBuilder.getFragment(node)).toBe(true);
 
       // Confirm that `${variables.sizeVariable}` is a variable by applying
       // variable values using `RelayQuery`:
-      var fragment = getNode(node, {
+      const fragment = getNode(node, {
         sizeVariable: '32',
       });
       expect(fragment instanceof RelayQuery.Fragment).toBe(true);
-      var children = fragment.getChildren();
+      const children = fragment.getChildren();
       expect(children.length).toBe(3);
       expect(children[1].getSchemaName()).toBe('profilePicture');
       // Variable has the applied value, not initial value.
@@ -98,7 +98,7 @@ describe('buildRQL', () => {
     });
 
     it('returns === fragments', () => {
-      var builder = () => Relay.QL`
+      const builder = () => Relay.QL`
         fragment on Node {
           id,
           profilePicture(size:$sizeVariable) {
@@ -106,29 +106,15 @@ describe('buildRQL', () => {
           },
         }
       `;
-      var node1 = buildRQL.Fragment(builder, {sizeVariable: null});
-      var node2 = buildRQL.Fragment(builder, {sizeVariable: null});
+      const node1 = buildRQL.Fragment(builder, {sizeVariable: null});
+      const node2 = buildRQL.Fragment(builder, {sizeVariable: null});
       expect(node1 === node2).toBe(true);
-    });
-
-    it('generates distinct fragments per fragment builder', () => {
-      var concreteFragment = Relay.QL`fragment on Node { id }`;
-      var builder1 = () => concreteFragment;
-      var builder2 = () => concreteFragment;
-      var node1 = buildRQL.Fragment(builder1);
-      var node2 = buildRQL.Fragment(builder2);
-      expect(node1).toBe(concreteFragment);
-      expect(node1).not.toBe(node2);
-      expect(node1.id).not.toBe(node2.id);
-      expect(getNode(node1)).toEqualQueryNode(getNode(node2));
-      expect(buildRQL.Fragment(builder1)).toBe(node1);
-      expect(buildRQL.Fragment(builder2)).toBe(node2);
     });
   });
 
   describe('Query()', () => {
     it('returns undefined if the node is not a query', () => {
-      var builder = () => Relay.QL`
+      const builder = () => Relay.QL`
         fragment on Node {
           id,
         }
@@ -139,7 +125,7 @@ describe('buildRQL', () => {
     });
 
     it('creates queries with components and variables', () => {
-      var builder = Component => Relay.QL`
+      const builder = Component => Relay.QL`
         query {
           node(id:$id) {
             id,
@@ -147,16 +133,17 @@ describe('buildRQL', () => {
           }
         }
       `;
-      var node = buildRQL.Query(builder, MockContainer, 'foo', {id: null});
+      const node = buildRQL.Query(builder, MockContainer, 'foo', {id: null});
       expect(!!QueryBuilder.getQuery(node)).toBe(true);
 
       // Confirm that `${variables.id}` is a variable by applying variable
       // values using `RelayQuery`:
-      var variables = {id: '123'};
-      var query = getNode(node, variables);
+      const variables = {id: '123'};
+      const query = getNode(node, variables);
       expect(query instanceof RelayQuery.Root).toBe(true);
       expect(query.getIdentifyingArg()).toEqual({
         name: 'id',
+        type: 'ID',
         value: '123',
       });
       expect(query.getChildren()[2].equals(
@@ -165,44 +152,44 @@ describe('buildRQL', () => {
     });
 
     it('returns === queries for the same component', () => {
-      var builder = Component => Relay.QL`
+      const builder = Component => Relay.QL`
         query {
           node(id:$id) {
             ${Component.getFragment('foo')}
           }
         }
       `;
-      var node1 = buildRQL.Query(builder, MockContainer, 'foo', {id: null});
-      var node2 = buildRQL.Query(builder, MockContainer, 'foo', {id: null});
+      const node1 = buildRQL.Query(builder, MockContainer, 'foo', {id: null});
+      const node2 = buildRQL.Query(builder, MockContainer, 'foo', {id: null});
       expect(node1 === node2).toBe(true);
     });
 
     it('returns different queries for different components', () => {
-      var MockContainer2 = Relay.createContainer(MockComponent, {
+      const MockContainer2 = Relay.createContainer(MockComponent, {
         fragments: {
           foo: () => Relay.QL`fragment on Node { name }`,
         },
       });
 
-      var builder = Component => Relay.QL`
+      const builder = Component => Relay.QL`
         query {
           node(id:$id) {
             ${Component.getFragment('foo')}
           }
         }
       `;
-      var node1 = buildRQL.Query(builder, MockContainer, 'foo', {id: null});
-      var node2 = buildRQL.Query(builder, MockContainer2, 'foo', {id: null});
+      const node1 = buildRQL.Query(builder, MockContainer, 'foo', {id: null});
+      const node2 = buildRQL.Query(builder, MockContainer2, 'foo', {id: null});
       expect(node1 === node2).toBe(false);
     });
 
     it('implicitly adds component fragments if not provided', () => {
-      var builder = () => Relay.QL`
+      const builder = () => Relay.QL`
         query {
           node(id:$id)
         }
       `;
-      var node = buildRQL.Query(
+      const node = buildRQL.Query(
         builder,
         MockContainer,
         'foo',
@@ -212,11 +199,12 @@ describe('buildRQL', () => {
 
       // Confirm that `${variables.id}` is a variable by applying
       // variable values using `RelayQuery`:
-      var variables = {id: '123'};
-      var query = getNode(node, variables);
+      const variables = {id: '123'};
+      const query = getNode(node, variables);
       expect(query instanceof RelayQuery.Root).toBe(true);
       expect(query.getIdentifyingArg()).toEqual({
         name: 'id',
+        type: 'ID',
         value: '123',
       });
       expect(query.getChildren()[2].equals(
@@ -265,7 +253,7 @@ describe('buildRQL', () => {
     });
 
     it('throws if non-scalar fields are given', () => {
-      var builder = () => Relay.QL`
+      const builder = () => Relay.QL`
         query {
           viewer {
             actor
