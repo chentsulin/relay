@@ -7,35 +7,35 @@ permalink: docs/api-reference-relay-proptypes.html
 next: api-reference-relay-store
 ---
 
-Relay introduces two new classes of objects: `RelayContainer` and `Relay.Route`. `Relay.PropTypes` provides prop validators used to assert that props are of these types.
+Relay 導入兩個新物件的 class：`RelayContainer` 和 `Relay.Route`。`Relay.PropTypes` 提供用來 assert props 是這些 types 的 prop 驗證器。
 
-## Overview
+## 概觀
 
-*Properties*
+*屬性*
 
 <ul class="apiIndex">
   <li>
     <a href="#example">
       <pre>static Container: ReactPropTypeValidator</pre>
-      A prop type validator asserting that a prop is a valid Relay container.
+      一個用來 assert prop 是一個有效的 Relay container 的 prop type 驗證器。
     </a>
   </li>
   <li>
     <a href="#example">
       <pre>static QueryConfig: ReactPropTypeValidator</pre>
-      A prop type validator asserting that a prop is a valid route.
+      一個用來 assert prop 是一個有效的 route 的 prop type 驗證器。
     </a>
   </li>
 </ul>
 
-## Example
+## 範例
 
 ```
 class MyApplication extends React.Component {
   static propTypes = {
-    // Warns if `Component` is not a valid RelayContainer.
+    // 如果 `Component` 不是一個有效的 RelayContainer 則丟出警告。
     Component: Relay.PropTypes.Container.isRequired,
-    // Warns if `route` is not a valid route.
+    // 如果 `route` 不是一個有效的 route 則丟出警告。
     route: Relay.PropTypes.QueryConfig.isRequired,
   };
   render() {
