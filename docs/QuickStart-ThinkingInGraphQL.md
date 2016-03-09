@@ -7,295 +7,295 @@ permalink: docs/thinking-in-graphql.html
 next: thinking-in-relay
 ---
 
-GraphQL presents new ways for clients to fetch data by focusing on the needs of product developers and client applications. It provides a way for developers to specify the precise data needed for a view and enables a client to fetch that data in a single network request. Compared to traditional approaches such as REST, GraphQL helps applications to fetch data more efficiently (compared to resource-oriented REST approaches) and avoid duplication of server logic (which can occur with custom endpoints). Furthermore, GraphQL helps developers to decouple product code and server logic. For example, a product can fetch more or less information without requiring a change to every relevant server endpoint. It's a great way to fetch data.
+GraphQL 為客戶端提出了一個新的方式，藉由 聚焦在產品開發者們和客戶端應用程式的需求去抓取資料。它提供一個方式給開發者們針對 view 指定精準的資料需求，並讓客戶端在單一的網路請求去抓取那些資料。與傳統的方法像是 REST 做比較，GraphQL 幫助應用程式更有效率地抓取資料 (相對於資源導向的 REST 方法) 並避免伺服器邏輯的重複 (可能會在客製化的 endpoints 發生)。此外，GraphQL 幫助開發者們解開產品程式碼和伺服器的邏輯之間的耦合。例如，產品可以抓取更多或更少的資訊而不需改變每一個相關的伺服器 endpoint。這是一個抓取資料的好方式。
 
-In this article we'll explore what it means to build a GraphQL client framework and how this compares to clients for more traditional REST systems. Along the way we'll look at the design decisions behind Relay and see that it's not just a GraphQL client but also a framework for *declarative data-fetching*. Let's start at the beginning and fetch some data!
+在這篇文章，我們將會探索建置一個 GraphQL 客戶端框架意味著什麼，還有這如何與使用比較傳統的 REST 系統的客戶端做比較。在這個過程中，我們將會關注 Relay 背後的設計決策並看到它不只是一個 GraphQL 客戶端也是一個 *declarative 資料抓取*的框架。讓我們從頭開始並抓取一些資料！
 
-## Fetching Data
+## 抓取資料
 
-Imagine we have a simple application that fetches a list of stories, and some details about each one. Here's how that might look in resource-oriented REST:
+想像我們有一個簡易的應用程式，它抓取一份 story 的清單，還有每個 story 的一些細節資訊。以下是它在資源導向 REST 中可能的樣貌：
 
 ```javascript
-// Fetch the list of story IDs but not their details:
+// 抓取 story IDs 的清單，但不包含它們的細節資訊：
 rest.get('/stories').then(stories =>
-  // This resolves to a list of items with linked resources:
-  // `[ { href: "http://.../story/1" }, ... ]`
-  Promise.all(stories.map(story =>
-    rest.get(story.href) // Follow the links
-  ))
+	// 這 resolve 成有連結的資源項目清單：
+	// `[ { href: "http://.../story/1" }, ... ]`
+	Promise.all(stories.map(story =>
+		rest.get(story.href) // 追蹤這些連結
+	))
 ).then(stories => {
-  // This resolves to a list of story items:
-  // `[ { id: "...", text: "..." } ]`
-  console.log(stories);
+	// 這 resolve 成一個 story 項目的清單：
+	// `[ { id: "...", text: "..." } ]`
+	console.log(stories);
 });
 ```
 
-Note that this approach requires *n+1* requests to the server: 1 to fetch the list, and *n* to fetch each item. With GraphQL we can fetch the same data in a single network request to the server (without creating a custom endpoint that we'd then have to maintain):
+要注意這個方法需要送 *n+1* 個請求到伺服器：1 個抓取清單，其他 *n* 抓取每一個項目。藉著 GraphQL 我們可以在一個到伺服器的單一網路請求抓取一樣的資料 (不需要建立一個客製化而且接著需要去維護的 endpoint)：
 
 ```javascript
 graphql.get(`query { stories { id, text } }`).then(
-  stories => {
-    // A list of story items:
-    // `[ { id: "...", text: "..." } ]`
-    console.log(stories);
-  }
+	stories => {
+		// story 項目的清單：
+		// `[ { id: "...", text: "..." } ]`
+		console.log(stories);
+	}
 );
 ```
 
-So far we're just using GraphQL as a more efficient version of typical REST approaches. Note two important benefits in the GraphQL version:
+到目前為止，我們只是使用 GraphQL 作為一個比典型 REST 方法更有效率的版本。請記住在 GraphQL 的版本中有兩個重要的好處：
 
-- All data is fetched in a single round trip.
-- The client and server are decoupled: the client specifies the data needed instead of *relying on* the server endpoint to return the correct data.
+- 用一次往返抓取所有資料。
+- 客戶端跟伺服器是解耦的：客戶端指定需要的資料而不是*依賴*伺服器 endpoint 回傳正確的資料。
 
-For a simple application that's already a nice improvement.
+對簡易的應用程式來說，這已經是個好的改進。
 
-## Client Caching
+## 客戶端快取
 
-Repeatedly refetching information from the server can get quite slow. For example, navigating from the list of stories, to a list item, and back to the list of stories means we have to refetch the whole list. We'll solve this with the standard solution: *caching*.
+重複地從伺服器重新抓取資訊可能會非常的慢。例如，從 story 的清單，換頁到清單中的一個項目，再回到 story 的清單意味著我們必須重新抓取整個清單。我們解決這個問題，將會使用標準的解決方案：*快取*。
 
-In a resource-oriented REST system, we can maintain a **response cache** based on URIs:
+在一個資源導向 REST 系統中，我們可以基於 URI 維護一個**回應快取**：
 
 ```javascript
 var _cache = new Map();
 rest.get = uri => {
-  if (!_cache.has(uri)) {
-    _cache.set(uri, fetch(uri));
-  }
-  return _cache.get(uri);
+	if (!_cache.has(uri)) {
+		_cache.set(uri, fetch(uri));
+	}
+	return _cache.get(uri);
 };
 ```
 
-Response-caching can also be applied to GraphQL. A basic approach would work similarly to the REST version. The text of the query itself can be used as a cache key:
+回應快取也可以應用到 GraphQL 上。基本的方法會用與 REST 版本類似地方式運作。query 的 text 本身可以用來作為快取的鍵：
 
 ```javascript
 var _cache = new Map();
 graphql.get = queryText => {
-  if (!_cache.has(queryText)) {
-    _cache.set(queryText, fetchGraphQL(queryText));
-  }
-  return _cache.get(queryText);
+	if (!_cache.has(queryText)) {
+		_cache.set(queryText, fetchGraphQL(queryText));
+	}
+	return _cache.get(queryText);
 };
 ```
 
-Now, requests for previously cached data can be answered immediately without making a network request. This is a practical approach to improving the perceived performance of an application. However, this method of caching can cause problems with data consistency.
+現在，請求先前快取過的資料可以馬上回應而不需要建立網路請求。這是一個提升應用程式察覺得到的效能的實用方法。不過，這種快取方法可能會導致資料一致性問題。
 
-## Cache Consistency
+## 快取一致性
 
-With GraphQL it is very common for the results of multiple queries to overlap. However, our response cache from the previous section doesn't account for this overlap — it caches based on distinct queries. For example, if we issue a query to fetch stories:
+使用 GraphQL，數個 queries 的結果會重疊非常常見。不過，從上面章節而來的回應快取並沒有考慮到這種重疊 — 它基於不同的 queries 來做快取。舉例來說，如果我們發出一個 query 去抓取 stories：
 
 ```
 query { stories { id, text, likeCount } }
 ```
 
-and then later refetch one of the stories whose `likeCount` has since been incremented:
+並接著再之後重新抓取其中一個 story，而它的 `likeCount` 已經被增加：
 
 ```
 query { story(id: "123") { id, text, likeCount } }
 ```
 
-We'll now see different `likeCount`s depending on how the story is accessed. A view that uses the first query will see an outdated count, while a view using the second query will see the updated count.
+現在取決於這個 story 是如何被存取的，我們將會看到不同的 `likeCount`。使用第一個 query 的 view 將會看到一個過期的 count，而使用第二個 query 的 view 將會看到已更新的 count。
 
-### Caching A Graph
+### 快取一個 Graph
 
-The solution to caching GraphQL is to normalize the hierarchical response into a flat collection of **records**. Relay implements this cache as a map from IDs to records. Each record is a map from field names to field values. Records may also link to other records (allowing it to describe a cyclic graph), and these links are stored as a special value type that references back into the top-level map. With this approach each server record is stored *once* regardless of how it is fetched.
+快取 GraphQL 的解法是把階層式的回應正規化成一個扁平的 **records** 集合。Relay 實作這種快取為從 IDs 映射到 records 的 map。每個 record 都是一個從欄位名稱映射到欄位值的 map。Records 也可以連結到其他 records (允許它描述一個循環 graph)，而這些連結被存成一個的特殊 value type，它會參考回去頂層的 map。用這個方法，無論是如何被抓取的，每一個伺服器 record 都只會被儲存*一次*。
 
-Here's an example query that fetches a story's text and its author's name:
+這是一個範例 query，它抓取一個 story 的 text 和它的 author 的 name：
 
 ```
 query {
-  story(id: "1") {
-    text,
-    author {
-      name
-    }
-  }
+	story(id: "1") {
+		text,
+		author {
+			name
+		}
+	}
 }
 ```
 
-And here's a possible response:
+而這是一個可能的回應：
 
 ```
 query: {
-  story: {
-     text: "Relay is open-source!",
-     author: {
-       name: "Jan"
-     }
-  }
+	story: {
+		 text: "Relay is open-source!",
+		 author: {
+			 name: "Jan"
+		 }
+	}
 }
 ```
 
-Although the response is hierarchical, we'll cache it by flattening all the records. Here is an example of how Relay would cache this query response:
+雖然回應是階層式的，我們會藉由扁平化所有的 records 來快取它。這是一個 Relay 會如何快取這個 query 回應的範例：
 
 ```javascript
 Map {
-  // `story(id: "1")`
-  1: Map {
-    text: 'Relay is open-source!',
-    author: Link(2),
-  },
-  // `story.author`
-  2: Map {
-    name: 'Jan',
-  },
+	// `story(id: "1")`
+	1: Map {
+		text: 'Relay is open-source!',
+		author: Link(2),
+	},
+	// `story.author`
+	2: Map {
+		name: 'Jan',
+	},
 };
 ```
 
-This is only a simple example: in reality the cache must handle one-to-many associations and pagination (among other things).
+這只是一個簡單的範例：現實中快取必須處理一對多關聯和 pagination (還有許多其他東西)。
 
-### Using The Cache
+### 使用快取
 
-So how do we use this cache? Let's look at two operations: writing to the cache when a response is received, and reading from the cache to determine if a query can be fulfilled locally (the equivalent to `_cache.has(key)` above, but for a graph).
+所以我們要如何使用這種快取？讓我們來看看兩種操作：當收到回應時寫入到快取，還有從快取讀取以確定是否 query 可以在本地完成 (等同於上面的 `_cache.has(key)`，不過是 graph 用的)。
 
-### Populating The Cache
+### 填充快取
 
-Populating the cache involves walking a hierarchical GraphQL response and creating or updating normalized cache records. At first it may seem that the response alone is sufficient to process the response, but in fact this is only true for very simple queries. Consider `user(id: "456") { photo(size: 32) { uri } }` — how should we store `photo`? Using `photo` as the field name in the cache won't work because a different query might fetch the same field but with different argument values (e.g. `photo(size: 64) {...}`). A similar issue occurs with pagination. If we fetch the 11th to 20th stories with `stories(first: 10, offset: 10)`, these new results should be *appended* to the existing list.
+填充快取牽涉到走訪階層式的 GraphQL 回應以及建立或更新正規化的快取 records。起初看起來似乎只要有回應就已經足夠處理回應，但事實上這只有對非常簡單的 queries 是正確的。試想 `user(id: "456") { photo(size: 32) { uri } }` — 我們應該如何儲存 `photo`？使用 `photo` 作為快取中的欄位名稱不可行，因為不同的 query 可能會抓取一樣的欄位卻使用不同的參數值 (例如，`photo(size: 64) {...}`)。一個類似的問題也發生在 pagination。如果我們用 `stories(first: 10, offset: 10)` 抓取 11th 到 20th 的 stories，這些新的結果應該被*附加*到既存的清單中。
 
-Therefore, a normalized response cache for GraphQL requires processing payloads and queries in parallel. For example, the `photo` field from above might be cached with a generated field name such as `photo_size(32)` in order to uniquely identify the field and its argument values.
+因此，GraphQL 的正規化的回應快取需要同時處理 payloads 和 queries。例如，上面範例的 `photo` 欄位可能會被快取到一個產生出來的欄位名稱，像是 `photo_size(32)`，以唯一地識別欄位以及它的參數值。
 
-### Reading From Cache
+### 從快取讀取
 
-To read from the cache we can walk a query and resolve each field. But wait: that sounds *exactly* like what a GraphQL server does when it processes a query. And it is! Reading from the cache is a special case of an executor where a) there's no need for user-defined field functions because all results come from a fixed data structure and b) results are always synchronous — we either have the data cached or we don't.
+為了從快取讀取，我們可以走訪 query 並 resolve 每個欄位。但是等等：那聽起來*就*像是 GraphQL 伺服器在處理 query 時做的事。是這樣沒錯！從快取讀取是一個 executor 的特例，它 a) 不需要使用者定義的欄位函式因為所有的結果都來自固定的資料結構，而且 b) 結果總是同步的 — 我們要不是有已經快取的資料，要不然就是沒有。
 
-Relay implements several variations of **query traversal**: operations that walk a query alongside some other data such as the cache or a response payload. For example, when a query is fetched Relay performs a "diff" traversal to determine what fields are missing (much like React diffs virtual DOM trees). This can reduce the amount of data fetched in many common cases and even allow Relay to avoid network requests at all when queries are fully cached.
+Relay 實作了 **query traversal** 的幾種變化：這些操作會走訪 query 以及一些其他的資料，像是快取或是回應 payload。例如，當 Relay 抓取一個 query 時，它會執行一個「diff」traversal 來判斷缺少什麼欄位 (很像是 React 找出 virtual DOM trees 的差異)。這可以在大多數情況下減少要抓取的資料量，並甚至在 queries 被完整快取的時候，讓 Relay 完全避免掉網路請求。
 
-### Cache Updates
+### 快取更新
 
-Note that this normalized cache structure allows overlapping results to be cached without duplication. Each record is stored once regardless of how it is fetched. Let's return to the earlier example of inconsistent data and see how this cache helps in that scenario.
+要注意的是，這種正規化的快取結構讓重疊的結果可以不重複的被快取起來。每個 record 無論是如何被抓取都只會被儲存一次。讓我們回到先前資料不一致的範例，並看看在這個情況下這種快取要如何產生幫助。
 
-The first query was for a list of stories:
+第一個 query 是用來抓取 stories 的清單：
 
 ```
 query { stories { id, text, likeCount } }
 ```
 
-With a normalized response cache, a record would be created for each story in the list. The `stories` field would store links to each of these records.
+伴隨著正規化的回應快取，清單中的每個 story 都會建立一筆 record。`stories` 欄位會儲存參考到這裡面每一個 records 的連結。
 
-The second query refetched the information for one of those stories:
+第二個 query 重新抓取了其中一個 story 的資訊：
 
 ```
 query { story(id: "123") { id, text, likeCount } }
 ```
 
-When this response is normalized, Relay can detect that this result overlaps with existing data based on its `id`. Rather than create a new record, Relay will update the existing `123` record. The new `likeCount` is therefore available to *both* queries, as well as any other query that might reference this story.
+在這個回應被正規化後，Relay 可以基於它的 `id` 偵測這份結果與已經存在的資料的重疊。Relay 會更新已經存在的 `123` record，而不是建立一個新的 record。因此，新的 `likeCount` 在*這兩個* queries，以及任何其他可能會參考到這個 story 的 query 都可以存取。
 
-## Data/View Consistency
+## Data/View 一致性
 
-A normalized cache ensures that the *cache* is consistent. But what about our views? Ideally, our React views would always reflect the current information from the cache.
+正規化的快取確保了*快取*是一致的。但是我們的 views 呢？理想上，我們的 React views 會總是從快取反映當下的資訊。
 
-Consider rendering the text and comments of a story along with the corresponding author names and photos. Here's the GraphQL query:
+試想 render 一個 story 的 text 和 comments 以及它對應的 author names 和 photos。這是需要的 GraphQL query：
 
 ```
 query {
-  node(id: "1") {
-    text,
-    author { name, photo },
-    comments {
-      text,
-      author { name, photo }
-    }
-  }
+	node(id: "1") {
+		text,
+		author { name, photo },
+		comments {
+			text,
+			author { name, photo }
+		}
+	}
 }
 ```
 
-After initially fetching this story our cache might be as follows. Note that the story and comment both link to the same record as `author`:
+在一開始抓取這個 story 之後，我們的快取可能會變成下面這樣。要注意的是，story 和 comment 都連結到 同樣的 `author` record：
 
 ```
-// Note: This is pseudo-code for `Map` initialization to make the structure
-// more obvious.
+// 備註：這是 `Map` 初始化的虛擬程式碼以讓結構
+// 更明顯。
 Map {
-  // `story(id: "1")`
-  1: Map {
-    author: Link(2),
-    comments: [Link(3)],
-  },
-  // `story.author`
-  2: Map {
-    name: 'Yuzhi',
-    photo: 'http://.../photo1.jpg',
-  },
-  // `story.comments[0]`
-  3: Map {
-    author: Link(2),
-  },
+	// `story(id: "1")`
+	1: Map {
+		author: Link(2),
+		comments: [Link(3)],
+	},
+	// `story.author`
+	2: Map {
+		name: 'Yuzhi',
+		photo: 'http://.../photo1.jpg',
+	},
+	// `story.comments[0]`
+	3: Map {
+		author: Link(2),
+	},
 }
 ```
 
-The author of this story also commented on it — quite common. Now imagine that some other view fetches new information about the author, and her profile photo has changed to a new URI. Here's the *only* part of our cached data that changes:
+這個 story 的 author 也在上面留下了 comment — 這十分常見。現在我們想像一些其他的 view 抓取了 author 的新資訊，而她的 profile photo 已經變更成一個新的 URI。這是我們快取資料中*唯一*改變的部分：
 
 ```
 Map {
-  ...
-  2: Map {
-    ...
-    photo: 'http://.../photo2.jpg',
-  },
+	...
+	2: Map {
+		...
+		photo: 'http://.../photo2.jpg',
+	},
 }
 ```
 
-The value of the `photo` field has changed; and therefore the record `2` has also changed. And that's it. Nothing else in the *cache* is affected. But clearly our *view* needs to reflect the update: both instances of the author in the UI (as story author and comment author) need to show the new photo.
+`photo` 欄位的值已經被改變；並因此 record `2` 也改變了。就只有這樣。沒有其他在*快取*中的東西受到影響。而顯然我們的 *view* 需要反映這些更新：在 UI 中的兩個 author 實體 (story author 和 comment author) 都需要呈現新的 photo。
 
-A standard response is to "just use immutable data structures" — but let's see what would happen if we did:
+標準的回答是「只管使用 immutable 資料結構」— 不過讓我們來看看如果這樣做會怎樣：
 
 ```
 ImmutableMap {
-  1: ImmutableMap {/* same as before */}
-  2: ImmutableMap {
-    ... // other fields unchanged
-    photo: 'http://.../photo2.jpg',
-  },
-  3: ImmutableMap {/* same as before */}
+	1: ImmutableMap {/* 跟之前一樣 */}
+	2: ImmutableMap {
+		... // 其他欄位沒有改變
+		photo: 'http://.../photo2.jpg',
+	},
+	3: ImmutableMap {/* 跟之前一樣 */}
 }
 ```
 
-If we replace `2` with a new immutable record, we'll also get a new immutable instance of the cache object. However, records `1` and `3` are untouched. Because the data is normalized, we can't tell that `story`'s contents have changed just by looking at the `story` record alone.
+如果我們用一個新的 immutable record 來取代 `2`，我們也會得到一個新的 immutable 快取物件實體。不過，records `1` 以及 `3` 是不變的。因為資料是正規化的，我們不能只看 `story` record 就知道 `story` 的內容已經變了。
 
-### Achieving View Consistency
+### 達成 View 一致性
 
-There are a variety of solutions for keeping views up to date with a flattened cache. The approach that Relay takes is to maintain a mapping from each UI view to the set of IDs it references. In this case, the story view would subscribe to updates on the story (`1`), the author (`2`), and the comments (`3` and any others). When writing data into the cache, Relay tracks which IDs are affected and notifies *only* the views that are subscribed to those IDs. The affected views re-render, and unaffected views opt-out of re-rendering for better performance (Relay provides a safe but effective default `shouldComponentUpdate`). Without this strategy, every view would re-render for even the tiniest change.
+有許多辦法可以讓 views 與扁平化的快取保持更新。Relay 採用的方法是維護從每一個 UI view 映射到它參考的一組 IDs 的 mapping。在這個情況下，story 的 view 會訂閱 story (`1`)、author (`2`)、以及 comments (`3` 和任何其他的) 的更新。當把資料寫進快取時，Relay 會追蹤哪些 IDs 有被影響並*只*通知那些有訂閱 這些 IDs 的 views。那些被影響到的 views 會重新 render，而沒有被影響到的 views 則不進行重新 render 以達到更好的效能 (Relay 提供一個安全而有效率的預設 `shouldComponentUpdate`)。如果沒有這種策略，即使只有微小的改變每個 view 都會重新 render。
 
-Note that this solution will also work for *writes*: any update to the cache will notify the affected views, and writes are just another thing that updates the cache.
+要注意的是，這個方案也對 *writes* 有用：快取的任何更新都會通知被影響的 views，而 writes 只是另一個會更新快取的東西。
 
 ## Mutations
 
-So far we've looked at the process of querying data and keeping views up to date, but we haven't looked at writes. In GraphQL, writes are called **mutations**. We can think of them as queries with side effects. Here's an example of calling a mutation that might mark a given story as being liked by the current user:
+到目前為止，我們已經看到了 query 資料的過程並且讓 views 保持更新，不過我們還沒有看到 write。在 GraphQL 中，write 被稱為 **mutation**。我們可以把它們想成是有 side effect 的 queries。這是一個呼叫 mutation 的範例，它會把給定的 story 標記成被現在的使用者 like 過：
 
 ```
-// Give a human-readable name and define the types of the inputs,
-// in this case the id of the story to mark as liked.
+// 給一個人類可讀的名稱並定義 inputs 的 types，
+// 在這個情況下是要被標記成 liked 的 story 的 id。
 mutation StoryLike($storyID: String) {
-   // Call the mutation field and trigger its side effects
-   storyLike(storyID: $storyID) {
-     // Define fields to re-fetch after the mutation completes
-     likeCount
-   }
+	 // 呼叫 mutation 欄位並觸發它的 side effects
+	 storyLike(storyID: $storyID) {
+		 // 定義欄位以在 mutation 完成之後重新抓取
+		 likeCount
+	 }
 }
 ```
 
-Notice that we're querying for data that *may* have changed as a result of the mutation. An obvious question is: why can't the server just tell us what changed? The answer is: it's complicated. GraphQL abstracts over *any* data storage layer (or an aggregation of multiple sources), and works with any programming language. Furthermore, the goal of GraphQL is to provide data in a form that is useful to product developers building a view.
+要注意的是，我們在 query 的資料*可能*已經因為 mutation 的結果而改變。一個明顯的問題是：為什麼伺服器不能直接告訴我們什麼東西改變了？答案是：這很複雜。GraphQL 抽象化了*任何的*資料儲存層 (或是多個來源的集合體)，而且可以用任何的程式語言運作。此外，GraphQL 的目標是提供對產品開發者們建構 view 有幫助的格式資料。
 
-We've found that it's common for the GraphQL schema to differ slightly or even substantially from the form in which data is stored on disk. Put simply: there isn't always a 1:1 correspondence between data changes in your underlying *data storage* (disk) and data changes in your *product-visible schema* (GraphQL). The perfect example of this is privacy: returning a user-facing field such as `age` might require accessing numerous records in our data-storage layer to determine if the active user is even allowed to *see* that `age` (Are we friends? Is my age shared? Did I block you? etc.).
+我們發現，GraphQL schema 與被儲存在硬碟上的資料之間常常有些微或甚至大幅度的差異。簡單的說：在背後的*資料倉儲* (硬碟) 的資料變化和在*產品可見的 schema* (GraphQL) 的資料變化之間不總是存在 1:1 的對應。關於這個的完美範例是隱私：回傳一個面對使用者的欄位，像是 `age`，可能需要在資料儲存層中存取數筆 records，來判斷現在的使用者是否被允許可以*看到*那個 `age` (我們是朋友嗎？我的年齡是公開的嗎？我有封鎖你嗎？等等。)。
 
-Given these real-world constraints, the approach in GraphQL is for clients to query for things that may change after a mutation. But what exactly do we put in that query? During the development of Relay we explored several ideas — let's look at them briefly in order to understand why Relay uses the approach that it does:
+有鑑於這些真實世界的約束，在 GraphQL 中的方法是讓客戶端去 query 在 mutation 之後可能會改變的東西。不過，我們究竟該如何 query？在 Relay 的開發期間，我們探討過幾個想法 — 讓我們來簡單地看看它們以了解為什麼 Relay 使用這樣的方式：
 
-- Option 1: Re-fetch everything that the app has ever queried. Even though only a small subset of this data will actually change, we'll still have to wait for the server to execute the *entire* query, wait to download the results, and wait to process them again. This is very inefficient.
+- 選項 1：重新抓取應用程式曾經 query 過的所有東西。即使實際上這份資料只有一小部分會改變，我們仍然必須等待伺服器執行*整個* query、等待下載結果、並等待再次的處理它們。這非常的沒有效率。
 
-- Option 2: Re-fetch only the queries required by actively rendered views. This is a slight improvement over option 1. However, cached data that *isn't* currently being viewed won't be updated. Unless this data is somehow marked as stale or evicted from the cache subsequent queries will read outdated information.
+- 選項 2：只重新抓取當下被 render 的 views 需要的 queries。這跟選項 1 比較起來有些細微的改進。但是，現在*沒有*被看見的被快取資料將不會被更新。除非這份資料以某種方式被標記成失效的或是被從快取移除，隨後的 queries 將會讀取到過時的資訊。
 
-- Option 3: Re-fetch a fixed list of fields that *may* change after the mutation. We'll call this list a **fat query**. We found this to also be inefficient because typical applications only render a subset of the fat query, but this approach would require fetching all of those fields.
+- 選項 3：重新抓取*可能會*在 mutation 之後改變的固定欄位列表。我們稱這個列表是一個 **fat query**。我們發現這也是沒效率的，因為典型的應用程式只 render fat query 的一部份子集合，但是這個方法會需要抓取它們之中全部的欄位。
 
-- Option 4 (Relay): Re-fetch the intersection of what may change (the fat query) and the data in the cache. In addition to the cache of data Relay also remembers the queries used to fetch each item. These are called **tracked queries**. By intersecting the tracked and fat queries, Relay can query exactly the set of information the application needs to update and nothing more.
+- 選項 4 (Relay)：重新抓取可能會改變的東西 (fat query) 與在快取裡的資料的交集。除了資料的快取之外，Relay 也記得用來抓取每個項目的 queries。這些被稱為 **tracked queries**。藉由交叉比對 tracked queries 和 fat queries，Relay 可以只 query 應用程式需要更新的那些資訊而不會包括其他的。
 
-## Data-Fetching APIs
+## 資料抓取 APIs
 
-So far we looked at the lower-level aspects of data-fetching and saw how various familiar concepts translate to GraphQL. Next, let's step back and look at some higher-level concerns that product developers often face around data-fetching:
+到目前為止，我們看到資料抓取比較低階的方面並看到各種熟悉的概念要如何轉換成 GraphQL。接下來，讓我們退回來看看一些比較高階、那些產品開發者們時常面對的資料抓取關注點：
 
-- Fetching all the data for a view hierarchy.
-- Managing asynchronous state transitions and coordinating concurrent requests.
-- Managing errors.
-- Retrying failed requests.
-- Updating the local cache after receiving query/mutation responses.
-- Queuing mutations to avoid race conditions.
-- Optimistically updating the UI while waiting for the server to respond to mutations.
+- 為 view 階層抓取所有的資料。
+- 管理非同步的 state 轉換與協調 concurrent 請求。
+- 管理錯誤。
+- 重試失敗的請求。
+- 在收到 query/mutation 的回應之後更新本地的快取。
+- 讓 mutations 排隊來避免 race conditions。
+- 當在等待伺服器回應 mutations 時，Optimistically updating UI。
 
-We've found that typical approaches to data-fetching — with imperative APIs — force developers to deal with too much of this non-essential complexity. For example, consider *optimistic UI updates*. This is a way of giving the user feedback while waiting for a server response. The logic of *what* to do can be quite clear: when the user clicks "like", mark the story as being liked and send the request to the server. But the implementation is often much more complex. Imperative approaches require us to implement all of those steps: reach into the UI and toggle the button, initiate a network request, retry it if necessary, show an error if it fails (and untoggle the button), etc. The same goes for data-fetching: specifying *what* data we need often dictates *how* and *when* it is fetched. Next, we'll explore our approach to solving these concerns with **Relay**.
+我們發現典型的資料抓取方法 — 藉由 imperative APIs — 強迫開發者們處理過多這種不必要的複雜度。例如，試想 *optimistic UI updates*。這是一個在等待伺服器回應的時候給使用者回饋的方式。要做*什麼*的邏輯很清楚：當使用者點擊「like」時，把這個 story 標記為被 like 過並送請求到伺服器。不過實作常常會更複雜一些。Imperative 的方法需要我們實作這些全部的步驟：介入 UI 並切換按鈕狀態、發起網路請求、在需要時重試它、如果它失敗的話呈現錯誤 (並把按鈕切換回來)，等等。這同樣適用於資料抓取：指定我們需要*什麼*資料通常也會指定*如何*與*何時*抓取它。接下來，我們會探討我們的方法，用 **Relay** 來解決這些關注點。
