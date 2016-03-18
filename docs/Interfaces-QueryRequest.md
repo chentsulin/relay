@@ -7,11 +7,11 @@ indent: true
 permalink: docs/interfaces-relay-query-request.html
 ---
 
-`RelayQueryRequest` encapsulates a query that Relay needs to send to the server. They are made available to network layers via the `sendQueries` method.
+`RelayQueryRequest` 封裝了一個 Relay 需要送去伺服器的 query。是通過 `sendQueries` 方法把它們提供給 network layer。
 
-## Overview
+## 概觀
 
-*Methods*
+*方法*
 
 <ul class="apiIndex">
   <li>
@@ -37,7 +37,7 @@ permalink: docs/interfaces-relay-query-request.html
 </ul>
 
 
-## Methods
+## 方法
 
 ### getQueryString
 
@@ -45,7 +45,7 @@ permalink: docs/interfaces-relay-query-request.html
 getQueryString(): string
 ```
 
-Gets a string representation of the GraphQL query.
+取得這個 GraphQL query 的表示字串。
 
 ### getVariables
 
@@ -53,7 +53,7 @@ Gets a string representation of the GraphQL query.
 getVariables(): {[name: string]: mixed}
 ```
 
-Gets the variables used by the query. These variables should be serialized and sent in the GraphQL request.
+取得被這個 query 使用的變數。這些變數應該被 serialize 並在 GraphQL 請求中送出。
 
 ### getID
 
@@ -61,7 +61,7 @@ Gets the variables used by the query. These variables should be serialized and s
 getID(): string
 ```
 
-Gets a unique identifier for this query. These identifiers are useful for assigning response payloads to their corresponding queries when sent in a single GraphQL request.
+取得這個 query 的唯一識別碼。這些識別碼在送出一個單一 GraphQL 請求時很有用，可以把回應 payload 指配給它們對應的 query。
 
 ### getDebugName
 
@@ -69,4 +69,4 @@ Gets a unique identifier for this query. These identifiers are useful for assign
 getDebugName(): string
 ```
 
-Gets a string name used to refer to this request for printing debug output.
+取得一個用來參考到這個請求的字串名稱，以印出 debug 用的 output。
