@@ -13,17 +13,17 @@
 
 'use strict';
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
 var _require = require('./GraphQL');
 
 var buildClientSchema = _require.utilities_buildClientSchema.buildClientSchema;
 
 var RelayQLTransformer = require('./RelayQLTransformer');
 var babelAdapter = require('./babelAdapter');
-var generateHash = require('./generateHash');
 var invariant = require('./invariant');
 var util = require('util');
 
-var HASH_LENGTH = 12;
 var PROVIDES_MODULE = 'providesModule';
 
 /**
@@ -55,7 +55,7 @@ function getBabelRelayPlugin(schemaProvider, pluginOptions) {
            * Extract the module name from `@providesModule`.
            */
 
-          Program: function (_ref2, state) {
+          Program: function Program(_ref2, state) {
             var parent = _ref2.parent;
 
             if (state.file.opts.documentName) {
@@ -89,7 +89,7 @@ function getBabelRelayPlugin(schemaProvider, pluginOptions) {
           /**
            * Transform Relay.QL`...`.
            */
-          TaggedTemplateExpression: function (path, state) {
+          TaggedTemplateExpression: function TaggedTemplateExpression(path, state) {
             var node = path.node;
 
 
@@ -103,17 +103,6 @@ function getBabelRelayPlugin(schemaProvider, pluginOptions) {
 
             invariant(documentName, 'Expected `documentName` to have been set.');
 
-            var _path$node$loc$start = path.node.loc.start;
-            var line = _path$node$loc$start.line;
-            var column = _path$node$loc$start.column;
-
-            var fragmentLocationID = generateHash(JSON.stringify({
-              filename: state.file.filename,
-              code: state.file.code,
-              line: line,
-              column: column
-            })).substring(0, HASH_LENGTH);
-
             var p = path;
             var propName = null;
             while (!propName && (p = p.parentPath)) {
@@ -126,7 +115,6 @@ function getBabelRelayPlugin(schemaProvider, pluginOptions) {
             try {
               result = transformer.transform(t, node.quasi, {
                 documentName: documentName,
-                fragmentLocationID: fragmentLocationID,
                 tagName: tagName,
                 propName: propName
               });
@@ -185,7 +173,7 @@ function getBabelRelayPlugin(schemaProvider, pluginOptions) {
 
 function getSchema(schemaProvider) {
   var introspection = typeof schemaProvider === 'function' ? schemaProvider() : schemaProvider;
-  invariant(typeof introspection === 'object' && introspection && typeof introspection.__schema === 'object' && introspection.__schema, 'Invalid introspection data supplied to `getBabelRelayPlugin()`. The ' + 'resulting schema is not an object with a `__schema` property.');
+  invariant((typeof introspection === 'undefined' ? 'undefined' : _typeof(introspection)) === 'object' && introspection && _typeof(introspection.__schema) === 'object' && introspection.__schema, 'Invalid introspection data supplied to `getBabelRelayPlugin()`. The ' + 'resulting schema is not an object with a `__schema` property.');
   return buildClientSchema(introspection);
 }
 

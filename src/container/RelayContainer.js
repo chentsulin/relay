@@ -27,6 +27,7 @@ const RelayMutationTransaction = require('RelayMutationTransaction');
 const RelayProfiler = require('RelayProfiler');
 const RelayPropTypes = require('RelayPropTypes');
 const RelayQuery = require('RelayQuery');
+import type {RelayQueryConfigInterface} from 'RelayQueryConfig';
 const RelayRecord = require('RelayRecord');
 const RelayRecordStatusMap = require('RelayRecordStatusMap');
 import type {
@@ -38,13 +39,12 @@ import type {
 } from 'RelayTypes';
 
 const buildRQL = require('buildRQL');
-import type {RelayQLFragmentBuilder, RelayQLQueryBuilder} from 'buildRQL';
+import type {RelayQLFragmentBuilder} from 'buildRQL';
 const forEachObject = require('forEachObject');
 const invariant = require('invariant');
 const isReactComponent = require('isReactComponent');
 const isRelayEnvironment = require('isRelayEnvironment');
 const nullthrows = require('nullthrows');
-const prepareRelayContainerProps = require('prepareRelayContainerProps');
 const relayUnstableBatchedUpdates = require('relayUnstableBatchedUpdates');
 const shallowEqual = require('shallowEqual');
 const warning = require('warning');
@@ -64,15 +64,6 @@ export type RelayContainerSpec = {
   };
 };
 export type RelayLazyContainer = Function;
-export type RelayQueryConfigSpec = {
-  name: string;
-  params: Variables;
-  queries: RootQueries;
-  useMockData?: boolean;
-};
-export type RootQueries = {
-  [queryName: string]: RelayQLQueryBuilder;
-};
 
 const containerContextTypes = {
   relay: RelayPropTypes.Environment,
@@ -469,7 +460,7 @@ function createContainerComponent(
     _initialize(
       props: Object,
       environment,
-      route: RelayQueryConfigSpec,
+      route: RelayQueryConfigInterface,
       prevVariables: Variables
     ): {
       queryData: {[propName: string]: mixed};
@@ -484,10 +475,12 @@ function createContainerComponent(
       this._updateFragmentResolvers(environment);
       return {
         queryData: this._getQueryData(props),
-        relayProp: shallowEqual(this.state.relayProp.variables, nextVariables) ?
+        relayProp: (this.state.relayProp.route === route)
+          && shallowEqual(this.state.relayProp.variables, nextVariables) ?
           this.state.relayProp :
           {
             ...this.state.relayProp,
+            route,
             variables: nextVariables,
           },
       };
@@ -546,7 +539,7 @@ function createContainerComponent(
 
     _updateFragmentPointers(
       props: Object,
-      route: RelayQueryConfigSpec,
+      route: RelayQueryConfigInterface,
       variables: Variables
     ): void {
       const fragmentPointers = this._fragmentPointers;
@@ -749,8 +742,8 @@ function createContainerComponent(
         <Component
           {...this.props}
           {...this.state.queryData}
-          {...prepareRelayContainerProps(this.state.relayProp)}
           ref={isReactComponent(Component) ? 'component' : null}
+          relay={this.state.relayProp}
         />
       );
     }
@@ -758,7 +751,7 @@ function createContainerComponent(
 
   function getFragment(
     fragmentName: string,
-    route: RelayQueryConfigSpec,
+    route: RelayQueryConfigInterface,
     variables: Variables
   ): RelayQuery.Fragment {
     const fragmentBuilder = fragments[fragmentName];

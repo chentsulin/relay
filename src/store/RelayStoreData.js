@@ -102,25 +102,16 @@ class RelayStoreData {
     const records: RecordMap = {};
     const rootCallMap: RootCallMap = {};
     const nodeRangeMap: NodeRangeMap = {};
-    const {
-      cachedStore,
-      queuedStore,
-      recordStore,
-    } = createRecordCollection({
-      cachedRecords,
-      cachedRootCallMap,
-      cacheWriter: null,
-      queuedRecords,
-      nodeRangeMap,
-      records,
-      rootCallMap,
-    });
     const rangeData = new GraphQLStoreRangeUtils();
 
     this._cacheManager = null;
     this._cachedRecords = cachedRecords;
     this._cachedRootCallMap = cachedRootCallMap;
-    this._cachedStore = cachedStore;
+    this._cachedStore = new RelayRecordStore(
+      {cachedRecords, records},
+      {cachedRootCallMap, rootCallMap},
+      nodeRangeMap
+    );
     this._changeEmitter = new GraphQLStoreChangeEmitter(rangeData);
     this._mutationQueue = new RelayMutationQueue(this);
     this._networkLayer = new RelayNetworkLayer();
@@ -129,9 +120,17 @@ class RelayStoreData {
     this._queryRunner = new GraphQLQueryRunner(this);
     this._queryTracker = new RelayQueryTracker();
     this._queuedRecords = queuedRecords;
-    this._queuedStore = queuedStore;
+    this._queuedStore = new RelayRecordStore(
+      {cachedRecords, queuedRecords, records},
+      {cachedRootCallMap, rootCallMap},
+      nodeRangeMap
+    );
     this._records = records;
-    this._recordStore = recordStore;
+    this._recordStore = new RelayRecordStore(
+      {records},
+      {rootCallMap},
+      nodeRangeMap
+    );
     this._rangeData = rangeData;
     this._rootCallMap = rootCallMap;
     this._taskQueue = new RelayTaskQueue();
@@ -171,45 +170,11 @@ class RelayStoreData {
    * the store.
    */
   injectCacheManager(cacheManager: ?CacheManager): void {
-    const {
-      cachedStore,
-      queuedStore,
-      recordStore,
-    } = createRecordCollection({
-      cachedRecords: this._cachedRecords,
-      cachedRootCallMap: this._cachedRootCallMap,
-      cacheWriter: cacheManager ? cacheManager.getQueryWriter() : null,
-      queuedRecords: this._queuedRecords,
-      nodeRangeMap: this._nodeRangeMap,
-      records: this._records,
-      rootCallMap: this._rootCallMap,
-    });
-
     this._cacheManager = cacheManager;
-    this._cachedStore = cachedStore;
-    this._queuedStore = queuedStore;
-    this._recordStore = recordStore;
   }
 
   clearCacheManager(): void {
-    const {
-      cachedStore,
-      queuedStore,
-      recordStore,
-    } = createRecordCollection({
-      cachedRecords: this._cachedRecords,
-      cachedRootCallMap: this._cachedRootCallMap,
-      cacheWriter: null,
-      queuedRecords: this._queuedRecords,
-      nodeRangeMap: this._nodeRangeMap,
-      records: this._records,
-      rootCallMap: this._rootCallMap,
-    });
-
     this._cacheManager = null;
-    this._cachedStore = cachedStore;
-    this._queuedStore = queuedStore;
-    this._recordStore = recordStore;
   }
 
   hasCacheManager(): boolean {
@@ -330,7 +295,7 @@ class RelayStoreData {
     const profiler = RelayProfiler.profile('RelayStoreData.handleQueryPayload');
     const changeTracker = new RelayChangeTracker();
     const writer = new RelayQueryWriter(
-      this._recordStore,
+      this._queuedStore,
       this.getRecordWriter(),
       this._queryTracker,
       changeTracker,
@@ -358,7 +323,6 @@ class RelayStoreData {
   ): void {
     const profiler = RelayProfiler.profile('RelayStoreData.handleUpdatePayload');
     const changeTracker = new RelayChangeTracker();
-    let store;
     let recordWriter;
     if (isOptimisticUpdate) {
       const clientMutationID = payload[CLIENT_MUTATION_ID];
@@ -368,15 +332,13 @@ class RelayStoreData {
         'to have a valid `%s`.',
         CLIENT_MUTATION_ID
       );
-      store = this.getRecordStoreForOptimisticMutation(clientMutationID);
       recordWriter =
         this.getRecordWriterForOptimisticMutation(clientMutationID);
     } else {
-      store = this._getRecordStoreForMutation();
       recordWriter = this._getRecordWriterForMutation();
     }
     const writer = new RelayQueryWriter(
-      store,
+      this._queuedStore,
       recordWriter,
       this._queryTracker,
       changeTracker,
@@ -561,17 +523,6 @@ class RelayStoreData {
     }
   }
 
-  _getRecordStoreForMutation(): RelayRecordStore {
-    const records = this._records;
-    const rootCallMap = this._rootCallMap;
-
-    return new RelayRecordStore(
-      {records},
-      {rootCallMap},
-      this._nodeRangeMap
-    );
-  }
-
   _getRecordWriterForMutation(): RelayRecordWriter {
     return new RelayRecordWriter(
       this._records,
@@ -581,22 +532,6 @@ class RelayStoreData {
       this._cacheManager ?
         this._cacheManager.getMutationWriter() :
         null
-    );
-  }
-
-  getRecordStoreForOptimisticMutation(
-    clientMutationID: ClientMutationID
-  ): RelayRecordStore {
-    const cachedRecords = this._cachedRecords;
-    const cachedRootCallMap = this._cachedRootCallMap;
-    const rootCallMap = this._rootCallMap;
-    const queuedRecords = this._queuedRecords;
-    const records = this._records;
-
-    return new RelayRecordStore(
-      {cachedRecords, queuedRecords, records},
-      {cachedRootCallMap, rootCallMap},
-      this._nodeRangeMap
     );
   }
 
@@ -613,38 +548,6 @@ class RelayStoreData {
     );
   }
 
-}
-
-function createRecordCollection({
-  cachedRecords,
-  cachedRootCallMap,
-  cacheWriter,
-  queuedRecords,
-  nodeRangeMap,
-  records,
-  rootCallMap,
-}): {
-  cachedStore: RelayRecordStore,
-  queuedStore: RelayRecordStore,
-  recordStore: RelayRecordStore
-} {
-  return {
-    queuedStore: new RelayRecordStore(
-      {cachedRecords, queuedRecords, records},
-      {cachedRootCallMap, rootCallMap},
-      nodeRangeMap
-    ),
-    cachedStore: new RelayRecordStore(
-      {cachedRecords, records},
-      {cachedRootCallMap, rootCallMap},
-      nodeRangeMap
-    ),
-    recordStore: new RelayRecordStore(
-      {records},
-      {rootCallMap},
-      nodeRangeMap
-    ),
-  };
 }
 
 RelayProfiler.instrumentMethods(RelayStoreData.prototype, {

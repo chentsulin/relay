@@ -13,27 +13,28 @@
 
 'use strict';
 
-const RelayFragmentPointer = require('RelayFragmentPointer');
 const React = require('React');
-import type {RelayQueryConfigSpec} from 'RelayContainer';
 import type {RelayEnvironmentInterface} from 'RelayEnvironment';
 import type {GarbageCollectionHold} from 'RelayGarbageCollector';
 import type {RelayQuerySet} from 'RelayInternalTypes';
 const RelayPropTypes = require('RelayPropTypes');
+import type {RelayQueryConfigInterface} from 'RelayQueryConfig';
+const RelayReadyStateRenderer = require('RelayReadyStateRenderer');
+import type {
+  RelayRenderCallback,
+  RelayRetryCallback,
+} from 'RelayReadyStateRenderer';
 import type {
   Abortable,
   ComponentReadyState,
   ReadyState,
   RelayContainer,
 } from 'RelayTypes';
-const StaticContainer = require('StaticContainer.react');
-import type {Root as RelayQueryRoot} from 'RelayQuery';
 
 const getRelayQueries = require('getRelayQueries');
 const invariant = require('invariant');
-const mapObject = require('mapObject');
 
-type RelayRendererProps = {
+type Props = {
   Container: RelayContainer;
   forceFetch?: ?boolean;
   onForceFetch?: ?(
@@ -45,28 +46,25 @@ type RelayRendererProps = {
     callback: (readyState: ReadyState) => void
   ) => Abortable;
   onReadyStateChange?: ?(readyState: ReadyState) => void;
-  queryConfig: RelayQueryConfigSpec;
+  queryConfig: RelayQueryConfigInterface;
   environment: RelayEnvironmentInterface;
-  render?: ?RelayRendererRenderCallback;
+  render?: ?RelayRenderCallback;
 };
-export type RelayRendererRenderCallback =
-  (renderArgs: RelayRendererRenderArgs) => ?React$Element;
-type RelayRendererRenderArgs = {
-  done: boolean;
-  error: ?Error;
-  props: ?Object;
-  retry: ?Function;
-  stale: boolean;
-};
-type RelayRendererState = {
-  activeContainer: ?RelayContainer;
-  activeEnvironment: ?RelayEnvironmentInterface;
-  activeQueryConfig: ?RelayQueryConfigSpec;
+type State = {
+  active: boolean;
   readyState: ?ComponentReadyState;
-  renderArgs: RelayRendererRenderArgs;
+  retry: RelayRetryCallback;
 };
 
 const {PropTypes} = React;
+
+const INACTIVE_READY_STATE = {
+  aborted: false,
+  done: false,
+  error: null,
+  ready: false,
+  stale: false,
+};
 
 /**
  * @public
@@ -83,7 +81,7 @@ const {PropTypes} = React;
  *
  * The `render` callback is called with an object with the following properties:
  *
- *   props: ?Object
+ *   props: ?{[propName: string]: mixed}
  *     If present, sufficient data is ready to render the container. This object
  *     must be spread into the container using the spread attribute operator. If
  *     absent, there is insufficient data to render the container.
@@ -127,52 +125,26 @@ const {PropTypes} = React;
  *   }
  *
  */
-class RelayRenderer extends React.Component {
+class RelayRenderer extends React.Component<void, Props, State> {
   gcHold: ?GarbageCollectionHold;
   mounted: boolean;
   pendingRequest: ?Abortable;
-  props: RelayRendererProps;
-  state: RelayRendererState;
+  props: Props;
+  querySet: ?RelayQuerySet;
+  state: State;
 
-  constructor(props: RelayRendererProps, context: any) {
+  constructor(props: Props, context: any) {
     super(props, context);
     const garbageCollector =
       this.props.environment.getStoreData().getGarbageCollector();
     this.gcHold = garbageCollector && garbageCollector.acquireHold();
     this.mounted = true;
     this.pendingRequest = null;
-    this.state = this._buildState(null, null, null, null, null);
-  }
-
-  /**
-   * @private
-   */
-  _buildState(
-    activeContainer: ?RelayContainer,
-    activeEnvironment: ?RelayEnvironmentInterface,
-    activeQueryConfig: ?RelayQueryConfigSpec,
-    readyState: ?ReadyState,
-    props: ?Object
-  ): RelayRendererState {
-    return {
-      activeContainer,
-      activeEnvironment,
-      activeQueryConfig,
-      readyState: readyState && {...readyState, mounted: true},
-      renderArgs: {
-        done: !!readyState && readyState.done,
-        error: readyState && readyState.error,
-        props,
-        retry: () => this._retry(),
-        stale: !!readyState && readyState.stale,
-      },
-    };
-  }
-
-  getChildContext(): Object {
-    return {
-      relay: this.props.environment,
-      route: this.props.queryConfig,
+    this.querySet = null;
+    this.state = {
+      active: false,
+      readyState: null,
+      retry: this._retry.bind(this),
     };
   }
 
@@ -191,9 +163,8 @@ class RelayRenderer extends React.Component {
       onPrimeCache,
       queryConfig,
       environment,
-    }: RelayRendererProps
+    }: Props
   ): void {
-    const querySet = getRelayQueries(Container, queryConfig);
     const onReadyStateChange = readyState => {
       if (!this.mounted) {
         this._handleReadyStateChange({...readyState, mounted: false});
@@ -206,76 +177,32 @@ class RelayRenderer extends React.Component {
       if (readyState.aborted || readyState.done || readyState.error) {
         this.pendingRequest = null;
       }
-      let {props} = this.state.renderArgs;
-      if (readyState.ready && !props) {
-        props = {
-          ...queryConfig.params,
-          ...mapObject(
-            querySet,
-            query => createFragmentPointerForRoot(environment, query)
-          ),
-        };
-      }
-      this.setState(
-        this._buildState(
-          Container,
-          environment,
-          queryConfig,
-          readyState,
-          props
-        )
-      );
+      this.setState({
+        active: true,
+        readyState: {
+          ...readyState,
+          mounted: true,
+        },
+      });
     };
 
     if (this.pendingRequest) {
       this.pendingRequest.abort();
     }
 
+    this.containerProps = null;
+    this.querySet = getRelayQueries(Container, queryConfig);
     const request = this.pendingRequest = forceFetch ?
       (
         onForceFetch ?
-          onForceFetch(querySet, onReadyStateChange) :
-          environment.forceFetch(querySet, onReadyStateChange)
+          onForceFetch(this.querySet, onReadyStateChange) :
+          environment.forceFetch(this.querySet, onReadyStateChange)
       ) :
       (
         onPrimeCache ?
-          onPrimeCache(querySet, onReadyStateChange) :
-          environment.primeCache(querySet, onReadyStateChange)
+          onPrimeCache(this.querySet, onReadyStateChange) :
+          environment.primeCache(this.querySet, onReadyStateChange)
       );
-  }
-
-  /**
-   * Returns whether or not the view should be updated during the current render
-   * pass. This is false between invoking `Relay.Store.{primeCache,forceFetch}`
-   * and the first invocation of the `onReadyStateChange` callback if there is
-   * an actively rendered Relay context, container and query configuration.
-   *
-   * @private
-   */
-  _shouldUpdate(): boolean {
-    const {activeContainer, activeEnvironment, activeQueryConfig} = this.state;
-    const {Container, queryConfig, environment} = this.props;
-    return (
-      (!activeContainer || Container === activeContainer) &&
-      (!activeEnvironment || environment === activeEnvironment) &&
-      (!activeQueryConfig || queryConfig === activeQueryConfig)
-    );
-  }
-
-  /**
-   * @private
-   */
-  _runQueriesAndSetState(props: RelayRendererProps): void {
-    this._runQueries(props);
-    this.setState(
-      this._buildState(
-        this.state.activeContainer,
-        this.state.activeEnvironment,
-        this.state.activeQueryConfig,
-        null,
-        null
-      )
-    );
   }
 
   /**
@@ -288,10 +215,11 @@ class RelayRenderer extends React.Component {
       'RelayRenderer: You tried to call `retry`, but the last request did ' +
       'not fail. You can only call this when the last request has failed.'
     );
-    this._runQueriesAndSetState(this.props);
+    this._runQueries(this.props);
+    this.setState({readyState: null});
   }
 
-  componentWillReceiveProps(nextProps: RelayRendererProps): void {
+  componentWillReceiveProps(nextProps: Props): void {
     if (nextProps.Container !== this.props.Container ||
         nextProps.environment !== this.props.environment ||
         nextProps.queryConfig !== this.props.queryConfig ||
@@ -304,13 +232,14 @@ class RelayRenderer extends React.Component {
           nextProps.environment.getStoreData().getGarbageCollector();
         this.gcHold = garbageCollector && garbageCollector.acquireHold();
       }
-      this._runQueriesAndSetState(nextProps);
+      this._runQueries(nextProps);
+      this.setState({readyState: null});
     }
   }
 
   componentDidUpdate(
-    prevProps: RelayRendererProps,
-    prevState?: RelayRendererState
+    prevProps: Props,
+    prevState?: State
   ): void {
     // `prevState` should exist; the truthy check is for Flow soundness.
     const {readyState} = this.state;
@@ -343,39 +272,21 @@ class RelayRenderer extends React.Component {
   }
 
   render(): ?React$Element {
-    let children;
-    let shouldUpdate = this._shouldUpdate();
-    if (shouldUpdate) {
-      const {Container, render} = this.props;
-      const {renderArgs} = this.state;
-      if (render) {
-        children = render(renderArgs);
-      } else if (renderArgs.props) {
-        children = <Container {...renderArgs.props} />;
-      }
-    }
-    if (children === undefined) {
-      children = null;
-      shouldUpdate = false;
-    }
+    const readyState = this.state.active ?
+      this.state.readyState :
+      INACTIVE_READY_STATE;
+
     return (
-      <StaticContainer shouldUpdate={shouldUpdate}>
-        {children}
-      </StaticContainer>
+      <RelayReadyStateRenderer
+        Container={this.props.Container}
+        environment={this.props.environment}
+        queryConfig={this.props.queryConfig}
+        readyState={readyState}
+        render={this.props.render}
+        retry={this.state.retry}
+      />
     );
   }
-}
-
-function createFragmentPointerForRoot(
-  environment,
-  query: RelayQueryRoot
-) {
-  return query ?
-    RelayFragmentPointer.createForRoot(
-      environment.getStoreData().getQueuedStore(),
-      query
-    ) :
-    null;
 }
 
 RelayRenderer.propTypes = {
@@ -385,11 +296,6 @@ RelayRenderer.propTypes = {
   queryConfig: RelayPropTypes.QueryConfig.isRequired,
   environment: RelayPropTypes.Environment,
   render: PropTypes.func,
-};
-
-RelayRenderer.childContextTypes = {
-  relay: RelayPropTypes.Environment,
-  route: RelayPropTypes.QueryConfig.isRequired,
 };
 
 module.exports = RelayRenderer;

@@ -13,14 +13,12 @@
 'use strict';
 
 const Map = require('Map');
-import type {
-  RelayLazyContainer,
-  RelayQueryConfigSpec,
-} from 'RelayContainer';
+import type {RelayLazyContainer} from 'RelayContainer';
 import type {RelayQuerySet} from 'RelayInternalTypes';
 const RelayMetaRoute = require('RelayMetaRoute');
 const RelayProfiler = require('RelayProfiler');
 const RelayQuery = require('RelayQuery');
+import type {RelayQueryConfigInterface} from 'RelayQueryConfig';
 
 const buildRQL = require('buildRQL');
 const invariant = require('invariant');
@@ -36,16 +34,14 @@ const queryCache = new Map();
  */
 function getRelayQueries(
   Component: RelayLazyContainer,
-  route: RelayQueryConfigSpec
+  route: RelayQueryConfigInterface
 ): RelayQuerySet {
-  if (!queryCache.has(Component)) {
-    queryCache.set(Component, {});
+  let cache = queryCache.get(Component);
+  if (!cache) {
+    cache = {};
+    queryCache.set(Component, cache);
   }
   const cacheKey = route.name + ':' + stableStringify(route.params);
-  /* $FlowFixMe: Error discovered while adding Flow types
-   * to Map and Set. This is often because .get() can return null.
-   */
-  const cache = queryCache.get(Component);
   if (cache.hasOwnProperty(cacheKey)) {
     return cache[cacheKey];
   }

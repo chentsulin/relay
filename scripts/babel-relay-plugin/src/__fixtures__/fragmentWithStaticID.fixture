@@ -7,8 +7,10 @@ var x = Relay.QL`
 `;
 
 Output:
+'use strict';
+
 var Relay = require('react-relay');
-var x = (function () {
+var x = function () {
   return {
     children: [{
       fieldName: 'name',
@@ -48,7 +50,7 @@ var x = (function () {
       name: 'IdFragment',
       type: 'Node'
     }],
-    id: 'kw9vpPb2ZM1/:0',
+    id: 'FragmentWithStaticIDRelayQL:0',
     kind: 'Fragment',
     metadata: {
       isStaticFragment: true,
@@ -57,4 +59,4 @@ var x = (function () {
     name: 'FragmentWithStaticIDRelayQL',
     type: 'Actor'
   };
-})();
+}();

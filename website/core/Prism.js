@@ -1,6 +1,15 @@
 /**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ *
  * @providesModule Prism
-*/
+ */
+
+'use strict';
 
 const React = require('React');
 const unindent = require('unindent');
@@ -15,7 +24,7 @@ const unindent = require('unindent');
 // Private helper vars
 const lang = /\blang(?:uage)?-(?!\*)(\w+)\b/i;
 
-const _ = Prism = {
+const Prism = {
 	util: {
 		encode: function (tokens) {
 			if (tokens instanceof Token) {
@@ -333,6 +342,8 @@ const _ = Prism = {
 	}
 };
 
+const _ = Prism;
+
 var Token = _.Token = function(type, content, alias) {
 	this.type = type;
 	this.content = content;
@@ -491,9 +502,7 @@ if (Prism.languages.markup) {
 			alias: 'language-javascript'
 		}
 	});
-}
-;
-(function(Prism) {
+};
 
 const javascript = Prism.util.clone(Prism.languages.javascript);
 
@@ -513,8 +522,6 @@ Prism.languages.insertBefore('inside', 'attr-value',{
 		'alias': 'language-javascript'
 	}
 }, Prism.languages.jsx.tag);
-
-}(Prism));
 
 const PrismComponent = React.createClass({
   statics: {
