@@ -8,11 +8,11 @@ indent: true
 next: interfaces-relay-query-request
 ---
 
-`RelayMutationRequest` encapsulates a mutation that Relay needs to send to the server. They are made available to network layers via the `sendMutation` method.
+`RelayMutationRequest` 封裝了一個 Relay 需要送去伺服器的 mutation。是通過 `sendMutation` 方法把它們提供給 network layer。
 
-## Overview
+## 概觀
 
-*Methods*
+*方法*
 
 <ul class="apiIndex">
   <li>
@@ -43,7 +43,7 @@ next: interfaces-relay-query-request
 </ul>
 
 
-## Methods
+## 方法
 
 ### getQueryString
 
@@ -51,7 +51,7 @@ next: interfaces-relay-query-request
 getQueryString(): string
 ```
 
-Gets a string representation of the GraphQL mutation.
+取得這個 GraphQL mutation 的表示字串。
 
 ### getVariables
 
@@ -59,7 +59,7 @@ Gets a string representation of the GraphQL mutation.
 getVariables(): {[name: string]: mixed}
 ```
 
-Gets the variables used by the mutation. These variables should be serialized and send in the GraphQL request.
+取得被這個 mutation 使用的變數。這些變數應該被 serialize 並在 GraphQL 請求中送出。
 
 ### getFiles
 
@@ -67,7 +67,7 @@ Gets the variables used by the mutation. These variables should be serialized an
 getFiles(): ?{[key: string]: File}
 ```
 
-Gets an optional map from name to File objects.
+彈性地取得一個從 name 映射到 File 物件的 map。
 
 ### getID
 
@@ -75,7 +75,7 @@ Gets an optional map from name to File objects.
 getID(): string
 ```
 
-Gets a unique identifier for this query. These identifiers are useful for assigning response payloads to their corresponding queries when sent in a single GraphQL request.
+取得這個 query 的唯一識別碼。這些識別碼在送出一個單一 GraphQL 請求時很有用，可以把回應 payload 指配給它們對應的 query。
 
 ### getDebugName
 
@@ -83,4 +83,4 @@ Gets a unique identifier for this query. These identifiers are useful for assign
 getDebugName(): string
 ```
 
-Gets a string name used to refer to this request for printing debug output.
+取得一個用來參考到這個請求的字串名稱，以印出 debug 用的 output。
