@@ -75,7 +75,7 @@ getFiles(): ?{[key: string]: File}
 getID(): string
 ```
 
-取得這個 query 的唯一識別碼。這些識別碼在送出一個單一 GraphQL 請求時很有用，可以把回應 payload 指配給它們對應的 query。
+取得這個 mutation 的唯一識別碼。這些識別碼在送出一個單一 GraphQL 請求時很有用，可以把回應 payload 指配給它們對應的 mutation。
 
 ### getDebugName
 

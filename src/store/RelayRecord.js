@@ -21,10 +21,6 @@ import type {
 } from 'RelayInternalTypes';
 import type {QueryPath} from 'RelayQueryPath';
 
-type FieldMap = {
-  [key: string]: mixed;
-};
-
 export type Record = {
   [key: string]: mixed;
   __dataID__: string;
@@ -71,24 +67,36 @@ const RelayRecord = {
     return {__dataID__: dataID};
   },
 
-  createWithFields(dataID: string, fieldMap: FieldMap): Record {
-    return {
-      __dataID__: dataID,
-      ...fieldMap,
-    };
+  createWithFields<Fields: Object>(
+    dataID: string,
+    fields: Fields
+  ): Record & Fields {
+    return {__dataID__: dataID, ...fields};
   },
 
-  isRecord(value: mixed): boolean {
+  isRecord(maybeRecord: mixed): boolean {
     return (
-      typeof value === 'object' &&
-      value != null &&
-      !Array.isArray(value) &&
-      typeof value.__dataID__ === 'string'
+      typeof maybeRecord === 'object' &&
+      maybeRecord != null &&
+      !Array.isArray(maybeRecord) &&
+      typeof maybeRecord.__dataID__ === 'string'
     );
   },
 
-  getDataID(record: Object): ?string {
+  getRecord(maybeRecord: mixed): ?Record {
+    if (RelayRecord.isRecord(maybeRecord)) {
+      return (maybeRecord: any);
+    } else {
+      return null;
+    }
+  },
+
+  getDataID(record: Record): string {
     return record.__dataID__;
+  },
+
+  getDataIDForObject(maybeRecord: Object): ?string {
+    return maybeRecord.__dataID__;
   },
 
  /**
