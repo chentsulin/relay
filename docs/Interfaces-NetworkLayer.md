@@ -7,11 +7,11 @@ permalink: docs/interfaces-relay-network-layer.html
 next: interfaces-relay-mutation-request
 ---
 
-Custom network layers that must conform to the `RelayNetworkLayer` interface.
+客製化的 network layer 必須符合 `RelayNetworkLayer` 介面。
 
-## Overview
+## 概觀
 
-*Methods*
+*方法*
 
 <ul class="apiIndex">
   <li>
@@ -32,7 +32,7 @@ Custom network layers that must conform to the `RelayNetworkLayer` interface.
 </ul>
 
 
-## Methods
+## 方法
 
 ### sendMutation
 
@@ -40,11 +40,11 @@ Custom network layers that must conform to the `RelayNetworkLayer` interface.
 sendMutation(mutationRequest: RelayMutationRequest): ?Promise
 ```
 
-Implement this method to send mutations to the server. When the server response is obtained, this method must either call `mutationRequest.resolve` with the response data, or `mutationRequest.reject` with an `Error` object.
+實作這個方法可以把 mutations 送到伺服器。當收到伺服器回應時，這個方法必須要用回應的資料去呼叫 `mutationRequest.resolve`，或是用一個 `Error` 物件去呼叫 `mutationRequest.reject`。
 
-This method can optionally return a promise in order to facilitate proper error propagation.
+這個方法可以選擇性地回傳一個 promise 來幫助適當的傳播錯誤。
 
-#### Example
+#### 範例
 
 ```
 sendMutation(mutationRequest) {
@@ -58,7 +58,7 @@ sendMutation(mutationRequest) {
 }
 ```
 
-See [RelayMutationRequest](interfaces-relay-mutation-request.html) for methods available on the argument object.
+請查看 [RelayMutationRequest](interfaces-relay-mutation-request.html) 以了解在 argument 物件上可以使用的方法。
 
 ### sendQueries
 
@@ -66,13 +66,13 @@ See [RelayMutationRequest](interfaces-relay-mutation-request.html) for methods a
 sendQueries(queryRequests: Array<RelayQueryRequest>): ?Promise
 ```
 
-Implement this method to send queries to the server. For each query request, when the server response is received, this method must either call `resolve` with the response data, or `reject` with an `Error` object.
+實作這個方法可以把 queries 送到伺服器。針對每一個 query 請求，當收到伺服器回應時，這個方法必須用回應的資料去呼叫 `resolve`，或是用一個 `Error` 物件去呼叫 `reject`。
 
-This method receives an array of queries (instead of a single query) in order to facilitate batching queries to improve network efficiency.
+這個方法接收一個 queries 陣列 (而不是一個單一 query) 以便於批次處理 queries 來提升 network 效率。
 
-This method can optionally return a promise in order to facilitate proper error propagation.
+這個方法可以選擇性地回傳一個 promise 來幫助適當的傳播錯誤。
 
-#### Example
+#### 範例
 
 ```
 sendQueries(queryRequests) {
@@ -88,7 +88,7 @@ sendQueries(queryRequests) {
 }
 ```
 
-See [RelayQueryRequest](interfaces-relay-query-request.html) for methods available on the argument objects.
+請查看 [RelayQueryRequest](interfaces-relay-query-request.html) 以了解在 argument 物件上可以使用的方法。
 
 ### supports
 
@@ -96,11 +96,11 @@ See [RelayQueryRequest](interfaces-relay-query-request.html) for methods availab
 supports(...options: Array<string>): boolean
 ```
 
-Implement this method to return true when the supplied options are supported by this network layer. This is used to declare which features the network layer supports.
+實作這個方法在提供的選項有被這個 network layer 支援時回傳 true。這是用來宣告這個 network layer 支援哪些功能。
 
-In the future, advanced capabilities in Relay may be dependent on the network layer being able to support certain features.
+往後，Relay 的進階功能可能會依賴 network layer 能夠支援某些特定的功能。
 
-#### Example
+#### 範例
 
 ```
 supports(...options) {
