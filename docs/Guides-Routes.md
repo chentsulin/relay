@@ -7,15 +7,15 @@ permalink: docs/guides-routes.html
 next: guides-root-container
 ---
 
-Routes are responsible for defining the entry points into a Relay application. But in order to understand why routes are necessary, we must first understand the difference between GraphQL queries and fragments.
+Routes 負責定義 Relay 應用程式的 entry point。不過為了了解為什麼需要 routes，我們必須先了解 GraphQL query 與 fragment 之間的不同。
 
-> Note
+> 備註
 >
-> Relay routes don't really implement any URL routing specific logic or work with History API. In the future we will maybe rename RelayRoute to be something more like RelayQueryRoots or RelayQueryConfig. For more information around why Relay doesn't provide URL-routing features, and suggestions for such solutions, see [this post](https://medium.com/@cpojer/relay-and-routing-36b5439bad9).
+> Relay routes 沒有真的實作任何 URL routing 的具體邏輯也沒有操作 History API。未來我們可能會把 RelayRoute 改名成一些像是 RelayQueryRoots 或是 RelayQueryConfig 之類的東西。想了解更多為什麼 Relay 不提供 URL-routing 功能，與這種解決方法的建議相關資訊，請看[這篇文章](https://medium.com/@cpojer/relay-and-routing-36b5439bad9)。
 
-## Queries vs. Fragments
+## Query 與 Fragment
 
-In GraphQL, **queries** declare fields that exist on the root query type. For example, the following query might fetch the name of the user with an `id` of `123`:
+在 GraphQL 中，**query** 宣告存在於 root query type 上的欄位。例如，以下的 query 可以抓取 `id` 是 `123` 的 user 的 name：
 
 ```
 query UserQuery {
@@ -25,7 +25,7 @@ query UserQuery {
 }
 ```
 
-On the other hand, GraphQL **fragments** declare fields that exist on any arbitrary type. For example, the following fragment fetches the profile picture URI for _some_ `User`.
+另一方面，GraphQL **fragment** 宣告存在於任何隨意 type 上的欄位。例如，以下的 fragment 抓取_一些_ `User` 的 profile picture URI。
 
 ```
 fragment UserProfilePhoto on User {
@@ -35,7 +35,7 @@ fragment UserProfilePhoto on User {
 }
 ```
 
-Fragments can be embedded within other fragments or queries. For example, the above fragment could be used to fetch user `123`'s profile photo:
+Fragment 可以嵌入到其他的 fragment 或是 query 中。例如，上面的 fragment 可以被用來抓取 user `123` 的 profile photo：
 
 ```
 query UserQuery {
@@ -45,7 +45,7 @@ query UserQuery {
 }
 ```
 
-However, the fragment could also fetch each of user `123`'s friends' profile photos:
+不過，這個 fragment 也可以用來抓取 user `123` 的每一個朋友的 profile photo：
 
 ```
 query UserQuery {
@@ -61,33 +61,33 @@ query UserQuery {
 }
 ```
 
-Since Relay containers define fragments and not queries, they can be easily embedded in multiple contexts. Like React components, Relay containers are highly reusable.
+因為 Relay container 定義 fragment 而不是 query，它們可以簡單地被嵌入到多種 context。跟 React component 一樣，Relay container 有高度的可重用性。
 
-## Routes and Queries
+## Routes 與 Queries
 
-Routes are objects that define a set of root queries and input parameters. Here is a simple route that might be used to render user `123`'s profile:
+Routes 是定義了一組 root queries 和 input 參數的物件。下面是一個簡單的 route，可以用來 render user `123` 的 profile：
 
 ```
 var profileRoute = {
   queries: {
-    // Routes declare queries using functions that return a query root. Relay
-    // will automatically compose the `user` fragment from the Relay container
-    // paired with this route on a Relay.RootContainer
+    // Route 使用回傳一個 query root 的函式來宣告 queries。
+    // Relay 將會自動地在 Relay.RootContainer 上
+    // 從這個 route 配對的 Relay container 組合 `user` fragment
     user: () => Relay.QL`
-      # In Relay, the GraphQL query name can be optionally omitted.
+      # 在 Relay 中，GraphQL query 的名稱可以選擇性的省略。
       query { user(id: $userID) }
     `,
   },
   params: {
-    // This `userID` parameter will populate the `$userID` variable above.
+    // 這個 `userID` 參數將會填入上面的 `$userID` 變數。
     userID: '123',
   },
-  // Routes must also define a string name.
+  // Routes 也必須定義一個字串名稱。
   name: 'ProfileRoute',
 };
 ```
 
-If we wanted to create an instance of this route for arbitrary users, we can subclass the `Relay.Route` abstract class. `Relay.Route` makes it easy to define a set of queries and required parameters to be re-used multiple times:
+如果我們想要對任意 user 建立一個這個 route 的實體，我們可以建立 `Relay.Route` 抽象類別的子類別。`Relay.Route` 讓定義一組可以被重複用許多次的 queries 和需要的參數變得簡單：
 
 ```
 class ProfileRoute extends Relay.Route {
@@ -97,22 +97,22 @@ class ProfileRoute extends Relay.Route {
     `,
   };
   static paramDefinitions = {
-    // By setting `required` to true, `ProfileRoute` will throw if a `userID`
-    // is not supplied when instantiated.
+    // 透過設定 `required` 為 true，如果在實體化時沒有提供 `userID`
+    // `ProfileRoute` 會 throw。
     userID: {required: true},
   };
   static routeName = 'ProfileRoute';
 }
 ```
 
-Now we can instantiate a `ProfileRoute` that fetches data for user `123`:
+現在我們可以實體化一個 `ProfileRoute` 來抓取 user `123` 的資料：
 
 ```
-// Equivalent to the object literal we created above.
+// 等同於我們前面建立的物件實字。
 var profileRoute = new ProfileRoute({userID: '123'});
 ```
 
-But now, we can also create routes for arbitrary user IDs. For example, if we wanted to construct a route that fetched data for a user defined by the `userID` query parameter, we might use:
+不過，現在我們也可以針對任意 user ID 去建立 route。例如，如果我們想要建構一個 route 來抓取藉由 `userID` query 參數定義的 user 資料，我們可以這樣使用：
 
 ```
 window.addEventListener('popstate', () => {
