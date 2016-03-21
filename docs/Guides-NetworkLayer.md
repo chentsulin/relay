@@ -7,13 +7,13 @@ permalink: docs/guides-network-layer.html
 next: guides-babel-plugin
 ---
 
-Relay has a network layer abstraction that separates mutations and queries from the actual machinery that sends requests to the GraphQL server. This gives us the flexibility to configure or even completely replace the default network layer via injection.
+Relay 有一個 network layer 的抽象，用來把 mutations 和 queries 從發送請求到 GraphQL 伺服器的實際機制分隔出來。這給我們設定的彈性或甚至可以藉由注入去完全地替換掉預設的 network layer。
 
-## Default Network Layer
+## 預設的 Network Layer
 
-Relay is pre-configured to use a default network layer that works with [express-graphql](https://github.com/graphql/express-graphql). This default network layer is exposed via `Relay.DefaultNetworkLayer`.
+Relay 已經被預先設定使用一個可以跟 [express-graphql](https://github.com/graphql/express-graphql) 一起運作的預設 network layer。這個預設的 network layer 是透過 `Relay.DefaultNetworkLayer` 暴露出來。
 
-By default, Relay assumes that GraphQL is served at `/graphql` relative to the origin where our application is served. This can be re-configured by injecting a custom instantiation of the default network layer.
+預設情況下，Relay 假設 GraphQL 在相對於應用程式服務根路徑的 `/graphql` 路徑服務。這可以藉由注入一個客製化的預設 network layer 實體來重新設定。
 
 ```
 Relay.injectNetworkLayer(
@@ -21,7 +21,7 @@ Relay.injectNetworkLayer(
 );
 ```
 
-Underneath the hood, the default network layer uses `fetch` ([Living Standard](https://fetch.spec.whatwg.org)). The constructor for `Relay.DefaultNetworkLayer` takes an optional second argument that accepts any valid initialization property that `fetch` accepts.
+在這背後，預設的 network layer 使用 `fetch` ([現存標準](https://fetch.spec.whatwg.org))。`Relay.DefaultNetworkLayer` 的建構式，接受一個選擇性的第二參數，它接受任何 `fetch` 接受的有效初始化屬性。
 
 ```{3}
 Relay.injectNetworkLayer(
@@ -31,22 +31,22 @@ Relay.injectNetworkLayer(
 );
 ```
 
-When it sends queries, it will automatically fail requests after a 15 second timeout. Also, failed requests are automatically retried twice, with a 1 second delay and a 3 second delay, respectively.
+在它發送請求時，它會自動地在 15 秒的 timeout 後讓請求失敗。另外，失敗的請求會自動地 retry 兩次，分別有 1 秒跟 3 秒的延遲。
 
-Like the GraphQL URI, the timeout and retry behavior can be configured:
+跟 GraphQL URI 類似，timeout 跟 retry 的行為都可以設定：
 
 ```{3-4}
 Relay.injectNetworkLayer(
   new Relay.DefaultNetworkLayer('http://example.com/graphql', {
-    fetchTimeout: 30000,   // Timeout after 30s.
-    retryDelays: [5000],   // Only retry once after a 5s delay.
+    fetchTimeout: 30000,   // 在 30s 之後 Timeout。
+    retryDelays: [5000],   // 只在 5s 的延遲後 retry 一次。
   })
 );
 ```
 
-Unlike queries, failed requests for mutations are not automatically retried.
+跟 query 不一樣，失敗的 mutation 請求不會自動地 retry。
 
-Custom HTTP headers can be configured by providing a `headers` object:
+可以藉由提供一個 `headers` 物件設定客製化的 HTTP headers：
 
 ```{3-5}
 Relay.injectNetworkLayer(
@@ -58,13 +58,13 @@ Relay.injectNetworkLayer(
 );
 ```
 
-## Custom Network Layers
+## 客製化的 Network Layer
 
-Relay also lets us completely replace the default network layer.
+Relay 也讓我們可以完全地取代預設的 network layer。
 
-Custom network layers must conform to the following [RelayNetworkLayer](interfaces-relay-network-layer.html) interface. Although the default network layer is an instantiable class that accepts some configuration, this is not a requirement of an injected network layer.
+客製化的 network layer 必須符合以下的 [RelayNetworkLayer](interfaces-relay-network-layer.html) 介面。雖然預設的 network layer 是一個接受一些設定的可實體化類別，但這不是注入的 network layer 所必需的。
 
-For example, a network layer can be a simple object that conforms to the interface:
+例如，network layer 可以是一個符合這個介面的簡單物件：
 
 ```
 var myNetworkLayer = {
@@ -82,4 +82,4 @@ var myNetworkLayer = {
 Relay.injectNetworkLayer(myNetworkLayer);
 ```
 
-You can read more about the API [RelayNetworkLayer](interfaces-relay-network-layer.html) interface.
+你可以閱讀更多有關 [RelayNetworkLayer](interfaces-relay-network-layer.html) API 介面的內容。
