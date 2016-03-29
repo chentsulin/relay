@@ -7,23 +7,23 @@ permalink: docs/thinking-in-relay.html
 next: videos
 ---
 
-Relay's approach to data-fetching is heavily inspired by our experience with React. In particular, React breaks complex interfaces into reusable **components**, allowing developers to reason about discrete units of an application in isolation, and reducing the coupling between disparate parts of an application. Even more important is that these components are **declarative**: they allow developers to specify *what* the UI should look like for a given state, and not have to worry about *how* to show that UI. Unlike previous approaches that used imperative commands to manipulate native views (e.g. the DOM), React uses a UI description to automatically determine the necessary commands.
+Relay 的資料抓取方法高度受到我們使用 React 的經驗啟發。尤其是，React 把複雜的界面拆成可重複使用的 **component**，讓開發者能獨立的去思考一個應用程式的個別部分，並減少應用程式不同部分之間的耦合。更重要的是，這些 component 是 **declarative** 的：它們讓開發者去指定 UI 針對給定的 state 應該看起來像*什麼樣子*，而不需要去擔心*如何*去呈現那個 UI。不同於以往那些使用 imperative 的指令去操作原生的 view (例如，DOM) 的方法，React 使用對 UI 的描述來自動地判斷需要的指令。
 
-Let's look at some product use-cases to understand how we incorporated these ideas into Relay. We'll assume a basic familiarity with React.
+讓我們看一些產品的使用案例來了解我們如何把這些想法加進 Relay。我們會假設你對 React 有基本的熟悉。
 
-## Fetching Data For a View
+## 為 View 抓取資料
 
-In our experience, the overwhelming majority of products want one specific behavior: fetch *all* the data for a view hierarchy while displaying a loading indicator, and then render the *entire* view once the data is ready.
+根據我們的經驗，絕大多數的產品都想要一個特定的行為：在為 view 層級抓取*全部的*資料時顯示一個載入指示燈，並接著在一旦資料準備好的時候 render *整個* view。
 
-One solution is to have a root component fetch the data for all its children. However, this would introduce coupling: every change to a component would require changing *any* root component that might render it, and often some components between it and the root. This coupling could mean a greater chance for bugs and slow the pace of development. Ultimately, this approach doesn't take advantage of React's component model. The natural place for specifying data-dependencies was in *components*.
+一種解決方案是擁有一個 root component 為它的所有 children 抓取資料。不過，這會導致耦合：對 component 的每個變更都會需要改變*所有*可能會 render 它的 root component，而且時常還有它跟 root 之間的一些 component。這種耦合可能意味著有更大的機會造成 bug 並拖慢開發的步調。追根究底，這個方法沒有利用 React 的 component 模型。指定資料依賴關係最自然的地方就在 *component* 中。
 
-The next logical approach is to use `render()` as the means of initiating data-fetching. We could simply render the application once, see what data it needed, fetch that data, and render again. This sounds great, but the problem is that *components use data to figure out what to render!* In other words, this would force data-fetching to be staged: first render the root and see what data it needs, then render its children and see what they need, all the way down the tree. If each stage incurs network request, rendering would require slow, serial roundtrips. We needed a way to determine all the data needs up-front or *statically*.
+下一個合乎邏輯的做法是使用 `render()` 作為觸發資料抓取的手段。我們可以簡單地先 render 應用程式一次，看它需要什麼資料，抓取那些資料，然後再 render 一次。這聽起來不錯，但問題是 *component 需要使用資料來計算出要 render 什麼東西！*也就是說，這會強迫資料抓取必須分階段：首先 render root 並看看它需要什麼資料，接著 render 它的 children 並看看它們需要什麼，一路往下走過整個 tree。如果每一個階段都引發網路請求，render 會需要很慢、連續的往返。我們需要一個方法來預先或*靜態地*決定所有的資料需求。
 
-We ultimately settled on static methods; components would effectively return a query-tree, separate from the view-tree, describing their data dependencies. Relay could then use this query-tree to fetch all the information needed in a single stage and use it to render the components. The problem was finding an appropriate mechanism to describe the query-tree, and a way to efficiently fetch it from the server (i.e. in a single network request). This is the perfect use-case for GraphQL because it provides a syntax for *describing data-dependencies as data*, without dictating any particular API. Note that Promises and Observables are often suggested as alternatives, but they represent *opaque commands* and preclude various optimizations such as query batching.
+我們最終選擇靜態方法；components 會有效率地回傳一個 query-tree，從 view-tree 中分離，描述他們依賴的資料。Relay 接著可以使用這個 query-tree 在一個單一階段去抓取所有需要的資訊並使用它去 render 這些 component。問題是要找到一個適當的機制去描述 query-tree，還有一個能夠有效率地從伺服器抓取它的方法 (例如，在單一網路請求中)。這是 GraphQL 的完美使用案例，因為它提供一個語法來*依照資料描述資料依賴關係*，而不用操作任何特定的 API。需要注意的是，Promise 和 Observable 常被建議作為替代選擇，不過它們代表*不透明的指令*並妨礙了各種的優化，例如：批次處理 query。
 
-## Data Components aka Containers
+## 資料 Component 又名 Container
 
-Relay allows developers to annotate their React components with data dependencies by creating **containers**. These are regular React components that wrap the originals. A key design constraint is that React components are meant to be reusable, so Relay containers must be too. For example, a `<Story>` component might implement a view for rendering any `Story` item. The actual story to render would be determined by the data passed to the component: `<Story story={ ... } />`. The equivalent in GraphQL are **fragments**: named query snippets that specify what data to fetch *for an object of a given type*. We might describe the data needed by `<Story>` as follows:
+Relay 讓開發者們藉由建立 **container** 來標注他們的 React component 與其資料依賴關係。它們是包裝了原本的 component 的正規 React component。關鍵的設計限制是，React component 應該是可以重複使用的，因此 Relay container 也必須是如此。例如，`<Story>` component 會實作一個用來 render 任何的 `Story` 項目的 view。實際要 render 的 story 將會藉由傳遞到 component 的資料來決定：`<Story story={ ... } />`。在 GraphQL 中的等價概念是 **fragment**：指定要抓取什麼資料*給一個給定 type 的物件*的命名 query 片段。我們可以如下描述 `<Story>` 需要的資料：
 
 ```
 fragment on Story {
@@ -35,17 +35,17 @@ fragment on Story {
 }
 ```
 
-And this fragment can then be used to define the Story container:
+而這個 fragment 可以接著被用來定義 Story container：
 
 ```javascript
-// Plain React component.
-// Usage: `<Story story={ ... } />`
+// 一般的 React component。
+// 用法：`<Story story={ ... } />`
 class Story extends React.Component { ... }
 
-// "Higher-order" component that wraps `<Story>`
+// 包了 `<Story>` 的「Higher-order」component
 var StoryContainer = Relay.createContainer(Story, {
   fragments: {
-    // Define a fragment with a name matching the `story` prop expected above
+    // 定義一個 fragment 有著符合上面預期的 `story` prop 的名稱
     story: () => Relay.QL`
       fragment on Story {
         text,
@@ -56,9 +56,9 @@ var StoryContainer = Relay.createContainer(Story, {
 })
 ```
 
-## Rendering
+## Render
 
-In React, rendering a view requires two inputs: the *component* to render, and a *root* DOM (UI) node to render into. Rendering Relay containers is similar: we need a *container* to render, and a *root* in the graph from which to start our query. We also must ensure that the queries for the container are executed and may want to show a loading indicator while data is being fetched. Similar to `ReactDOM.render(component, domNode)`, Relay provides `<RelayRootContainer Component={...} route={...}>` for this purpose. The component is the item to render, and the route provides queries that specify *which* item to fetch. Here's how we might render `<StoryContainer>`:
+在 React 中，render 一個 view 需要兩個 input：要 render 的 *component*，和一個要 render 進去的 *root* DOM (UI) node。Render Relay container 也類似：我們需要一個要 render 的 *container*，和一個 graph 中的 *root* 來從那邊開始我們的 query。我們也必須確保用於 container 的 query 有被執行並可能會想要在資料正在被抓取時顯示一個載入指示燈。類似於 `ReactDOM.render(component, domNode)`，Relay 也提供 `<RelayRootContainer Component={...} route={...}>` 來達成這個目的。那個 component 是要 render 的東西，而 route 則提供指定要抓取*哪個*東西的 query。下面是我們會如何去 render `<StoryContainer>`：
 
 ```javascript
 ReactDOM.render(
@@ -68,7 +68,7 @@ ReactDOM.render(
       queries: {
         story: () => Relay.QL`
           query {
-            node(id: "123") /* our `Story` fragment will be added here */
+            node(id: "123") /* 我們的 `Story` fragment 將會被加到這裡 */
           }
         `
       },
@@ -78,16 +78,16 @@ ReactDOM.render(
 )
 ```
 
-`RelayRootContainer` can then orchestrate the fetching of the queries; diffing them against cached data, fetching any missing information, updating the cache, and finally rendering `StoryContainer` once the data is available. The default is to render nothing while data is fetching, but the loading view can be customized via the `renderLoading` prop. Just as React allows developers to render views without directly manipulating the underlying view, Relay and `RelayRootContainer` remove the need to directly communicate with the network.
+`RelayRootContainer` 可以接著協調這些 queries 的抓取；把它們跟快取的資料做比較，抓取任何遺漏的資訊，更新快取，並最後在資料可以使用時 render `StoryContainer`。在正在抓取資料時預設不 render 任何東西，不過這個載入的 view 可以藉由 `renderLoading` prop 來客製化。就像 React 讓開發者們 render view 不需要直接操作背後的 view，Relay 和 `RelayRootContainer` 則去掉了直接與網路溝通的需要。
 
-## Data Masking
+## 資料遮罩
 
-With typical approaches to data-fetching we found that it was common for two components to have *implicit dependencies*. For example `<StoryHeader>` might use some data without directly ensuring that the data was fetched. This data would often be fetched by some other part of the system, such as `<Story>`. Then when we changed `<Story>` and removed that data-fetching logic, `<StoryHeader>` would suddenly and inexplicably break. These types of bugs are not always immediately apparent, especially in larger applications developed by larger teams. Manual and automated testing can only help so much: this is exactly the type of systematic problem that is better solved by a framework.
+在典型的資料抓取方法，我們發現兩個 component 有*不明確的依賴關係*很常見。例如 `<StoryHeader>` 可能可以使用一些資料而不需要直接確保已經抓取了這些資料。這些資料時常也會被系統的一些其他部分抓取，例如：`<Story>`。接著當我們改變 `<Story>` 並移除它的資料抓取邏輯，`<StoryHeader>` 會突然莫名其妙的壞掉。這種類型的 bug 不總是立刻出現，特別是在更大的團隊開發的更大的應用程式裡。手動與自動測試能給的幫助很有限：這就是最好藉由框架來解決的系統問題類型。
 
-We've seen that Relay containers ensure that GraphQL fragments are fetched *before* the component is rendered. But containers also provide another benefit that isn't immediately obvious: **data masking**. Relay only allows components to access data they specifically ask for in `fragments` — nothing more. So if one component queries for a Story's `text`, and another for its `author`, each can see *only* the field that they asked for. In fact, components can't even see the data requested by their *children*: that would also break encapsulation.
+我們已經看到 Relay container 會確保 GraphQL fragment 有在 component 被 render *之前* 被抓取。另外，container 也提供另一個不是顯而易見的好處：**資料遮罩**。Relay 只允許 component 存取它們在 `fragments` 中明確地要求的資料 — 僅此而已。所以如果一個 component 查詢 Story 的 `text`，而另一個查詢它的 `author`，彼此都*只*可以看到它們個別要求過的欄位。事實上，component 甚至看不到它們的 *children* 請求的資料：因為那也會破壞封裝。
 
-Relay also goes further: it uses opaque identifiers on `props` to validate that we've explicitly fetched the data for a component before rendering it. If `<Story>` renders `<StoryHeader>` but forgets to include its fragment, Relay will warn that the data for `<StoryHeader>` is missing. In fact, Relay will warn *even if* some other component happened to fetch the same data required by `<StoryHeader>`. This warning tells us that although things *might* work now they're highly likely to break later.
+Relay 還更進一步：它在 `props` 上使用不透明的識別符以驗證我們在 render component 之前已經明確地抓取了它的資料。如果 `<Story>` render `<StoryHeader>` 但是卻忘記要引入它的 fragment，Relay 會警告遺失了要給 `<StoryHeader>` 的資料。實際上，*即使*一些其他的 component 碰巧抓取了一些跟 `<StoryHeader>` 需要的一樣的資料，Relay 也會警告。這個警告告訴我們，雖然東西現在*可能*運作正常，但它們之後很有可能會壞掉。
 
-# Conclusion
+# 總結
 
-GraphQL provides a powerful tool for building efficient, decoupled client applications. Relay builds on this functionality to provide a framework for **declarative data-fetching**. By separating *what* data to fetch from *how* it is fetched, Relay helps developers build applications that are robust, transparent, and performant by default. It's a great complement to the component-centric way of thinking championed by React. While each of these technologies — React, Relay, and GraphQL — are powerful on their own, the combination is a **UI platform** that allows us to *move fast* and *ship high-quality apps at scale*.
+GraphQL 提供一個強大的工具來建置高效能、解耦的客戶端應用程式。Relay 建置在這樣的功能之上來提供一個 **declarative 資料抓取**的框架。透過把要抓取*什麼*資料跟*如何*抓取它分離，Relay 幫助開發者們建置強大、清楚、且高性能的應用程式。這對 React 倡導的以 component 為中心的思維是一個很好的補充。當這每一個技術 — React、Relay、以及 GraphQL — 都各自很強大，它們的組合是一個讓我們能*快速前進*並*釋出高品質且有規模的應用程式*的 **UI 平台**。
