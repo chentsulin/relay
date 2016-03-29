@@ -17,6 +17,7 @@ const Relay = require('Relay');
 const RelayConnectionInterface = require('RelayConnectionInterface');
 const RelayQuery = require('RelayQuery');
 const RelayTestUtils = require('RelayTestUtils');
+const RelayVariable = require('RelayVariable');
 
 const generateRQLFieldAlias = require('generateRQLFieldAlias');
 
@@ -179,6 +180,16 @@ describe('RelayQueryField', () => {
     const pictureVariable =
       getNode(pictureVariableRQL,  variables).getChildren()[0];
     expect(pictureScalar.equals(pictureVariable)).toBe(true);
+
+    const pictureTypedVariableA = getNode(
+      pictureVariableRQL,
+      {size: new RelayVariable('size')}
+    ).getChildren()[0];
+    const pictureTypedVariableB = getNode(
+      pictureVariableRQL,
+      {size: new RelayVariable('size')}
+    ).getChildren()[0];
+    expect(pictureTypedVariableA.equals(pictureTypedVariableB)).toBe(true);
 
     const diffId = getNode(generatedIdFieldRQL).getChildren()[1];
     expect(generatedIdField.equals(diffId)).toBe(true);
