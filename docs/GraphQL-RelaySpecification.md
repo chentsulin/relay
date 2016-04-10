@@ -7,40 +7,40 @@ permalink: docs/graphql-relay-specification.html
 next: graphql-object-identification
 ---
 
-# Getting Started
+# 入門
 
-The three core assumptions that Relay makes about a GraphQL server are that it
-provides:
+Relay 對 GraphQL 伺服器作出三個核心假設，就是它必須
+提供：
 
-1. A mechanism for refetching an object.
-2. A description of how to page through connections.
-3. Structure around mutations to make them predictable.
+1. 重新抓取一個物件的機制。
+2. 關於要如何透過 connection 處理分頁的描述。
+3. 架構 mutation 來使它們有可預測性。
 
-This example demonstrates all three of these assumptions.
+這個範例示範了這三個假設。
 
-This example is not comprehensive, but it is designed to quickly introduce
-these core assumptions, to provide some context before diving into
-the more detailed specification or the library.
+這個範例不是那麼的全面，不過它被設計用來快速地介紹
+這些核心假設，以在深入更細節的 specification 或是 library 之前
+提供一些 context。
 
-The premise of the example is that we want to use GraphQL to query for
-information about ships and factions in the original Star Wars
-trilogy.
+這個範例的前提是，我們想要使用 GraphQL 來
+在原始的 Star Wars 三部曲中
+query ship 和 faction 的資訊。
 
-It is assumed that the reader is already familiar with GraphQL; if not,
-the README for [GraphQL.js](https://github.com/graphql/graphql-js) is a
-good place to start.
+我們假設讀者已經熟悉 GraphQL 了；如果沒有的話，
+[GraphQL.js](https://github.com/graphql/graphql-js) 的 README 是一個
+好的起點。
 
-It is also assumed that the reader is already familiar with Star Wars; if not,
-the 1977 version of Star Wars is a good place to start, though the 1997
-Special Edition will serve for the purposes of this document.
+我們也假設讀者已經熟悉 Star Wars；如果沒有的話，
+Star Wars 的 1977 版本是一個好的起點，雖然 1997 的
+特別版將成為這份文件的目的。
 
 ## Schema
 
-The schema described below will be used to demonstrate the functionality
-that a GraphQL server used by Relay should implement. The two core types
-are a faction and a ship in the Star Wars universe, where a faction
-has many ships associated with it. The schema below is the output of the
-GraphQL.js [`schemaPrinter`](https://github.com/graphql/graphql-js/blob/master/src/utilities/schemaPrinter.js).
+在下面描述的 schema 將會被用來示範
+一個被 Relay 使用的 GraphQL 伺服器應該要實作的功能。兩個核心的 type
+是在 Star Wars 宇宙中的 faction 和 ship，而一個 faction
+有許多的 ship 關聯到它。下面的這個 schema 是
+GraphQL.js [`schemaPrinter`](https://github.com/graphql/graphql-js/blob/master/src/utilities/schemaPrinter.js) 的 output。
 
 ```
 interface Node {
