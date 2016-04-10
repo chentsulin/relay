@@ -22,8 +22,11 @@ const {
 } = require('./GraphQL');
 const GraphQLRelayDirective = require('./GraphQLRelayDirective');
 
+const buildDirective = require('./buildDirective');
 const find = require('./find');
 const invariant = require('./invariant');
+
+const GraphQLRelayDirectiveInstance = buildDirective(GraphQLRelayDirective);
 
 import type {
   Argument as GraphQLArgument,
@@ -136,7 +139,7 @@ class RelayQLFragment extends RelayQLDefinition<
     parentType?: RelayQLType
   ) {
     const relayDirectiveArgs = {};
-    const relayDirective = (ast.directives || []).find(
+    const relayDirective = find((ast.directives || []),
       directive => directive.name.value === 'relay'
     );
     if (relayDirective) {
@@ -328,7 +331,7 @@ class RelayQLDirective {
     const directiveName = ast.name.value;
     const schemaDirective =
       directiveName === GraphQLRelayDirective.name ?
-        GraphQLRelayDirective :
+        GraphQLRelayDirectiveInstance :
         context.schema.getDirective(directiveName);
     invariant(
       schemaDirective,

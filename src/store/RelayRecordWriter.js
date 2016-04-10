@@ -160,7 +160,7 @@ class RelayRecordWriter {
   putRecord(
     dataID: DataID,
     typeName: ?string,
-    path?: QueryPath
+    path?: ?QueryPath
   ): void {
     const prevRecord = this._getRecordForWrite(dataID);
     if (prevRecord) {
@@ -170,6 +170,9 @@ class RelayRecordWriter {
       __typename: typeName,
     });
     if (this._isOptimisticWrite) {
+      /* $FlowIssue(>=0.23.0) #10620219 - After fixing some unsoundness in
+       * dictionary types, we've come to realize we need a safer object
+       * supertype than Object. */
       this._setClientMutationID(nextRecord);
     }
     if (RelayRecord.isClientID(dataID) && path) {

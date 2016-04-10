@@ -16,6 +16,7 @@
 const RelayQuery = require('RelayQuery');
 import type RelayChangeTracker from 'RelayChangeTracker';
 const RelayConnectionInterface = require('RelayConnectionInterface');
+import type RelayFragmentTracker from 'RelayFragmentTracker';
 const RelayNodeInterface = require('RelayNodeInterface');
 import type {QueryPath} from 'RelayQueryPath';
 const RelayQueryPath = require('RelayQueryPath');
@@ -58,6 +59,7 @@ const {EXISTENT} = RelayRecordState;
 class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
   _changeTracker: RelayChangeTracker;
   _forceIndex: number;
+  _fragmentTracker: RelayFragmentTracker;
   _isOptimisticUpdate: boolean;
   _store: RelayRecordStore;
   _queryTracker: RelayQueryTracker;
@@ -69,6 +71,7 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
     writer: RelayRecordWriter,
     queryTracker: RelayQueryTracker,
     changeTracker: RelayChangeTracker,
+    fragmentTracker: RelayFragmentTracker,
     options?: WriterOptions
   ) {
     super();
@@ -78,6 +81,7 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
     this._store = store;
     this._queryTracker = queryTracker;
     this._updateTrackedQueries = !!(options && options.updateTrackedQueries);
+    this._fragmentTracker = fragmentTracker;
     this._writer = writer;
   }
 
@@ -239,6 +243,9 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
       this._isOptimisticUpdate ||
       isCompatibleRelayFragmentType(fragment, this._store.getType(recordID))
     ) {
+      if (!this._isOptimisticUpdate && fragment.isTrackingEnabled()) {
+        this._fragmentTracker.track(recordID, fragment.getCompositeHash());
+      }
       const path = RelayQueryPath.getPath(state.path, fragment, recordID);
       this.traverse(fragment, {
         ...state,
@@ -266,10 +273,22 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
       'an object.',
       recordID
     );
+    const serializationKey = field.getSerializationKey();
 
-    const fieldData = responseData[field.getSerializationKey()];
+    const fieldData = responseData[serializationKey];
     // Queried fields that are `undefined` are stored as nulls.
     if (fieldData == null) {
+      if (fieldData === undefined &&
+          responseData.hasOwnProperty(serializationKey)) {
+        warning(
+          false,
+          'RelayQueryWriter: Encountered an explicit `undefined` field `%s` ' +
+          'on record `%s`, expected response to not contain `undefined`.',
+          field.getDebugName(),
+          recordID
+        );
+        return;
+      }
       const storageKey = field.getStorageKey();
       const prevValue = this._store.getField(recordID, storageKey);
       // Always write to ensure data is stored in the correct recordStore.

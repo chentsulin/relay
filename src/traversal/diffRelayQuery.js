@@ -14,6 +14,7 @@
 'use strict';
 
 const RelayConnectionInterface = require('RelayConnectionInterface');
+import type RelayFragmentTracker from 'RelayFragmentTracker';
 const RelayNodeInterface = require('RelayNodeInterface');
 const RelayProfiler = require('RelayProfiler');
 const RelayQuery = require('RelayQuery');
@@ -77,12 +78,17 @@ type DiffOutput = {
 function diffRelayQuery(
   root: RelayQuery.Root,
   store: RelayRecordStore,
-  tracker: RelayQueryTracker
+  queryTracker: RelayQueryTracker,
+  fragmentTracker: RelayFragmentTracker,
 ): Array<RelayQuery.Root> {
   const path = RelayQueryPath.create(root);
   const queries = [];
 
-  const visitor = new RelayDiffQueryBuilder(store, tracker);
+  const visitor = new RelayDiffQueryBuilder(
+    store,
+    queryTracker,
+    fragmentTracker
+  );
   const rootIdentifyingArg = root.getIdentifyingArg();
   const rootIdentifyingArgValue =
     (rootIdentifyingArg && rootIdentifyingArg.value) || null;
@@ -160,19 +166,25 @@ function diffRelayQuery(
  *   - `diffNode`: subset of the input that could not diffed out
  *   - `trackedNode`: subset of the input that must be tracked
  *
- * The provided `tracker` is updated whenever the traversal of a node results
- * in a `trackedNode` being created. New top-level queries are not returned
- * up the tree, and instead are available via `getSplitQueries()`.
+ * The provided `queryTracker` is updated whenever the traversal of a node
+ * results in a `trackedNode` being created. New top-level queries are not
+ * returned up the tree, and instead are available via `getSplitQueries()`.
  */
 class RelayDiffQueryBuilder {
   _store: RelayRecordStore;
   _splitQueries: Array<RelayQuery.Root>;
-  _tracker: RelayQueryTracker;
+  _queryTracker: RelayQueryTracker;
+  _fragmentTracker: RelayFragmentTracker;
 
-  constructor(store: RelayRecordStore, tracker: RelayQueryTracker) {
+  constructor(
+    store: RelayRecordStore,
+    queryTracker: RelayQueryTracker,
+    fragmentTracker: RelayFragmentTracker,
+  ) {
     this._store = store;
     this._splitQueries = [];
-    this._tracker = tracker;
+    this._queryTracker = queryTracker;
+    this._fragmentTracker = fragmentTracker;
   }
 
   splitQuery(
@@ -328,6 +340,16 @@ class RelayDiffQueryBuilder {
           this._store.getType(scope.dataID)
         );
         if (isCompatibleType) {
+          if (child.isTrackingEnabled()) {
+            const hash = child.getCompositeHash();
+            if (this._fragmentTracker.isTracked(scope.dataID, hash)) {
+              return {
+                diffNode: null,
+                trackedNode: null,
+              };
+            }
+          }
+
           const diffOutput = this.traverse(child, path, scope);
           const diffChild = diffOutput ? diffOutput.diffNode : null;
           const trackedChild = diffOutput ? diffOutput.trackedNode : null;
@@ -363,7 +385,7 @@ class RelayDiffQueryBuilder {
     // always be composed into, and therefore tracked by, their nearest
     // non-fragment parent.
     if (trackedNode && !(trackedNode instanceof RelayQuery.Fragment)) {
-      this._tracker.trackNodeForID(trackedNode, scope.dataID, path);
+      this._queryTracker.trackNodeForID(trackedNode, scope.dataID, path);
     }
 
     return {
@@ -771,7 +793,7 @@ function splitNodeAndEdgesFields(
 } {
   const children = edgeOrFragment.getChildren();
   const edgeChildren = [];
-  let hasNodeChild = false;
+  let nodeChild = null;
   let nodeChildren = [];
   let hasEdgeChild = false;
   for (let ii = 0; ii < children.length; ii++) {
@@ -781,14 +803,17 @@ function splitNodeAndEdgesFields(
         const subFields = child.getChildren();
         nodeChildren = nodeChildren.concat(subFields);
         // can skip if `node` only has an `id` field
-        if (!hasNodeChild) {
+        if (!nodeChild) {
           if (subFields.length === 1) {
             const subField = subFields[0];
-            hasNodeChild =
+            if (
               !(subField instanceof RelayQuery.Field) ||
-              subField.getSchemaName() !== 'id';
+              subField.getSchemaName() !== 'id'
+            ) {
+              nodeChild = child;
+            }
           } else {
-            hasNodeChild = true;
+            nodeChild = child;
           }
         }
       } else {
@@ -803,13 +828,21 @@ function splitNodeAndEdgesFields(
       }
       if (node) {
         nodeChildren.push(node);
-        hasNodeChild = true;
+        nodeChild = node;
       }
     }
   }
+
   return {
     edges: hasEdgeChild ? edgeOrFragment.clone(edgeChildren) : null,
-    node: hasNodeChild ? edgeOrFragment.clone(nodeChildren) : null,
+    node: nodeChild && RelayQuery.Fragment.build(
+      'diffRelayQuery',
+      nodeChild.getType(),
+      nodeChildren,
+      {
+        isAbstract: nodeChild.isAbstract(),
+      }
+    ),
   };
 }
 

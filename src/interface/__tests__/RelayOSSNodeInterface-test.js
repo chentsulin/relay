@@ -16,18 +16,13 @@ const RelayFBNodeInterface = require('RelayOSSNodeInterface');
 const RelayTestUtils = require('RelayTestUtils');
 
 describe('RelayOSSNodeInterface', () => {
-  let RelayRecordStore;
-
   const {getNode, getVerbatimNode} = RelayTestUtils;
 
   beforeEach(() => {
     jest.resetModuleRegistry();
-
-    RelayRecordStore = require('RelayRecordStore');
   });
 
   it('creates results for argument-less custom root calls with an id', () => {
-    const store = new RelayRecordStore({});
     const query = getNode(Relay.QL`
       query {
         me {
@@ -41,20 +36,21 @@ describe('RelayOSSNodeInterface', () => {
       },
     };
     const result = RelayFBNodeInterface.getResultsFromPayload(
-      store,
       query,
       payload
     );
 
     expect(result).toEqual([{
-      dataID: '1055790163',
       result: payload.me,
-      rootCallInfo: {storageKey: 'me', identifyingArgKey: null},
+      rootCallInfo: {
+        storageKey: 'me',
+        identifyingArgKey: null,
+        identifyingArgValue: null,
+      },
     }]);
   });
 
   it('creates results for argument-less custom root calls without an id', () => {
-    const store = new RelayRecordStore({});
     const query = getNode(Relay.QL`
       query {
         viewer {
@@ -72,20 +68,21 @@ describe('RelayOSSNodeInterface', () => {
      },
     };
     const result = RelayFBNodeInterface.getResultsFromPayload(
-      store,
       query,
       payload
     );
 
     expect(result).toEqual([{
-      dataID: 'client:1',
       result: payload.viewer,
-      rootCallInfo: {storageKey: 'viewer', identifyingArgKey: null},
+      rootCallInfo: {
+        storageKey: 'viewer',
+        identifyingArgKey: null,
+        identifyingArgValue: null,
+      },
     }]);
   });
 
   it('creates results for custom root calls with an id', () => {
-    const store = new RelayRecordStore({});
     const query = getNode(Relay.QL`
       query {
         username(name:"yuzhi") {
@@ -100,20 +97,21 @@ describe('RelayOSSNodeInterface', () => {
     };
 
     const result = RelayFBNodeInterface.getResultsFromPayload(
-      store,
       query,
       payload
     );
 
     expect(result).toEqual([{
-      dataID: '1055790163',
       result: payload.username,
-      rootCallInfo: {storageKey: 'username', identifyingArgKey: 'yuzhi'},
+      rootCallInfo: {
+        storageKey: 'username',
+        identifyingArgKey: 'yuzhi',
+        identifyingArgValue: 'yuzhi',
+      },
     }]);
   });
 
   it('creates results for custom root calls without an id', () => {
-    const store = new RelayRecordStore({});
     const query = getVerbatimNode(Relay.QL`
       query {
         username(name:"yuzhi") {
@@ -128,53 +126,21 @@ describe('RelayOSSNodeInterface', () => {
       },
     };
     const result = RelayFBNodeInterface.getResultsFromPayload(
-      store,
       query,
       payload
     );
 
     expect(result).toEqual([{
-      dataID: 'client:1',
       result: payload.username,
-      rootCallInfo: {storageKey: 'username', identifyingArgKey: 'yuzhi'},
-    }]);
-  });
-
-  it('reuses ids for custom root calls without an id', () => {
-    const store = new RelayRecordStore({});
-    store.getDataID = jest.genMockFunction().mockReturnValue('client:12345');
-
-    const query = getNode(Relay.QL`
-      query {
-        viewer {
-          actor {
-            id
-          }
-        }
-      }
-    `);
-    const payload = {
-      viewer: {
-        actor: {
-          id: '123',
-        },
+      rootCallInfo: {
+        storageKey: 'username',
+        identifyingArgKey: 'yuzhi',
+        identifyingArgValue: 'yuzhi',
       },
-    };
-    const result = RelayFBNodeInterface.getResultsFromPayload(
-      store,
-      query,
-      payload
-    );
-
-    expect(result).toEqual([{
-      dataID: 'client:12345',
-      result: payload.viewer,
-      rootCallInfo: {storageKey: 'viewer', identifyingArgKey: null},
     }]);
   });
 
   it('creates results for single identifying argument', () => {
-    const store = new RelayRecordStore({});
     const query = getNode(Relay.QL`
       query {
         node(id:"123") {
@@ -188,20 +154,21 @@ describe('RelayOSSNodeInterface', () => {
       },
     };
     const result = RelayFBNodeInterface.getResultsFromPayload(
-      store,
       query,
       payload
     );
 
     expect(result).toEqual([{
-      dataID: '123',
       result: payload.node,
-      rootCallInfo: {storageKey: 'node', identifyingArgKey: '123'},
+      rootCallInfo: {
+        storageKey: 'node',
+        identifyingArgKey: '123',
+        identifyingArgValue: '123',
+      },
     }]);
   });
 
   it('creates results for plural identifying arguments', () => {
-    const store = new RelayRecordStore({});
     const query = getNode(Relay.QL`
       query {
         nodes(ids: ["123","456"]) {
@@ -220,27 +187,59 @@ describe('RelayOSSNodeInterface', () => {
       ],
     };
     const result = RelayFBNodeInterface.getResultsFromPayload(
-      store,
       query,
       payload
     );
 
     expect(result).toEqual([
       {
-        dataID: '123',
         result: payload.nodes[0],
-        rootCallInfo: {storageKey: 'nodes', identifyingArgKey: '123'},
+        rootCallInfo: {
+          storageKey: 'nodes',
+          identifyingArgKey: '123',
+          identifyingArgValue: '123',
+        },
      },
       {
-        dataID: '456',
         result: payload.nodes[1],
-        rootCallInfo: {storageKey: 'nodes', identifyingArgKey: '456'},
+        rootCallInfo: {
+          storageKey: 'nodes',
+          identifyingArgKey: '456',
+          identifyingArgValue: '456',
+        },
      },
     ]);
   });
 
+  it('creates results for id-less identifying arguments', () => {
+    const query = getNode(Relay.QL`
+      query {
+        task(number: 123) {
+          title
+        }
+      }
+    `);
+    const payload = {
+      task: {
+        title: 'Give Relay',
+      },
+    };
+    const result = RelayFBNodeInterface.getResultsFromPayload(
+      query,
+      payload
+    );
+
+    expect(result).toEqual([{
+      result: payload.task,
+      rootCallInfo: {
+        storageKey: 'task',
+        identifyingArgKey: '123',
+        identifyingArgValue: 123,
+      },
+    }]);
+  });
+
   it('creates results for null response', () => {
-    const store = new RelayRecordStore({});
     const query = getNode(Relay.QL`
       query {
         me {
@@ -252,20 +251,21 @@ describe('RelayOSSNodeInterface', () => {
       me: null,
     };
     const result = RelayFBNodeInterface.getResultsFromPayload(
-      store,
       query,
       payload
     );
 
     expect(result).toEqual([{
-      dataID: 'client:1',
       result: null,
-      rootCallInfo: {storageKey: 'me', identifyingArgKey: null},
+      rootCallInfo: {
+        storageKey: 'me',
+        identifyingArgKey: null,
+        identifyingArgValue: null,
+      },
     }]);
   });
 
   it('creates results for undefined response', () => {
-    const store = new RelayRecordStore({});
     const query = getNode(Relay.QL`
       query {
         me {
@@ -275,15 +275,17 @@ describe('RelayOSSNodeInterface', () => {
     );
     const payload = {};
     const result = RelayFBNodeInterface.getResultsFromPayload(
-      store,
       query,
       payload
     );
 
     expect(result).toEqual([{
-      dataID: 'client:1',
       result: null,
-      rootCallInfo: {storageKey: 'me', identifyingArgKey: null},
+      rootCallInfo: {
+        storageKey: 'me',
+        identifyingArgKey: null,
+        identifyingArgValue: null,
+      },
     }]);
   });
 });

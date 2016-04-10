@@ -32,8 +32,8 @@ import type {Call, Directive}  from 'RelayInternalTypes';
 const RelayMetaRoute = require('RelayMetaRoute');
 const RelayProfiler = require('RelayProfiler');
 const RelayRouteFragment = require('RelayRouteFragment');
-const RelayVariable = require('RelayVariable');
 import type {Variables} from 'RelayTypes';
+const RelayVariable = require('RelayVariable');
 
 const areEqual = require('areEqual');
 const callsFromGraphQL = require('callsFromGraphQL');
@@ -779,6 +779,9 @@ class RelayQueryFragment extends RelayQueryNode {
     metadata?: ?{[key: string]: mixed}
   ): RelayQueryFragment {
     const nextChildren = children ? children.filter(child => !!child) : [];
+    /* $FlowIssue(>=0.23.0) #10620219 - After fixing some unsoundness in
+     * dictionary types, we've come to realize we need a safer object supertype
+     * than Object. */
     const concreteFragment = QueryBuilder.createFragment({
       name,
       type,
@@ -886,6 +889,11 @@ class RelayQueryFragment extends RelayQueryNode {
       (// FB Printer
       metadata.isPlural || metadata.plural)       // OSS Printer from `@relay`
     );
+  }
+
+  isTrackingEnabled(): boolean {
+    const metadata = (this.__concreteNode__: ConcreteFragment).metadata;
+    return !!metadata.isTrackingEnabled;
   }
 
   cloneAsPlainFragment(): RelayQueryFragment {

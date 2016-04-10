@@ -27,13 +27,20 @@ type PrinterState = {
   fragmentNameByText: {[fragmentText: string]: string};
   fragmentTexts: Array<string>;
   variableCount: number;
-  variableMap: Map<mixed, Variable>;
+  variableMap: Map<string, Map<mixed, Variable>>;
 };
 type Variable = {
-  type: string;
   value: mixed;
   variableID: string;
 };
+
+let oneIndent = '';
+let newLine = '';
+
+if (__DEV__) {
+  oneIndent = '  ';
+  newLine = '\n';
+}
 
 /**
  * @internal
@@ -65,12 +72,14 @@ function printRelayOSSQuery(node: RelayQuery.Node): PrintedQuery {
     'printRelayOSSQuery(): Unsupported node type.'
   );
   const variables = {};
-  variableMap.forEach(({value, variableID}) => {
-    variables[variableID] = value;
+  variableMap.forEach(variablesForType => {
+    variablesForType.forEach(({value, variableID}) => {
+      variables[variableID] = value;
+    });
   });
 
   return {
-    text: [queryText, ...fragmentTexts].join(' '),
+    text: [queryText, ...fragmentTexts].join(newLine.length ? newLine : ' '),
     variables,
   };
 }
@@ -105,11 +114,12 @@ function printRoot(
     }
   }
   // Note: children must be traversed before printing variable definitions
-  const children = printChildren(node, printerState);
+  const children = printChildren(node, printerState, oneIndent);
   const queryString = node.getName() + printVariableDefinitions(printerState);
   fieldName += printDirectives(node);
 
-  return 'query ' + queryString + '{' + fieldName + children + '}';
+  return 'query ' + queryString + ' {' + newLine +
+    oneIndent + fieldName + children + newLine + '}';
 }
 
 function printMutation(
@@ -130,23 +140,22 @@ function printMutation(
     node.getCallVariableName()
   );
   // Note: children must be traversed before printing variable definitions
-  const children = printChildren(node, printerState);
+  const children = printChildren(node, printerState, oneIndent);
   const mutationString =
     node.getName() + printVariableDefinitions(printerState);
   const fieldName = call.name + '(' + inputString + ')';
 
-  return 'mutation ' + mutationString + '{' + fieldName + children + '}';
+  return 'mutation ' + mutationString + ' {' + newLine +
+    oneIndent + fieldName + children + newLine + '}';
 }
 
 function printVariableDefinitions({variableMap}: PrinterState): string {
   let argStrings = null;
-  variableMap.forEach(({type, variableID}) => {
-    // To ensure that the value can flow into a nullable or non-nullable
-    // argument, print it as non-nullable. Note that variables are not created
-    // for null values (the argument is omitted instead).
-    const nonNullType = printNonNullType(type);
-    argStrings = argStrings || [];
-    argStrings.push('$' + variableID + ':' + nonNullType);
+  variableMap.forEach((variablesForType, type) => {
+    variablesForType.forEach(({variableID}) => {
+      argStrings = argStrings || [];
+      argStrings.push('$' + variableID + ':' + type);
+    });
   });
   if (argStrings) {
     return '(' + argStrings.join(',') + ')';
@@ -167,12 +176,13 @@ function printFragment(
 ): string {
   const directives = printDirectives(node);
   return 'fragment ' + node.getDebugName() + ' on ' +
-    node.getType() + directives + printChildren(node, printerState);
+    node.getType() + directives + printChildren(node, printerState, '');
 }
 
 function printChildren(
   node: RelayQuery.Node,
-  printerState: PrinterState
+  printerState: PrinterState,
+  indent: string
 ): string {
   const childrenText = [];
   const children = node.getChildren();
@@ -203,7 +213,7 @@ function printChildren(
       }
       fieldText += printDirectives(child);
       if (child.getChildren().length) {
-        fieldText += printChildren(child, printerState);
+        fieldText += printChildren(child, printerState, indent + oneIndent);
       }
       childrenText.push(fieldText);
     } else if (child instanceof RelayQuery.Fragment) {
@@ -225,7 +235,7 @@ function printChildren(
           const fragmentText =
             child.getType() +
             printDirectives(child) +
-            printChildren(child, printerState);
+            printChildren(child, printerState, '');
           if (fragmentNameByText.hasOwnProperty(fragmentText)) {
             fragmentName = fragmentNameByText[fragmentText];
           } else {
@@ -254,7 +264,9 @@ function printChildren(
   if (!childrenText) {
     return '';
   }
-  return childrenText.length ? '{' + childrenText.join(',') + '}' : '';
+  return childrenText.length ? ' {' + newLine + indent + oneIndent +
+    childrenText.join(',' + newLine + indent + oneIndent) + newLine +
+    indent + '}' : '';
 }
 
 function printDirectives(node) {
@@ -318,13 +330,18 @@ function createVariable(
     name
   );
   const valueKey = JSON.stringify(value);
-  const existingVariable = printerState.variableMap.get(valueKey);
+  const nonNullType = printNonNullType(type);
+  let variablesForType = printerState.variableMap.get(nonNullType);
+  if (!variablesForType) {
+    variablesForType = new Map();
+    printerState.variableMap.set(nonNullType, variablesForType);
+  }
+  const existingVariable = variablesForType.get(valueKey);
   if (existingVariable) {
     return existingVariable.variableID;
   } else {
     const variableID = name + '_' + base62(printerState.variableCount++);
-    printerState.variableMap.set(valueKey, {
-      type,
+    variablesForType.set(valueKey, {
       value,
       variableID,
     });

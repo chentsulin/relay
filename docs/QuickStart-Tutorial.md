@@ -38,29 +38,29 @@ game.id = '1';
 
 var hidingSpots = [];
 (function() {
-  var hidingSpot;
-  var indexOfSpotWithTreasure = Math.floor(Math.random() * 9);
-  for (var i = 0; i < 9; i++) {
-    hidingSpot = new HidingSpot();
-    hidingSpot.id = `${i}`;
-    hidingSpot.hasTreasure = (i === indexOfSpotWithTreasure);
-    hidingSpot.hasBeenChecked = false;
-    hidingSpots.push(hidingSpot);
-  }
+	var hidingSpot;
+	var indexOfSpotWithTreasure = Math.floor(Math.random() * 9);
+	for (var i = 0; i < 9; i++) {
+		hidingSpot = new HidingSpot();
+		hidingSpot.id = `${i}`;
+		hidingSpot.hasTreasure = (i === indexOfSpotWithTreasure);
+		hidingSpot.hasBeenChecked = false;
+		hidingSpots.push(hidingSpot);
+	}
 })();
 
 var turnsRemaining = 3;
 
 export function checkHidingSpotForTreasure(id) {
-  if (hidingSpots.some(hs => hs.hasTreasure && hs.hasBeenChecked)) {
-    return;
-  }
-  turnsRemaining--;
-  var hidingSpot = getHidingSpot(id);
-  hidingSpot.hasBeenChecked = true;
+	if (hidingSpots.some(hs => hs.hasTreasure && hs.hasBeenChecked)) {
+		return;
+	}
+	turnsRemaining--;
+	var hidingSpot = getHidingSpot(id);
+	hidingSpot.hasBeenChecked = true;
 };
 export function getHidingSpot(id) {
-  return hidingSpots.find(hs => hs.id === id)
+	return hidingSpots.find(hs => hs.id === id)
 }
 export function getGame() { return game; }
 export function getHidingSpots() { return hidingSpots; }
@@ -86,13 +86,13 @@ schema。
 /* ... */
 
 import {
-  Game,
-  HidingSpot,
-  checkHidingSpotForTreasure,
-  getGame,
-  getHidingSpot,
-  getHidingSpots,
-  getTurnsRemaining,
+	Game,
+	HidingSpot,
+	checkHidingSpotForTreasure,
+	getGame,
+	getHidingSpot,
+	getHidingSpots,
+	getTurnsRemaining,
 } from './database';
 ```
 
@@ -102,25 +102,25 @@ import {
 
 ```
 var {nodeInterface, nodeField} = nodeDefinitions(
-  (globalId) => {
-    var {type, id} = fromGlobalId(globalId);
-    if (type === 'Game') {
-      return getGame(id);
-    } else if (type === 'HidingSpot') {
-      return getHidingSpot(id);
-    } else {
-      return null;
-    }
-  },
-  (obj) => {
-    if (obj instanceof Game) {
-      return gameType;
-    } else if (obj instanceof HidingSpot)  {
-      return hidingSpotType;
-    } else {
-      return null;
-    }
-  }
+	(globalId) => {
+		var {type, id} = fromGlobalId(globalId);
+		if (type === 'Game') {
+			return getGame(id);
+		} else if (type === 'HidingSpot') {
+			return getHidingSpot(id);
+		} else {
+			return null;
+		}
+	},
+	(obj) => {
+		if (obj instanceof Game) {
+			return gameType;
+		} else if (obj instanceof HidingSpot)  {
+			return hidingSpotType;
+		} else {
+			return null;
+		}
+	}
 );
 ```
 
@@ -128,48 +128,48 @@ var {nodeInterface, nodeField} = nodeDefinitions(
 
 ```
 var gameType = new GraphQLObjectType({
-  name: 'Game',
-  description: 'A treasure search game',
-  fields: () => ({
-    id: globalIdField('Game'),
-    hidingSpots: {
-      type: hidingSpotConnection,
-      description: 'Places where treasure might be hidden',
-      args: connectionArgs,
-      resolve: (game, args) => connectionFromArray(getHidingSpots(), args),
-    },
-    turnsRemaining: {
-      type: GraphQLInt,
-      description: 'The number of turns a player has left to find the treasure',
-      resolve: () => getTurnsRemaining(),
-    },
-  }),
-  interfaces: [nodeInterface],
+	name: 'Game',
+	description: 'A treasure search game',
+	fields: () => ({
+		id: globalIdField('Game'),
+		hidingSpots: {
+			type: hidingSpotConnection,
+			description: 'Places where treasure might be hidden',
+			args: connectionArgs,
+			resolve: (game, args) => connectionFromArray(getHidingSpots(), args),
+		},
+		turnsRemaining: {
+			type: GraphQLInt,
+			description: 'The number of turns a player has left to find the treasure',
+			resolve: () => getTurnsRemaining(),
+		},
+	}),
+	interfaces: [nodeInterface],
 });
 
 var hidingSpotType = new GraphQLObjectType({
-  name: 'HidingSpot',
-  description: 'A place where you might find treasure',
-  fields: () => ({
-    id: globalIdField('HidingSpot'),
-    hasBeenChecked: {
-      type: GraphQLBoolean,
-      description: 'True if this spot has already been checked for treasure',
-      resolve: (hidingSpot) => hidingSpot.hasBeenChecked,
-    },
-    hasTreasure: {
-      type: GraphQLBoolean,
-      description: 'True if this hiding spot holds treasure',
-      resolve: (hidingSpot) => {
-        if (hidingSpot.hasBeenChecked) {
-          return hidingSpot.hasTreasure;
-        } else {
-          return null;  // 噓... 這是秘密！
-        }
-      },
-    },
-  }),
-  interfaces: [nodeInterface],
+	name: 'HidingSpot',
+	description: 'A place where you might find treasure',
+	fields: () => ({
+		id: globalIdField('HidingSpot'),
+		hasBeenChecked: {
+			type: GraphQLBoolean,
+			description: 'True if this spot has already been checked for treasure',
+			resolve: (hidingSpot) => hidingSpot.hasBeenChecked,
+		},
+		hasTreasure: {
+			type: GraphQLBoolean,
+			description: 'True if this hiding spot holds treasure',
+			resolve: (hidingSpot) => {
+				if (hidingSpot.hasBeenChecked) {
+					return hidingSpot.hasTreasure;
+				} else {
+					return null;  // 噓... 這是秘密！
+				}
+			},
+		},
+	}),
+	interfaces: [nodeInterface],
 });
 ```
 
@@ -177,21 +177,21 @@ var hidingSpotType = new GraphQLObjectType({
 
 ```
 var {connectionType: hidingSpotConnection} =
-  connectionDefinitions({name: 'HidingSpot', nodeType: hidingSpotType});
+	connectionDefinitions({name: 'HidingSpot', nodeType: hidingSpotType});
 ```
 
 現在讓我們來把這些 types 連結到 root query type。
 
 ```
 var queryType = new GraphQLObjectType({
-  name: 'Query',
-  fields: () => ({
-    node: nodeField,
-    game: {
-      type: gameType,
-      resolve: () => getGame(),
-    },
-  }),
+	name: 'Query',
+	fields: () => ({
+		node: nodeField,
+		game: {
+			type: gameType,
+			resolve: () => getGame(),
+		},
+	}),
 });
 ```
 
@@ -199,25 +199,25 @@ var queryType = new GraphQLObjectType({
 
 ```
 var CheckHidingSpotForTreasureMutation = mutationWithClientMutationId({
-  name: 'CheckHidingSpotForTreasure',
-  inputFields: {
-    id: { type: new GraphQLNonNull(GraphQLID) },
-  },
-  outputFields: {
-    hidingSpot: {
-      type: hidingSpotType,
-      resolve: ({localHidingSpotId}) => getHidingSpot(localHidingSpotId),
-    },
-    game: {
-      type: gameType,
-      resolve: () => getGame(),
-    },
-  },
-  mutateAndGetPayload: ({id}) => {
-    var localHidingSpotId = fromGlobalId(id).id;
-    checkHidingSpotForTreasure(localHidingSpotId);
-    return {localHidingSpotId};
-  },
+	name: 'CheckHidingSpotForTreasure',
+	inputFields: {
+		id: { type: new GraphQLNonNull(GraphQLID) },
+	},
+	outputFields: {
+		hidingSpot: {
+			type: hidingSpotType,
+			resolve: ({localHidingSpotId}) => getHidingSpot(localHidingSpotId),
+		},
+		game: {
+			type: gameType,
+			resolve: () => getGame(),
+		},
+	},
+	mutateAndGetPayload: ({id}) => {
+		var localHidingSpotId = fromGlobalId(id).id;
+		checkHidingSpotForTreasure(localHidingSpotId);
+		return {localHidingSpotId};
+	},
 });
 ```
 
@@ -225,10 +225,10 @@ var CheckHidingSpotForTreasureMutation = mutationWithClientMutationId({
 
 ```
 var mutationType = new GraphQLObjectType({
-  name: 'Mutation',
-  fields: () => ({
-    checkHidingSpotForTreasure: CheckHidingSpotForTreasureMutation,
-  }),
+	name: 'Mutation',
+	fields: () => ({
+		checkHidingSpotForTreasure: CheckHidingSpotForTreasureMutation,
+	}),
 });
 ```
 
@@ -236,8 +236,8 @@ var mutationType = new GraphQLObjectType({
 
 ```
 export var Schema = new GraphQLSchema({
-  query: queryType,
-  mutation: mutationType
+	query: queryType,
+	mutation: mutationType
 });
 ```
 
@@ -256,11 +256,11 @@ npm start
 
 ```
 export default class extends Relay.Route {
-  static path = '/';
-  static queries = {
-    game: () => Relay.QL`query { game }`,
-  };
-  static routeName = 'AppHomeRoute';
+	static path = '/';
+	static queries = {
+		game: () => Relay.QL`query { game }`,
+	};
+	static routeName = 'AppHomeRoute';
 }
 ```
 
@@ -270,63 +270,63 @@ export default class extends Relay.Route {
 import Relay from 'react-relay';
 
 export default class CheckHidingSpotForTreasureMutation extends Relay.Mutation {
-  static fragments = {
-    game: () => Relay.QL`
-      fragment on Game {
-        id,
-        turnsRemaining,
-      }
-    `,
-    hidingSpot: () => Relay.QL`
-      fragment on HidingSpot {
-        id,
-      }
-    `,
-  };
-  getMutation() {
-    return Relay.QL`mutation{checkHidingSpotForTreasure}`;
-  }
-  getCollisionKey() {
-    return `check_${this.props.game.id}`;
-  }
-  getFatQuery() {
-    return Relay.QL`
-      fragment on CheckHidingSpotForTreasurePayload {
-        hidingSpot {
-          hasBeenChecked,
-          hasTreasure,
-        },
-        game {
-          turnsRemaining,
-        },
-      }
-    `;
-  }
-  getConfigs() {
-    return [{
-      type: 'FIELDS_CHANGE',
-      fieldIDs: {
-        hidingSpot: this.props.hidingSpot.id,
-        game: this.props.game.id,
-      },
-    }];
-  }
-  getVariables() {
-    return {
-      id: this.props.hidingSpot.id,
-    };
-  }
-  getOptimisticResponse() {
-    return {
-      game: {
-        turnsRemaining: this.props.game.turnsRemaining - 1,
-      },
-      hidingSpot: {
-        id: this.props.hidingSpot.id,
-        hasBeenChecked: true,
-      },
-    };
-  }
+	static fragments = {
+		game: () => Relay.QL`
+			fragment on Game {
+				id,
+				turnsRemaining,
+			}
+		`,
+		hidingSpot: () => Relay.QL`
+			fragment on HidingSpot {
+				id,
+			}
+		`,
+	};
+	getMutation() {
+		return Relay.QL`mutation{checkHidingSpotForTreasure}`;
+	}
+	getCollisionKey() {
+		return `check_${this.props.game.id}`;
+	}
+	getFatQuery() {
+		return Relay.QL`
+			fragment on CheckHidingSpotForTreasurePayload {
+				hidingSpot {
+					hasBeenChecked,
+					hasTreasure,
+				},
+				game {
+					turnsRemaining,
+				},
+			}
+		`;
+	}
+	getConfigs() {
+		return [{
+			type: 'FIELDS_CHANGE',
+			fieldIDs: {
+				hidingSpot: this.props.hidingSpot.id,
+				game: this.props.game.id,
+			},
+		}];
+	}
+	getVariables() {
+		return {
+			id: this.props.hidingSpot.id,
+		};
+	}
+	getOptimisticResponse() {
+		return {
+			game: {
+				turnsRemaining: this.props.game.turnsRemaining - 1,
+			},
+			hidingSpot: {
+				id: this.props.hidingSpot.id,
+				hasBeenChecked: true,
+			},
+		};
+	}
 }
 ```
 
@@ -336,101 +336,101 @@ export default class CheckHidingSpotForTreasureMutation extends Relay.Mutation {
 import CheckHidingSpotForTreasureMutation from '../mutations/CheckHidingSpotForTreasureMutation';
 
 class App extends React.Component {
-  _getHidingSpotStyle(hidingSpot) {
-    var color;
-    if (this.props.relay.hasOptimisticUpdate(hidingSpot)) {
-      color = 'lightGrey';
-    } else if (hidingSpot.hasBeenChecked) {
-      if (hidingSpot.hasTreasure) {
-        color = 'blue';
-      } else {
-        color = 'red';
-      }
-    } else {
-      color = 'black';
-    }
-    return {
-      backgroundColor: color,
-      cursor: this._isGameOver() ? null : 'pointer',
-      display: 'inline-block',
-      height: 100,
-      marginRight: 10,
-      width: 100,
-    };
-  }
-  _handleHidingSpotClick(hidingSpot) {
-    if (this._isGameOver()) {
-      return;
-    }
-    Relay.Store.commitUpdate(
-      new CheckHidingSpotForTreasureMutation({
-        game: this.props.game,
-        hidingSpot,
-      })
-    );
-  }
-  _hasFoundTreasure() {
-    return (
-      this.props.game.hidingSpots.edges.some(edge => edge.node.hasTreasure)
-    );
-  }
-  _isGameOver() {
-    return !this.props.game.turnsRemaining || this._hasFoundTreasure();
-  }
-  renderGameBoard() {
-    return this.props.game.hidingSpots.edges.map(edge => {
-      return (
-        <div
-          key={edge.node.id}
-          onClick={this._handleHidingSpotClick.bind(this, edge.node)}
-          style={this._getHidingSpotStyle(edge.node)}
-        />
-      );
-    });
-  }
-  render() {
-    var headerText;
-    if (this.props.relay.getPendingTransactions(this.props.game)) {
-      headerText = '\u2026';
-    } else if (this._hasFoundTreasure()) {
-      headerText = 'You win!';
-    } else if (this._isGameOver()) {
-      headerText = 'Game over!';
-    } else {
-      headerText = 'Find the treasure!';
-    }
-    return (
-      <div>
-        <h1>{headerText}</h1>
-        {this.renderGameBoard()}
-        <p>Turns remaining: {this.props.game.turnsRemaining}</p>
-      </div>
-    );
-  }
+	_getHidingSpotStyle(hidingSpot) {
+		var color;
+		if (this.props.relay.hasOptimisticUpdate(hidingSpot)) {
+			color = 'lightGrey';
+		} else if (hidingSpot.hasBeenChecked) {
+			if (hidingSpot.hasTreasure) {
+				color = 'blue';
+			} else {
+				color = 'red';
+			}
+		} else {
+			color = 'black';
+		}
+		return {
+			backgroundColor: color,
+			cursor: this._isGameOver() ? null : 'pointer',
+			display: 'inline-block',
+			height: 100,
+			marginRight: 10,
+			width: 100,
+		};
+	}
+	_handleHidingSpotClick(hidingSpot) {
+		if (this._isGameOver()) {
+			return;
+		}
+		Relay.Store.commitUpdate(
+			new CheckHidingSpotForTreasureMutation({
+				game: this.props.game,
+				hidingSpot,
+			})
+		);
+	}
+	_hasFoundTreasure() {
+		return (
+			this.props.game.hidingSpots.edges.some(edge => edge.node.hasTreasure)
+		);
+	}
+	_isGameOver() {
+		return !this.props.game.turnsRemaining || this._hasFoundTreasure();
+	}
+	renderGameBoard() {
+		return this.props.game.hidingSpots.edges.map(edge => {
+			return (
+				<div
+					key={edge.node.id}
+					onClick={this._handleHidingSpotClick.bind(this, edge.node)}
+					style={this._getHidingSpotStyle(edge.node)}
+				/>
+			);
+		});
+	}
+	render() {
+		var headerText;
+		if (this.props.relay.getPendingTransactions(this.props.game)) {
+			headerText = '\u2026';
+		} else if (this._hasFoundTreasure()) {
+			headerText = 'You win!';
+		} else if (this._isGameOver()) {
+			headerText = 'Game over!';
+		} else {
+			headerText = 'Find the treasure!';
+		}
+		return (
+			<div>
+				<h1>{headerText}</h1>
+				{this.renderGameBoard()}
+				<p>Turns remaining: {this.props.game.turnsRemaining}</p>
+			</div>
+		);
+	}
 }
 
 export default Relay.createContainer(App, {
-  fragments: {
-    game: () => Relay.QL`
-      fragment on Game {
-        turnsRemaining,
-        hidingSpots(first: 9) {
-          edges {
-            node {
-              hasBeenChecked,
-              hasTreasure,
-              id,
-              ${CheckHidingSpotForTreasureMutation.getFragment('hidingSpot')},
-            }
-          }
-        },
-        ${CheckHidingSpotForTreasureMutation.getFragment('game')},
-      }
-    `,
-  },
+	fragments: {
+		game: () => Relay.QL`
+			fragment on Game {
+				turnsRemaining,
+				hidingSpots(first: 9) {
+					edges {
+						node {
+							hasBeenChecked,
+							hasTreasure,
+							id,
+							${CheckHidingSpotForTreasureMutation.getFragment('hidingSpot')},
+						}
+					}
+				},
+				${CheckHidingSpotForTreasureMutation.getFragment('game')},
+			}
+		`,
+	},
 });
 ```
 
 在 Relay repository 中的 [`./examples/`](https://github.com/facebook/relay/tree/master/examples) 目錄下可以找到一份可運作的 treasure hunt 副本。
 
-現在，我們現在已經完成這份教學，讓我們深入一些介紹並解釋 GraphQL 和 Relay 的 conference 影片。
+現在，我們現在已經完成這份教學，讓我們深入看看建置一個 GraphQL 客戶端框架代表什麼意思還有要如何把它跟比較傳統的 REST 系統的客戶端做比較。

@@ -48,6 +48,9 @@ type PendingTransaction = {
   getCollisionKey: () => ?string;
   getConfigs: () => Array<RelayMutationConfig>;
   getFiles: () => ?FileMap;
+  /* $FlowIssue(>=0.23.0) #10620219 - After fixing some unsoundness in
+   * dictionary types, we've come to realize we need a safer object supertype
+   * than Object. */
   getOptimisticConfigs: () => ?Array<{[key: string]: mixed}>;
   getOptimisticQuery: (storeData: RelayStoreData) => ?RelayQuery.Mutation;
   getOptimisticResponse: () => ?Object;
@@ -310,14 +313,16 @@ class RelayMutationQueue {
   _advanceCollisionQueue(transaction: PendingTransaction): void {
     const collisionKey = transaction.getCollisionKey();
     if (collisionKey) {
-      const collisionQueue = nullthrows(this._collisionQueueMap[collisionKey]);
-      // Remove the transaction that called this function.
-      collisionQueue.shift();
+      const collisionQueue = this._collisionQueueMap[collisionKey];
+      if (collisionQueue) {
+        // Remove the transaction that called this function.
+        collisionQueue.shift();
 
-      if (collisionQueue.length) {
-        this._handleCommit(collisionQueue[0]);
-      } else {
-        delete this._collisionQueueMap[collisionKey];
+        if (collisionQueue.length) {
+          this._handleCommit(collisionQueue[0]);
+        } else {
+          delete this._collisionQueueMap[collisionKey];
+        }
       }
     }
   }
@@ -325,14 +330,16 @@ class RelayMutationQueue {
   _failCollisionQueue(failedTransaction: PendingTransaction): void {
     const collisionKey = failedTransaction.getCollisionKey();
     if (collisionKey) {
-      const collisionQueue = nullthrows(this._collisionQueueMap[collisionKey]);
-      // Remove the transaction that called this function.
-      collisionQueue.forEach(queuedTransaction => {
-        if (queuedTransaction !== failedTransaction) {
-          this._handleCommitFailure(queuedTransaction, null);
-        }
-      });
-      delete this._collisionQueueMap[collisionKey];
+      const collisionQueue = this._collisionQueueMap[collisionKey];
+      if (collisionQueue) {
+        // Remove the transaction that called this function.
+        collisionQueue.forEach(queuedTransaction => {
+          if (queuedTransaction !== failedTransaction) {
+            this._handleCommitFailure(queuedTransaction, null);
+          }
+        });
+        delete this._collisionQueueMap[collisionKey];
+      }
     }
   }
 
@@ -410,6 +417,9 @@ class RelayPendingTransaction {
 
   getConfigs(): Array<RelayMutationConfig> {
     if (!this._configs) {
+      /* $FlowIssue(>=0.23.0) #10620219 - After fixing some unsoundness in
+       * dictionary types, we've come to realize we need a safer object
+       * supertype than Object. */
       this._configs = this.mutation.getConfigs();
     }
     return this._configs;

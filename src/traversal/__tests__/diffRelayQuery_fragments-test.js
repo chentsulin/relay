@@ -19,16 +19,19 @@ jest
 
 const Relay = require('Relay');
 const RelayConnectionInterface = require('RelayConnectionInterface');
+const RelayFragmentTracker = require('RelayFragmentTracker');
+const RelayQuery = require('RelayQuery');
 const RelayQueryTracker = require('RelayQueryTracker');
 const RelayTestUtils = require('RelayTestUtils');
 
 const diffRelayQuery = require('diffRelayQuery');
+const generateClientEdgeID = require('generateClientEdgeID');
 
 describe('diffRelayQuery - fragments', () => {
   let RelayRecordStore;
   let RelayRecordWriter;
 
-  const {getNode, writePayload} = RelayTestUtils;
+  const {findQueryNode, getNode, writePayload} = RelayTestUtils;
   let HAS_NEXT_PAGE, HAS_PREV_PAGE, PAGE_INFO;
 
   const rootCallMap = {
@@ -373,4 +376,216 @@ describe('diffRelayQuery - fragments', () => {
       `));
     }
   );
+
+  describe('fragments inside connections', () => {
+    let records;
+    let store;
+    let writer;
+    let queryTracker;
+    let fragmentTracker;
+
+    function writeEdgesForQuery(edges, query) {
+      const payload = {
+        viewer: {
+          newsFeed: {
+            edges: edges,
+            [PAGE_INFO]: {
+              [HAS_NEXT_PAGE]: true,
+              [HAS_PREV_PAGE]: false,
+            },
+          },
+        },
+      };
+      writePayload(
+        store,
+        writer,
+        query,
+        payload,
+        queryTracker,
+        fragmentTracker
+      );
+    }
+
+    beforeEach(() => {
+      records = {};
+      store = new RelayRecordStore({records}, {rootCallMap});
+      writer = new RelayRecordWriter(records, rootCallMap, false);
+      queryTracker = new RelayQueryTracker();
+      fragmentTracker = new RelayFragmentTracker();
+
+      // Load 2 stories without message
+      writeEdgesForQuery(
+        [
+          {cursor: 'c1', node: {id: 's1', __typename: 'Story'}},
+          {cursor: 'c2', node: {id: 's2', __typename: 'Story'}},
+        ],
+        getNode(Relay.QL`
+          query {
+            viewer {
+              newsFeed(first: "2") {
+                edges {
+                  node {
+                    id
+                  }
+                }
+              }
+            }
+          }
+        `)
+      );
+    });
+
+    it('generates a valid diff query', () => {
+      const feedQuery = Relay.QL`
+        query {
+          viewer {
+            newsFeed(after: $after, first: $count) {
+              edges {
+                ... on NewsFeedEdge {
+                  node {
+                    ... on Story {
+                      message {
+                        text
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      // Load 1 story with message
+      writeEdgesForQuery(
+        [
+          {
+            cursor: 'c1',
+            node: {
+              id: 's1',
+              __typename: 'Story',
+              message: {
+                text: 's1',
+              },
+            },
+          },
+        ],
+        getNode(feedQuery, {count: 1, after: null})
+      );
+
+      // Query for 3 stories with text
+      const diffQueries = diffRelayQuery(
+        getNode(feedQuery, {count: 3, after: null}),
+        store,
+        queryTracker,
+        fragmentTracker,
+      );
+      expect(diffQueries.length).toBe(2);
+      expect(diffQueries[0]).toEqualQueryRoot(
+        getNode(feedQuery, {count: 1, after: 'c2'})
+      );
+      expect(diffQueries[1]).toEqualQueryRoot(getNode(Relay.QL`
+        query {
+          node(id: "s2") {
+            ... on FeedUnit {
+              id
+              ... on Story {
+                id
+                message { text }
+              }
+            }
+            ... on FeedUnit {
+              id
+            }
+          }
+        }
+      `));
+    });
+
+    it('skips tracked fragments', () => {
+      const query = getNode(Relay.QL`
+        query {
+          node(id: "123") {
+            ... on User {
+              friends(first: "1") {
+                edges {
+                  ... on FriendsEdge @relay(variables: []) {
+                    node {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `);
+      const fragment = findQueryNode(query, node =>
+        node instanceof RelayQuery.Fragment &&
+        node.getType() === 'FriendsEdge'
+      );
+      const payload = {
+        node: {
+          id: '123',
+          __typename: 'User',
+          friends: {
+            edges: [
+              {
+                cursor: 'cursor1',
+                node: {
+                  id: 'node1',
+                  __typename: 'User',
+                  name: 'Alice',
+                },
+              },
+            ],
+            [PAGE_INFO]: {
+              [HAS_NEXT_PAGE]: true,
+            },
+          },
+        },
+      };
+      writePayload(
+        store,
+        writer,
+        query,
+        payload,
+        queryTracker,
+        fragmentTracker
+      );
+      const connectionID = store.getLinkedRecordID('123', 'friends');
+      const edgeID = generateClientEdgeID(connectionID, 'node1');
+      const fragmentHash = fragment.getCompositeHash();
+      expect(fragment.isTrackingEnabled()).toBe(true);
+      expect(fragmentTracker.isTracked(edgeID, fragmentHash)).toBe(true);
+
+      // All fields present, nothing to diff.
+      expect(diffRelayQuery(
+        query,
+        store,
+        queryTracker,
+        fragmentTracker,
+      ).length).toBe(0);
+
+      // Removing a field should not result in a diff query since the edge is
+      // tracked.
+      delete records.node1.name;
+      expect(diffRelayQuery(
+        query,
+        store,
+        queryTracker,
+        fragmentTracker,
+      ).length).toBe(0);
+
+      // Untracking the fragment should result in a diff query.
+      fragmentTracker.untrack(edgeID);
+      expect(fragmentTracker.isTracked(edgeID, fragmentHash)).toBe(false);
+      expect(diffRelayQuery(
+        query,
+        store,
+        queryTracker,
+        fragmentTracker,
+      ).length).toBe(1);
+    });
+  });
 });

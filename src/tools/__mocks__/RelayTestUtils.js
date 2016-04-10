@@ -157,6 +157,18 @@ const RelayTestUtils = {
     return reference;
   },
 
+  findQueryNode(node, predicate) {
+    const queue = [node];
+    while (queue.length) {
+      const test = queue.shift();
+      if (predicate(test)) {
+        return test;
+      }
+      queue.push(...test.getChildren());
+    }
+    return null;
+  },
+
   getNode(node, variables, queryConfig) {
     const RelayMetaRoute = require('RelayMetaRoute');
     const RelayQuery = require('RelayQuery');
@@ -548,7 +560,15 @@ const RelayTestUtils = {
    * writing; property keys are rewritten from application names into
    * serialization keys matching the fields in the query.
    */
-  writePayload(store, writer, query, payload, tracker, options) {
+  writePayload(
+    store,
+    writer,
+    query,
+    payload,
+    queryTracker,
+    fragmentTracker,
+    options
+  ) {
     const transformRelayQueryPayload = require('transformRelayQueryPayload');
 
     return RelayTestUtils.writeVerbatimPayload(
@@ -556,7 +576,8 @@ const RelayTestUtils = {
       writer,
       query,
       transformRelayQueryPayload(query, payload),
-      tracker,
+      queryTracker,
+      fragmentTracker,
       options
     );
   },
@@ -565,20 +586,31 @@ const RelayTestUtils = {
    * Helper to write the result payload into a store. Unlike `writePayload`,
    * the payload is not transformed first.
    */
-  writeVerbatimPayload(store, writer, query, payload, tracker, options) {
+  writeVerbatimPayload(
+    store,
+    writer,
+    query,
+    payload,
+    queryTracker,
+    fragmentTracker,
+    options,
+  ) {
     const RelayChangeTracker = require('RelayChangeTracker');
+    const RelayFragmentTracker = require('RelayFragmentTracker');
     const RelayQueryTracker = require('RelayQueryTracker');
     const RelayQueryWriter = require('RelayQueryWriter');
     const writeRelayQueryPayload = require('writeRelayQueryPayload');
 
-    tracker = tracker || new RelayQueryTracker();
+    queryTracker = queryTracker || new RelayQueryTracker();
+    fragmentTracker = fragmentTracker || new RelayFragmentTracker();
     options = options || {};
     const changeTracker = new RelayChangeTracker();
     const queryWriter = new RelayQueryWriter(
       store,
       writer,
-      tracker,
+      queryTracker,
       changeTracker,
+      fragmentTracker,
       options
     );
     writeRelayQueryPayload(

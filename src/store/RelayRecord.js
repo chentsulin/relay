@@ -22,6 +22,9 @@ import type {
 import type {QueryPath} from 'RelayQueryPath';
 
 export type Record = {
+  /* $FlowIssue(>=0.23.0) #10620219 - After fixing some unsoundness in
+   * dictionary types, we've come to realize we need a safer object supertype
+   * than Object. */
   [key: string]: mixed;
   __dataID__: string;
   __filterCalls__?: Array<Call>;
@@ -104,7 +107,7 @@ const RelayRecord = {
   * that's understood by the server as well.
   */
   isClientID(dataID: string): boolean {
-    return dataID.substring(0, 7) === 'client:';
+    return dataID.startsWith('client:');
   },
 
   isMetadataKey(key: string): boolean {

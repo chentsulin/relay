@@ -210,6 +210,16 @@ describe('RelayQueryField', () => {
     const pictureVariable =
       getNode(pictureVariableRQL, {size: '33'}).getChildren()[0];
     expect(pictureScalar.equals(pictureVariable)).toBe(false);
+
+    const pictureTypedVariableA = getNode(
+      pictureVariableRQL,
+      {size: new RelayVariable('size')}
+    ).getChildren()[0];
+    const pictureMimeticVariableB = getNode(
+      pictureVariableRQL,
+      {size: {name: 'size'}}
+    ).getChildren()[0];
+    expect(pictureTypedVariableA.equals(pictureMimeticVariableB)).toBe(false);
   });
 
   it('scalar fields have no children', () => {
