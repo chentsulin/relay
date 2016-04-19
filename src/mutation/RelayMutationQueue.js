@@ -48,9 +48,6 @@ type PendingTransaction = {
   getCollisionKey: () => ?string;
   getConfigs: () => Array<RelayMutationConfig>;
   getFiles: () => ?FileMap;
-  /* $FlowIssue(>=0.23.0) #10620219 - After fixing some unsoundness in
-   * dictionary types, we've come to realize we need a safer object supertype
-   * than Object. */
   getOptimisticConfigs: () => ?Array<{[key: string]: mixed}>;
   getOptimisticQuery: (storeData: RelayStoreData) => ?RelayQuery.Mutation;
   getOptimisticResponse: () => ?Object;
@@ -64,6 +61,10 @@ type PendingTransaction = {
 type PendingTransactionMap = {
   [key: ClientMutationID]: PendingTransaction;
 };
+type TransactionBuilder = (
+  id: ClientMutationID,
+  transaction: RelayMutationTransaction
+) => PendingTransaction;
 type TransactionData = {
   id: ClientMutationID;
   mutation: RelayMutation;
@@ -99,23 +100,53 @@ class RelayMutationQueue {
     this._willBatchRefreshQueuedData = false;
   }
 
+  /**
+   * High-level API for creating a RelayMutationTransaction from a
+   * RelayMutation.
+   */
   createTransaction(
     mutation: RelayMutation,
     callbacks: ?RelayMutationTransactionCommitCallbacks
   ): RelayMutationTransaction {
-    const id = base62(transactionIDCounter++);
+    return this.createTransactionWithPendingTransaction(
+      null,
+      (id, mutationTransaction) => new RelayPendingTransaction({
+        id,
+        mutation,
+        mutationTransaction,
+        onFailure: callbacks && callbacks.onFailure,
+        onSuccess: callbacks && callbacks.onSuccess,
+      })
+    );
+  }
+
+  /**
+   * @internal
+   *
+   * This is a lower-level API used to create transactions based on:
+   *
+   * - An object that conforms to the PendingTransaction type; or
+   * - A function that can build such an object.
+   *
+   * Used by the high-level `createTransaction` API, but also enables us to
+   * run legacy and low-level mutations.
+   */
+  createTransactionWithPendingTransaction(
+    pendingTransaction: ?PendingTransaction,
+    transactionBuilder: ?TransactionBuilder
+  ): RelayMutationTransaction{
+    invariant(
+      pendingTransaction || transactionBuilder,
+      'RelayMutationQueue: `createTransactionWithPendingTransaction()` ' +
+      'expects a PendingTransaction or TransactionBuilder.'
+    );
+    const id = getNextID();
     const mutationTransaction = new RelayMutationTransaction(this, id);
-    const transaction = new RelayPendingTransaction({
-      id,
-      mutation,
-      mutationTransaction,
-      onFailure: callbacks && callbacks.onFailure,
-      onSuccess: callbacks && callbacks.onSuccess,
-    });
+    const transaction =
+      pendingTransaction ||
+      (transactionBuilder: any)(id, mutationTransaction);
     this._pendingTransactionMap[id] = transaction;
     this._queue.push(transaction);
-    this._handleOptimisticUpdate(transaction);
-
     return mutationTransaction;
   }
 
@@ -173,22 +204,6 @@ class RelayMutationQueue {
       }
     }
     this._handleRollback(transaction);
-  }
-
-  /**
-   * @internal
-   *
-   * Supports running legacy mutations.
-   */
-  createLegacyMutationTransaction(
-    transaction: PendingTransaction
-  ): RelayMutationTransaction {
-    const {id} = transaction;
-    const mutationTransaction = new RelayMutationTransaction(this, id);
-    this._pendingTransactionMap[id] = transaction;
-    this._queue.push(transaction);
-
-    return mutationTransaction;
   }
 
   _get(id: ClientMutationID): PendingTransaction {
@@ -294,7 +309,7 @@ class RelayMutationQueue {
     );
     this._storeData.getNetworkLayer().sendMutation(request);
 
-    request.getPromise().done(
+    request.done(
       result => this._handleCommitSuccess(transaction, result.response),
       error => this._handleCommitFailure(transaction, error)
     );
@@ -398,7 +413,7 @@ class RelayPendingTransaction {
     this.mutationTransaction = transactionData.mutationTransaction;
     this.onFailure = transactionData.onFailure;
     this.onSuccess = transactionData.onSuccess;
-    this.status = RelayMutationTransactionStatus.UNCOMMITTED;
+    this.status = RelayMutationTransactionStatus.CREATED;
   }
 
   getCallName(): string {
@@ -417,9 +432,6 @@ class RelayPendingTransaction {
 
   getConfigs(): Array<RelayMutationConfig> {
     if (!this._configs) {
-      /* $FlowIssue(>=0.23.0) #10620219 - After fixing some unsoundness in
-       * dictionary types, we've come to realize we need a safer object
-       * supertype than Object. */
       this._configs = this.mutation.getConfigs();
     }
     return this._configs;
@@ -548,6 +560,10 @@ class RelayPendingTransaction {
     }
     return this._query;
   }
+}
+
+function getNextID(): string {
+  return base62(transactionIDCounter++);
 }
 
 module.exports = RelayMutationQueue;

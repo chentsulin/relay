@@ -72,9 +72,6 @@ export type RelayQuerySet = {[queryName: string]: ?RelayQuery.Root};
 export type QueryPayload = {[key: string]: mixed};
 
 export type UpdateOptions = {
-  /* $FlowIssue(>=0.23.0) #10620219 - After fixing some unsoundness in
-   * dictionary types, we've come to realize we need a safer object supertype
-   * than Object. */
   configs: Array<{[key: string]: mixed}>;
   isOptimisticUpdate: boolean;
 };
@@ -82,3 +79,34 @@ export type UpdateOptions = {
 export type RangeBehaviors = {
   [key: string]: $Keys<GraphQLMutatorConstants.RANGE_OPERATIONS>;
 };
+
+type AfterConnectionArgumentMap = {
+  after: string;
+  first: number;
+};
+type BeforeConnectionArgumentMap = {
+  before: string;
+  last: number;
+};
+type HeadConnectionArgumentMap = {
+  before: string;
+  first: number;
+};
+type InitialHeadConnectionArgumentMap = {
+  first: number;
+};
+type InitialTailConnectionArgumentMap = {
+  last: number;
+};
+type TailConnectionArgumentMap = {
+  after: string;
+  last: number;
+};
+export type ConnectionArgumentsMap = (
+  AfterConnectionArgumentMap |
+  BeforeConnectionArgumentMap |
+  HeadConnectionArgumentMap |
+  InitialHeadConnectionArgumentMap |
+  InitialTailConnectionArgumentMap |
+  TailConnectionArgumentMap
+);

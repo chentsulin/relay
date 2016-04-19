@@ -378,6 +378,17 @@ const RelayTestUtils = {
       };
     },
 
+    /**
+     * Recursively compares two objects, ignoring missing metadata keys (such as
+     * `__dataID__`).
+     *
+     * Handles basic objects, arrays and primitive types, but doesn't support
+     * "exotic" types like Date etc.
+     */
+    toMatchRecord() {
+      return {compare: require('matchRecord')};
+    },
+
     toEqualPrintedQuery() {
       return {
         compare(actual, expected) {
@@ -566,7 +577,6 @@ const RelayTestUtils = {
     query,
     payload,
     queryTracker,
-    fragmentTracker,
     options
   ) {
     const transformRelayQueryPayload = require('transformRelayQueryPayload');
@@ -577,7 +587,6 @@ const RelayTestUtils = {
       query,
       transformRelayQueryPayload(query, payload),
       queryTracker,
-      fragmentTracker,
       options
     );
   },
@@ -592,17 +601,14 @@ const RelayTestUtils = {
     query,
     payload,
     queryTracker,
-    fragmentTracker,
     options,
   ) {
     const RelayChangeTracker = require('RelayChangeTracker');
-    const RelayFragmentTracker = require('RelayFragmentTracker');
     const RelayQueryTracker = require('RelayQueryTracker');
     const RelayQueryWriter = require('RelayQueryWriter');
     const writeRelayQueryPayload = require('writeRelayQueryPayload');
 
     queryTracker = queryTracker || new RelayQueryTracker();
-    fragmentTracker = fragmentTracker || new RelayFragmentTracker();
     options = options || {};
     const changeTracker = new RelayChangeTracker();
     const queryWriter = new RelayQueryWriter(
@@ -610,7 +616,6 @@ const RelayTestUtils = {
       writer,
       queryTracker,
       changeTracker,
-      fragmentTracker,
       options
     );
     writeRelayQueryPayload(

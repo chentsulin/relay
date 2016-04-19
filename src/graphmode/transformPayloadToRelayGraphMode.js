@@ -39,7 +39,12 @@ const isCompatibleRelayFragmentType = require('isCompatibleRelayFragmentType');
 const warning = require('warning');
 
 const {EDGES, PAGE_INFO} = RelayConnectionInterface;
-const {CACHE_KEY, REF_KEY} = RelayGraphModeInterface;
+const {
+  CACHE_KEY,
+  DEFERRED_FRAGMENTS,
+  FRAGMENTS,
+  REF_KEY,
+} = RelayGraphModeInterface;
 const {ANY_TYPE, ID, TYPENAME} = RelayNodeInterface;
 const {PATH} = RelayRecord.MetadataKey;
 
@@ -56,9 +61,6 @@ type PayloadState = {
   path: QueryPath;
   payloadRecord: PayloadRecord;
 };
-/* $FlowIssue(>=0.23.0) #10620219 - After fixing some unsoundness in dictionary
- * types, we've come to realize we need a safer object supertype than Object.
- */
 type PayloadRecord = {[storageKey: string]: ?PayloadValue};
 type PayloadScalar = (
   boolean |
@@ -253,12 +255,17 @@ class RelayPayloadTransformer extends RelayQueryVisitor<PayloadState> {
   ): void {
     const {currentRecord} = state;
     const typeName = currentRecord[TYPENAME];
-    if (fragment.isDeferred() || fragment.isTrackingEnabled()) {
-      const fragments = (currentRecord: any).__fragments__ =
-        (currentRecord: any).__fragments__ || {};
+    if (fragment.isDeferred()) {
+      const fragments = (currentRecord: any)[DEFERRED_FRAGMENTS] =
+        (currentRecord: any)[DEFERRED_FRAGMENTS] || {};
       fragments[fragment.getCompositeHash()] = true;
     }
     if (isCompatibleRelayFragmentType(fragment, typeName)) {
+      if (fragment.isTrackingEnabled()) {
+        const fragments = (currentRecord: any)[FRAGMENTS] =
+          (currentRecord: any)[FRAGMENTS] || {};
+        fragments[fragment.getCompositeHash()] = true;
+      }
       this.traverse(fragment, {
         ...state,
         path: RelayQueryPath.getPath(

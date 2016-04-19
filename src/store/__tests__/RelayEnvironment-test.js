@@ -21,10 +21,13 @@ const RelayEnvironment = require('RelayEnvironment');
 const RelayQueryResultObservable = require('RelayQueryResultObservable');
 const RelayMutation = require('RelayMutation');
 const RelayMutationTransaction = require('RelayMutationTransaction');
+const RelayMutationTransactionStatus = require('RelayMutationTransactionStatus');
 const RelayMutationQueue = require('RelayMutationQueue');
 const RelayTestUtils = require('RelayTestUtils');
 
 const readRelayQueryData = require('readRelayQueryData');
+
+const {CREATED} = RelayMutationTransactionStatus;
 
 describe('RelayEnvironment', () => {
   let environment;
@@ -45,7 +48,7 @@ describe('RelayEnvironment', () => {
     filter = () => true;
     dataIDs = ['feedback_id', 'likers_id'];
     queries = {};
-    callback = jest.genMockFunction();
+    callback = jest.fn();
     queryRunner = environment.getStoreData().getQueryRunner();
     recordWriter = environment.getStoreData().getRecordWriter();
   });
@@ -157,7 +160,7 @@ describe('RelayEnvironment', () => {
       );
 
       const observer = environment.observe(fragment, '123');
-      const onNext = jest.genMockFunction();
+      const onNext = jest.fn();
       expect(observer instanceof RelayQueryResultObservable).toBe(true);
       observer.subscribe({onNext});
       expect(onNext).toBeCalledWith({
@@ -168,19 +171,27 @@ describe('RelayEnvironment', () => {
   });
 
   describe('update functions', () => {
-    let mockMutation, createTransactionMock, mockTransaction, mockCallbacks;
+    let createTransactionMock;
+    let mockCallbacks;
+    let mockMutation;
+    let mockQueue;
+    let mockTransaction;
 
     beforeEach(() => {
-      mockTransaction = new RelayMutationTransaction();
-      mockTransaction.commit = jest.genMockFunction();
-      createTransactionMock = jest.genMockFunction();
+      mockQueue = {
+        applyOptimistic: () => {},
+        getStatus: jest.fn(() => CREATED),
+      };
+      mockTransaction = new RelayMutationTransaction(mockQueue);
+      mockTransaction.commit = jest.fn();
+      createTransactionMock = jest.fn();
       createTransactionMock.mockReturnValue(mockTransaction);
       RelayMutationQueue.prototype.createTransaction = createTransactionMock;
       mockMutation = new RelayMutation();
-      mockCallbacks = jest.genMockFunction();
+      mockCallbacks = jest.fn();
     });
 
-    describe('applyUpdate', () => {
+    describe('applyUpdate()', () => {
       it('binds environment to mutation before creating transaction', () => {
         mockMutation.bindEnvironment.mockImplementation(() => {
           expect(createTransactionMock).not.toBeCalled();
@@ -202,7 +213,7 @@ describe('RelayEnvironment', () => {
       });
     });
 
-    describe('commitUpdate', () => {
+    describe('commitUpdate()', () => {
       it('binds environment to mutation before creating transaction', () => {
         mockMutation.bindEnvironment.mockImplementation(() => {
           expect(createTransactionMock).not.toBeCalled();

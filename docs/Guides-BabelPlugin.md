@@ -33,6 +33,23 @@ Relay.QL`
 
 現在要上手最簡單的方式是使用 [Relay Starter Kit](https://github.com/relayjs/relay-starter-kit) - 這裡面包含一個範例 schema 檔並設定好了 [`babel-relay-plugin`](https://www.npmjs.com/package/babel-relay-plugin) npm 模組來 transpile queries。
 
+### 設定 React Native
+
+`babel-relay-plugin` 必須在 `react-native` Babel preset 之前執行。所以，在 `.babelrc` 中 `"react-native"` 必須放在 `babelRelayPlugin` 之後。
+
+```javascript
+{
+  "passPerPreset": true,
+  "presets": [
+    {"plugins": ["./plugins/babelRelayPlugin"]},
+    "react-native"
+  ]
+}
+```
+
+原因是如果 `babel-relay-plugin` 沒有在 `es2015-template-literals` transform 之前執行，它不會正確地轉換 Relay.QL template literals。而且在 Babel 6，你不能控制 plugin 的順序。所以在 React Native 中，它的 `.babelrc` 中的 plugins 會在專案的 `.babelrc` 之前載入，要不複寫整個 transform 清單而使用 Babel Relay Plugin 是不可能的。
+
+
 ## 進階用法
 
 如果你不是使用 starter kit，你會需要設定 `babel` 以使用 `babel-relay-plugin`。步驟如下：

@@ -67,11 +67,11 @@ describe('GraphQLQueryRunner', () => {
     queryRunner = storeData.getQueryRunner();
     pendingQueryTracker = storeData.getPendingQueryTracker();
 
-    networkLayer.injectNetworkLayer({
+    networkLayer.injectImplementation({
       supports: () => true,
     });
 
-    mockCallback = jest.genMockFunction();
+    mockCallback = jest.fn();
     mockQuerySet = {
       foo: getNode(Relay.QL`query{viewer{actor{id,name}}}`),
       bar: getNode(Relay.QL`query{node(id:"4"){id,name}}`),
@@ -109,7 +109,7 @@ describe('GraphQLQueryRunner', () => {
   it('warns and uses fallback when defer is unsupported', () => {
     diffRelayQuery.mockImplementation(query => [query]);
     checkRelayQueryData.mockImplementation(() => false);
-    networkLayer.injectNetworkLayer({
+    networkLayer.injectImplementation({
       supports: () => false,
     });
 
@@ -307,9 +307,9 @@ describe('GraphQLQueryRunner', () => {
   it('is ready if required data is in disk cache', () => {
     diffRelayQuery.mockImplementation(query => [query]);
     RelayStoreData.prototype.hasCacheManager =
-      jest.genMockFunction().mockImplementation(() => true);
+      jest.fn(() => true);
     RelayStoreData.prototype.readFromDiskCache =
-      jest.genMockFunction().mockImplementation((queries, callback) => {
+      jest.fn((queries, callback) => {
         callback.onSuccess();
       });
     mockSplitDeferredQueries();

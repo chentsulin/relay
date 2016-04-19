@@ -163,9 +163,6 @@ class RelayGarbageCollector {
     }
     this._isCollecting = true;
 
-    /* $FlowIssue(>=0.23.0) #10620219 - After fixing some unsoundness in
-     * dictionary types, we've come to realize we need a safer object supertype
-     * than Object. */
     const cachedRecords = this._storeData.getCachedData();
     const freshRecords = this._storeData.getNodeData();
     this._scheduler(() => {
@@ -208,9 +205,6 @@ class RelayGarbageCollector {
     return null;
   }
 
-  /* $FlowIssue(>=0.23.0) #10620219 - After fixing some unsoundness in
-   * dictionary types, we've come to realize we need a safer object supertype
-   * than Object. */
   _traverseRecord(record: {[key: string]: mixed}): void {
     forEachObject(record, (value, storageKey) => {
       if (storageKey === RelayRecord.MetadataKey.PATH) {
@@ -240,7 +234,6 @@ class RelayGarbageCollector {
   }
 
   _collectRecord(dataID: DataID): void {
-    this._storeData.getFragmentTracker().untrack(dataID);
     this._storeData.getQueryTracker().untrackNodesForID(dataID);
     this._storeData.getQueuedStore().removeRecord(dataID);
     this._storeData.getRangeData().removeRecord(dataID);
