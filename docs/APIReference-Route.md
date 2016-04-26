@@ -7,106 +7,105 @@ permalink: docs/api-reference-relay-route.html
 next: api-reference-relay-renderer
 ---
 
-Relay uses routes to define entry points into a Relay application.
+Relay 使用 routes 來定義 Relay 應用程式的 entry point。
 
-> Note
+> 附註
 >
-> Relay routes don't really implement any URL routing specific logic or work with History API. In the future we will maybe rename RelayRoute to be something more like RelayQueryRoots or RelayQueryConfig.
+> Relay routes 沒有真的實作任何 URL routing 的特定邏輯，也沒有使用 History API。未來我們可能會把 RelayRoute 重新命名成像是 RelayQueryRoots 或是 RelayQueryConfig 之類的東西。
 
 
-## Overview
+## 概觀
 
-*Properties*
-
-<ul class="apiIndex">
-  <li>
-    <a href="#paramdefinitions-static-property">
-      <pre>static paramDefinitions</pre>
-      Declare the expected parameters.
-    </a>
-  </li>
-  <li>
-    <a href="#queries-static-property">
-      <pre>static queries</pre>
-      Declare the set of query roots.
-    </a>
-  </li>
-  <li>
-    <a href="#routename-static-property">
-      <pre>static routeName</pre>
-      Declare the name of this route class.
-    </a>
-  </li>
-</ul>
-
-*Methods*
+*屬性*
 
 <ul class="apiIndex">
-  <li>
-    <a href="#constructor">
-      <pre>constructor(initialParams)</pre>
-    </a>
-  </li>
+	<li>
+		<a href="#paramdefinitions-static-property">
+			<pre>static paramDefinitions</pre>
+			宣告預期的參數。
+		</a>
+	</li>
+	<li>
+		<a href="#queries-static-property">
+			<pre>static queries</pre>
+			宣告一組 query root。
+		</a>
+	</li>
+	<li>
+		<a href="#routename-static-property">
+			<pre>static routeName</pre>
+			宣告這個 route 類別的名稱。
+		</a>
+	</li>
 </ul>
 
-## Properties
+*方法*
 
-### paramDefinitions (static property)
+<ul class="apiIndex">
+	<li>
+		<a href="#constructor">
+			<pre>constructor(initialParams)</pre>
+		</a>
+	</li>
+</ul>
+
+## 屬性
+
+### paramDefinitions (static 屬性)
 
 ```
 static paramDefinitions: {[param: string]: {required: boolean}}
 ```
 
-Routes can declare a set of parameter names that it requires to be supplied to the constructor. This is also a convenient place to document the set of valid parameters.
+Routes 可以宣告一組需要提供給 constructor 的參數名稱。這裡也是一個方便紀錄這組有效參數的位置。
 
-#### Example
+#### 範例
 
 ```
 class ProfileRoute extends Relay.Route {
-  static paramDefinitions = {
-    userID: {required: true},
-  };
-  // ...
+	static paramDefinitions = {
+		userID: {required: true},
+	};
+	// ...
 }
 ```
 
-### queries (static property)
+### queries (static 屬性)
 
 ```
 static queries: {
-  [queryName: string]: () => Relay.QL`query { ... }`
+	[queryName: string]: () => Relay.QL`query { ... }`
 };
 ```
 
-Routes must declare a set of query roots using `Relay.QL`. These queries will automatically compose a matching fragment named `queryName` on
-the Relay container used with this route on a **Relay.RootContainer**.
+Routes 必須使用 `Relay.QL` 宣告一組 query root。這些 queries 會自動合成一個符合 Relay container 的 fragment 命名成 `queryName`，與這個 route 一起使用在 **Relay.RootContainer** 上。
 
-#### Example
+#### 範例
 
 ```
 class ProfileRoute extends Relay.Route {
-  static queries = {
-    user: () => Relay.QL`query { user(id: $userID) }`,
-  };
-  // ...
+	static queries = {
+		user: () => Relay.QL`query { user(id: $userID) }`,
+	};
+	// ...
 }
 ```
 
-### routeName (static property)
+### routeName (static 屬性)
 
 ```
 static routeName: string
 ```
 
-Routes must define a string name.
+Routes 必須定義一個字串名稱。
 
-## Methods
+## 方法
 
 ### constructor
 
-Create a route instance using the `new` keyword, optionally passing it some params.
+使用 `new` 關鍵字來建立一個 route 實體，可選擇性地傳遞一些參數給它。
 
-#### Example
+#### 範例
 
 ```
 var profileRoute = new ProfileRoute({userID: '123'});
