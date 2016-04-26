@@ -8,17 +8,17 @@ next: api-reference-relay-container
 ---
 
 
-`Relay` is the entry point to the Relay library. If you're using one of the prebuilt packages it's available as a global; if you're using CommonJS modules you can `require()` it.
+`Relay` 是 Relay library 的 entry point。如果你使用任何一個 prebuilt package，你可以用全域變數取用它；如果你使用 CommonJS 模組，那你可以 `require()` 它。
 
-> Note
+> 附註
 >
-> The `react-relay` npm module includes `react` as a *peer dependency*. Your app should specify React as a dependency explicitly.
+> `react-relay` npm module 把 `react` 設為 *peer dependency*。你的應用程式應該明確地指定 React 為 dependency。
 
-The most-used function is [`createContainer()`](#createcontainer-static-method) which wraps components with data declarations.
+最常使用的 function 是 [`createContainer()`](#createcontainer-static-method)，它用資料宣告來包裝 component。
 
-## Overview
+## 概觀
 
-*Properties*
+*屬性*
 
 <ul class="apiIndex">
   <li>
@@ -58,68 +58,68 @@ The most-used function is [`createContainer()`](#createcontainer-static-method) 
   </li>
 </ul>
 
-*Methods*
+*方法*
 
 <ul class="apiIndex">
   <li>
     <a href="#createcontainer-static-method">
       <pre>static createContainer(Component, ContainerConfig)</pre>
-      Creates a Relay Container.
+      建立一個 Relay Container。
     </a>
   </li>
   <li>
     <a href="#injectnetworklayer-static-method">
       <pre>static injectNetworkLayer(networkLayer)</pre>
-      Customize how queries and mutations are sent to the server.
+      客製化 queries 和 mutations 要如何被送到伺服器。
     </a>
   </li>
   <li>
     <a href="#injecttaskscheduler-static-method">
       <pre>static injectTaskScheduler(scheduler)</pre>
-      Configure when Relay processing occurs.
+      設定 Relay 的處理程序要何時發生。
     </a>
   </li>
   <li>
     <a href="#iscontainer-static-method">
       <pre>static isContainer(Component)</pre>
-      Determine if a given object is a Relay.Container.
+      判斷給定的物件是不是一個 Relay.Container。
     </a>
   </li>
 </ul>
 
-## Properties
+## 屬性
 
-### DefaultNetworkLayer (static property)
+### DefaultNetworkLayer (static 屬性)
 
-See the [Network Layer Guide](guides-network-layer.html).
+查看 [Network Layer Guide](guides-network-layer.html)。
 
 ### Mutation
 
-See the [Mutations Guide](guides-mutations.html).
+查看 [Mutations Guide](guides-mutations.html)。
 
 ### QL
 
-See the [Relay.QL API reference](api-reference-relay-ql.html).
+查看 [Relay.QL API reference](api-reference-relay-ql.html)。
 
 ### PropTypes
 
-See the [PropTypes API reference](api-reference-relay-proptypes.html).
+查看 [PropTypes API reference](api-reference-relay-proptypes.html)。
 
 ### RootContainer
 
-See the [RootContainer Guide](guides-root-container.html).
+查看 [RootContainer Guide](guides-root-container.html)。
 
 ### Route
 
-See the [Routes Guide](guides-routes.html).
+查看 [Routes Guide](guides-routes.html)。
 
 ### Store
 
-See the [Store API reference](api-reference-relay-store.html).
+查看 [Store API reference](api-reference-relay-store.html)。
 
-## Methods
+## 方法
 
-### createContainer (static method)
+### createContainer (static 方法)
 
 ```
 var Container = Relay.createContainer(Component, {
@@ -129,9 +129,9 @@ var Container = Relay.createContainer(Component, {
 });
 ```
 
-Creates a new Relay Container - see the [Container Guide](guides-containers.html) for more details and examples.
+建立一個新的 Relay Container - 查看 [Container Guide](guides-containers.html) 以獲得更多的細節與範例。
 
-### injectNetworkLayer (static method)
+### injectNetworkLayer (static 方法)
 
 ```
 Relay.injectNetworkLayer(networkLayer: {
@@ -141,23 +141,23 @@ Relay.injectNetworkLayer(networkLayer: {
 });
 ```
 
-Overrides the [DefaultNetworkLayer](#defaultnetworklayer-static-property).
+覆蓋掉 [DefaultNetworkLayer](#defaultnetworklayer-static-property)。
 
-#### Example
+#### 範例
 
-As an example, we can log each mutation that is sent to the server as follows:
+舉個例子，我們可以如下印出每一個被送去伺服器的 mutation：
 
 ```
 var DefaultNetworkLayer = Relay.DefaultNetworkLayer;
 
 class MutationLoggingNetworkLayer extends DefaultNetworkLayer {
   sendMutation(mutation) {
-    // log the response or error (note that `mutation` is a promise)
+    // 印出回應或是錯誤 (注意，`mutation` 是一個 promise)
     mutation.then(
       response => console.log(response),
       error => console.error(error),
     );
-    // Send the mutation using the default network implementation
+    // 使用預設的 network 實作來發送 mutation
     return super.sendMutation(mutation);
   }
 };
@@ -165,7 +165,7 @@ class MutationLoggingNetworkLayer extends DefaultNetworkLayer {
 Relay.injectNetworkLayer(new MutationLoggingNetworkLayer());
 ```
 
-### injectTaskScheduler (static method)
+### injectTaskScheduler (static 方法)
 
 ```
 Relay.injectTaskScheduler(scheduler: Scheduler): void;
@@ -173,19 +173,19 @@ Relay.injectTaskScheduler(scheduler: Scheduler): void;
 type Scheduler = (task: Function) => void;
 ```
 
-Relay wraps its core processing functions inside lightweight tasks, which by default are executed immediately (i.e. synchronously). In order to customize *when* these tasks are run - for example to avoid interrupting an animation during a touch gesture - applications can provide a custom scheduling function.
+Relay 把它的核心處理 function 包在輕量的 task 裡面，它預設是會立刻被執行 (也就是說，同步地)。為了客製化這些 task *何時*被執行 - 例如為了避免在 touch 手勢期間中斷動畫 - 應用程式可以提供一個客製化的排程 function。
 
-#### Examples
+#### 範例
 
-The default implementation is as follows:
+預設的實作如下：
 
 ```
 Relay.injectTaskScheduler(task => task());
 ```
 
-Notice that it immediately executes the next task. Relay manages the order of tasks to ensure a proper order of operations - the scheduler can't skip or reorder tasks, only decide when to execute the next one.
+注意它會立刻執行下一個 task。Relay 會管理 task 的順序以確保操作有一個適當的順序 - scheduler 不能跳過或重新排序 task，只能決定何時執行下一個。
 
-In React Native, we can schedule Relay processing so as to avoid interrupting touch gestures as follows:
+在 React Native 中，我們可以如下把 Relay 的處理程序排程，以避免中斷 touch 手勢：
 
 ```
 var {InteractionManager} = require('react-native');
@@ -193,15 +193,15 @@ var {InteractionManager} = require('react-native');
 Relay.injectTaskScheduler(InteractionManager.runAfterInteractions);
 ```
 
-You can read more about `InteractionManager` on the [React Native API docs](http://facebook.github.io/react-native/docs/interactionmanager.html).
+你可以在 [React Native API 文件](http://facebook.github.io/react-native/docs/interactionmanager.html) 閱讀更多有關 `InteractionManager` 的內容。
 
-### isContainer (static method)
+### isContainer (static 方法)
 
 ```
 Relay.isContainer(Component: Object): boolean;
 ```
 
-#### Example
+#### 範例
 
 ```
 var Component = require('...');
