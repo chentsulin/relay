@@ -7,30 +7,30 @@ permalink: docs/api-reference-relay-store.html
 next: interfaces-relay-network-layer
 ---
 
-The Relay `Store` provides an API for dispatching mutations to the server.
+Relay 的 `Store` 提供一個 API 來把 mutation 發送到伺服器。
 
-## Overview
+## 概觀
 
-*Methods*
+*方法*
 
 <ul class="apiIndex">
   <li>
     <a href="#commitupdate-static-method">
       <pre>static commitUpdate(mutation, callbacks)</pre>
-      Initiate processing of a mutation.
+      開始處理一個 mutation。
     </a>
   </li>
   <li>
     <a href="#applyupdate-static-method">
       <pre>static applyUpdate(mutation, callbacks)</pre>
-      Adds a MutationTransaction to the queue without committing it.
+      添加一個 MutationTransaction 到佇列而不 commit 它。
     </a>
   </li>
 </ul>
 
-## Methods
+## 方法
 
-### commitUpdate (static method)
+### commitUpdate (static 方法)
 
 ```
 static commitUpdate(mutation: RelayMutation, callbacks: {
@@ -38,23 +38,24 @@ static commitUpdate(mutation: RelayMutation, callbacks: {
   onSuccess?: (response: Object) => void;
 }): RelayMutationTransaction
 
-// Argument to `onFailure` callback
+// 傳給 `onFailure` callback 的參數
 type Transaction = {
   getError(): ?Error;
 }
 ```
 
-The `commitUpdate` method is analogous to dispatching an action in Flux. Relay processes
-the mutation as follows:
+`commitUpdate` 方法類似於在 Flux 中 dispatch 一個 action。Relay
+會如下處理 mutation：
 
-- If the mutation defines an optimistic payload - a set of data to apply locally while waiting for the server response - Relay applies this change and updates any affected React components (note that optimistic updates do not overwrite known server data in the cache).
-- If the mutation would not 'collide' (overlap) with other pending mutations - as specified by its `getCollisionKey` implementation - it is sent to the server. If it would conflict, it is enqueued until conflicting mutations have completed.
-- When the server response is received, one of the callbacks is invoked:
-  - `onSuccess` is called if the mutation succeeded.
-  - `onFailure` is called if the mutation failed.
+- 如果這個 mutation 定義一個 optimistic payload - 一組要在等待伺服器回應時在本地套用的資料 - Relay 套用這個變更並更新所有受影響的 React component (要注意 optimistic update 不會覆寫掉在快取中的已知伺服器資料)。
+- 如果這個 mutation 不會與其他未完成的 mutation 'collide' (重疊)
+- 藉由它的 `getCollisionKey` 實作來指定 - 這會被送到伺服器。 如果它會衝突，它會排隊直到衝突的 mutation 完成。
+- 當收到伺服器回應時，其中一個 callback 會被呼叫：
+  - 如果這個 mutation 成功了會呼叫 `onSuccess`。
+  - 如果這個 mutation 失敗了會呼叫 `onFailure`。
 
 
-#### Example
+#### 範例
 
 ```
 var onSuccess = () => {
@@ -69,7 +70,7 @@ var mutation = new MyMutation({...});
 Relay.Store.commitUpdate(mutation, {onFailure, onSuccess});
 ```
 
-### applyUpdate (static method)
+### applyUpdate (static 方法)
 
 ```
 static applyUpdate(mutation: RelayMutation, callbacks: {
@@ -78,14 +79,14 @@ static applyUpdate(mutation: RelayMutation, callbacks: {
 }): RelayMutationTransaction
 ```
 
-The `applyUpdate` adds a mutation just like `update`, but does not commit it. It returns a `RelayMutationTransaction` that can be committed or rollbacked.
+`applyUpdate` 就像 `update` 一樣添加一個 mutation，不過並不 commit 它。它回傳一個可以被 commit 或是 rollback 的 `RelayMutationTransaction`。
 
-When the transaction is committed and the response is received from the server, one of the callbacks is invoked:
-  - `onSuccess` is called if the mutation succeeded.
-  - `onFailure` is called if the mutation failed.
+當這個 transaction 被 commit 並從伺服器收到回應時，其中一個 callback 會被呼叫：
+  - 如果這個 mutation 成功了會呼叫 `onSuccess`。
+  - 如果這個 mutation 失敗了會呼叫 `onFailure`。
 
 
-#### Example
+#### 範例
 
 ```
 var onSuccess = () => {
