@@ -84,12 +84,12 @@ const containerContextTypes = {
  *
  */
 function createContainerComponent(
-  Component: ReactClass,
+  Component: ReactClass ,
   spec: RelayContainerSpec
 ): RelayContainerClass {
-  const componentName = Component.displayName || Component.name;
-  const containerName = 'Relay(' + componentName + ')';
-
+  const ComponentClass = getReactComponent(Component);
+  const componentName = getComponentName(Component);
+  const containerName = getContainerName(Component);
   const fragments = spec.fragments;
   const fragmentNames = Object.keys(fragments);
   const initialVariables = spec.initialVariables || {};
@@ -730,14 +730,24 @@ function createContainerComponent(
     }
 
     render(): React$Element {
-      return (
-        <Component
-          {...this.props}
-          {...this.state.queryData}
-          ref={isReactComponent(Component) ? 'component' : null}
-          relay={this.state.relayProp}
-        />
-      );
+      if (ComponentClass) {
+        return (
+          <ComponentClass
+            {...this.props}
+            {...this.state.queryData}
+            ref={'component'}
+            relay={this.state.relayProp}
+          />
+        );
+      } else {
+        // Stateless functional.
+        const Fn = (Component: any);
+        return React.createElement(Fn, {
+          ...this.props,
+          ...this.state.queryData,
+          relay: this.state.relayProp,
+        });
+      }
     }
   }
 
@@ -892,16 +902,11 @@ function getDeferredFragment(
   );
 }
 
-/**
- * Creates a lazy Relay container. The actual container is created the first
- * time a container is being constructed by React's rendering engine.
- */
-function create(
-  Component: ReactClass<any>,
+
+function validateSpec(
+  componentName: string,
   spec: RelayContainerSpec,
-): RelayLazyContainer {
-  const componentName = Component.displayName || Component.name;
-  const containerName = 'Relay(' + componentName + ')';
+): void {
 
   const fragments = spec.fragments;
   invariant(
@@ -910,6 +915,69 @@ function create(
     'to be an object mapping from `propName` to: () => Relay.QL`...`',
     componentName
   );
+
+  if (!spec.initialVariables) {
+    return;
+  }
+  const initialVariables = spec.initialVariables || {};
+  invariant(
+    typeof initialVariables === 'object' && initialVariables,
+    'Relay.createContainer(%s, ...): Expected `initialVariables` to be an ' +
+    'object.',
+    componentName
+  );
+
+  forEachObject(fragments, (_, name) => {
+    warning(
+      !initialVariables.hasOwnProperty(name),
+      'Relay.createContainer(%s, ...): `%s` is used both as a fragment name ' +
+      'and variable name. Please give them unique names.',
+      componentName,
+      name
+    );
+  });
+}
+
+function getReactComponent(
+  Component: ReactClass<any>
+): ?ReactClass<any> {
+  if (isReactComponent(Component)) {
+    return (Component: any);
+  } else {
+    return null;
+  }
+}
+
+function getComponentName(Component: ReactClass<any>): string {
+  let name;
+  const ComponentClass = getReactComponent(Component);
+  if (ComponentClass) {
+    name = ComponentClass.displayName || ComponentClass.name;
+  } else {
+    // This is a stateless functional component.
+    name = 'props => ReactElement';
+  }
+  return name;
+}
+
+function getContainerName(Component: ReactClass<any>): string {
+  return 'Relay(' + getComponentName(Component) + ')';
+}
+
+/**
+ * Creates a lazy Relay container. The actual container is created the first
+ * time a container is being constructed by React's rendering engine.
+ */
+function create(
+  Component: ReactClass<any>,
+  spec: RelayContainerSpec,
+): RelayLazyContainer {
+  const componentName = getComponentName(Component);
+  const containerName = getContainerName(Component);
+
+  validateSpec(componentName, spec);
+
+  const fragments = spec.fragments;
   const fragmentNames = Object.keys(fragments);
   const initialVariables = spec.initialVariables || {};
   const prepareVariables = spec.prepareVariables;

@@ -13,6 +13,7 @@
 
 'use strict';
 
+import type {ChangeSubscription} from 'RelayInternalTypes';
 import type RelayMutationRequest from 'RelayMutationRequest';
 const RelayProfiler = require('RelayProfiler');
 import type RelayQuery from 'RelayQuery';
@@ -23,6 +24,14 @@ const invariant = require('invariant');
 const resolveImmediate = require('resolveImmediate');
 const warning = require('warning');
 
+export type MutationCallback = (request: RelayMutationRequest) => void;
+export type QueryCallback = (request: RelayQueryRequest) => void;
+
+type Subscriber = {
+  queryCallback: ?QueryCallback,
+  mutationCallback: ?MutationCallback,
+};
+
 /**
  * @internal
  *
@@ -32,12 +41,17 @@ class RelayNetworkLayer {
   _defaultImplementation: ?NetworkLayer;
   _implementation: ?NetworkLayer;
   _queue: ?Array<RelayQueryRequest>;
+  _subscribers: Array<Subscriber>;
 
   constructor() {
     this._implementation = null;
     this._queue = null;
+    this._subscribers = [];
   }
 
+  /**
+   * @internal
+   */
   injectDefaultImplementation(implementation: ?NetworkLayer): void {
     if (this._defaultImplementation) {
       warning(
@@ -60,8 +74,26 @@ class RelayNetworkLayer {
     this._implementation = implementation;
   }
 
+  addNetworkSubscriber(
+    queryCallback?: ?QueryCallback,
+    mutationCallback?: ?MutationCallback
+  ) : ChangeSubscription {
+    const index = this._subscribers.length;
+    this._subscribers.push({queryCallback, mutationCallback});
+    return {
+      remove: () => {
+        delete this._subscribers[index];
+      },
+    };
+  }
+
   sendMutation(mutationRequest: RelayMutationRequest): void {
     const implementation = this._getImplementation();
+    this._subscribers.forEach(({mutationCallback}) => {
+      if (mutationCallback) {
+        mutationCallback(mutationRequest);
+      }
+    });
     const promise = implementation.sendMutation(mutationRequest);
     if (promise) {
       Promise.resolve(promise).done();
@@ -70,6 +102,14 @@ class RelayNetworkLayer {
 
   sendQueries(queryRequests: Array<RelayQueryRequest>): void {
     const implementation = this._getImplementation();
+    this._subscribers.forEach(({queryCallback}) => {
+      if (queryCallback) {
+        queryRequests.forEach(request => {
+          // $FlowIssue #10907496 queryCallback was checked above
+          queryCallback(request);
+        });
+      }
+    });
     const promise = implementation.sendQueries(queryRequests);
     if (promise) {
       Promise.resolve(promise).done();

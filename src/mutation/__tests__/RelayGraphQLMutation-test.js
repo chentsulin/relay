@@ -28,21 +28,26 @@ const RelayTestUtils = require('RelayTestUtils');
 const generateRQLFieldAlias = require('generateRQLFieldAlias');
 const readRelayQueryData = require('readRelayQueryData');
 
-const {COMMITTING} = RelayMutationTransactionStatus;
+const {
+  COMMITTING,
+  COMMIT_QUEUED,
+  UNCOMMITTED,
+} = RelayMutationTransactionStatus;
 const {HAS_NEXT_PAGE, HAS_PREV_PAGE, PAGE_INFO} = RelayConnectionInterface;
 
 const {getNode} = RelayTestUtils;
 
-describe('RelayGraphQLMutation', function() {
+describe('RelayGraphQLMutation', () => {
   let environment;
-  let callbacks;
   let feedbackLikeQuery;
+  let feedbackLikeVariables;
+  let optimisticQuery;
+  let optimisticResponse;
   let queue;
   let requests;
   let sendMutation;
   let store;
   let storeData;
-  let variables;
 
   // Convenience wrapper around `RelayTestUtils.writePayload`.
   function writePayload(query, payload) {
@@ -67,7 +72,8 @@ describe('RelayGraphQLMutation', function() {
   }
 
   beforeEach(() => {
-    jest.addMatchers(RelayTestUtils.matchers);
+    jasmine.addMatchers(RelayTestUtils.matchers);
+    jest.resetModuleRegistry();
 
     requests = [];
     environment = new RelayEnvironment();
@@ -98,19 +104,166 @@ describe('RelayGraphQLMutation', function() {
           }
         }
       }`;
+    feedbackLikeVariables = {
+      input: {
+        feedbackId: 'aFeedbackId',
+      },
+      likersCount: 10,
+    };
+
+    optimisticQuery =
+      Relay.QL`mutation FeedbackLikeOptimisticUpdate {
+        feedbackLike(input: $input) {
+          clientMutationId
+          feedback {
+            doesViewerLike
+            id
+            likers(first: $likersCount) {
+              count
+            }
+          }
+        }
+      }`;
+    const likers = generateRQLFieldAlias('likers.first(10)');
+    optimisticResponse = {
+      feedback: {
+        doesViewerLike: true,
+        id: 'aFeedbackId',
+        [likers]: {
+          count: 2,
+        },
+        __typename: 'Feedback',
+      },
+    };
   });
 
-  describe('commitUpdate()', () => {
+  describe('applyOptimistic()', () => {
+    it('complains if called twice', () => {
+      const mutation = RelayGraphQLMutation.create(
+        feedbackLikeQuery,
+        feedbackLikeVariables,
+        environment
+      );
+      const mutate = () => mutation.applyOptimistic(
+        optimisticQuery,
+        optimisticResponse
+      );
+      expect(mutate).not.toThrow();
+      expect(mutate).toFailInvariant(
+        'RelayGraphQLMutation: `applyOptimistic()` was called on an instance ' +
+        'that already has a transaction in progress.'
+      );
+    });
+
+    it('optimistically updates the store', () => {
+      writePayload(
+        getNode(Relay.QL`
+          query {
+            node(id: "aFeedbackId") {
+              ... on Feedback {
+                doesViewerLike
+                id
+                likers(first: "10") {
+                  count
+                  edges {
+                    node {
+                      id
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `),
+        {
+          node: {
+            __typename: 'Feedback',
+            doesViewerLike: false,
+            id: 'aFeedbackId',
+            likers: {
+              count: 1,
+              edges: [
+                {
+                  cursor: 'cursor1',
+                  node: {
+                    __typename: 'User',
+                    id: '1055790163',
+                    name: 'Yuzhi',
+                  },
+                },
+              ],
+              [PAGE_INFO]: {
+                [HAS_NEXT_PAGE]: false,
+                [HAS_PREV_PAGE]: false,
+              },
+            },
+          },
+        }
+      );
+
+      const callbacks = {
+        onFailure: jest.fn(),
+        onSuccess: jest.fn(),
+      };
+      const mutation = new RelayGraphQLMutation(
+        feedbackLikeQuery,
+        feedbackLikeVariables,
+        null,
+        environment,
+        callbacks
+      );
+      const transaction = mutation.applyOptimistic(
+        optimisticQuery,
+        optimisticResponse,
+      );
+      const id = transaction.getID();
+      expect(queue.getStatus(id)).toBe(UNCOMMITTED);
+      expect(sendMutation.mock.calls.length).toBe(0);
+
+      const data = readData(
+        getNode(Relay.QL`
+          fragment on Feedback {
+            doesViewerLike
+            id
+            likers(first: "10") {
+              count
+            }
+          }
+        `),
+        'aFeedbackId'
+      );
+      expect(data).toMatchRecord({
+        __mutationStatus__: '0:UNCOMMITTED',
+        doesViewerLike: true,
+        id: 'aFeedbackId',
+        likers: {
+          __mutationStatus__: '0:UNCOMMITTED',
+          count: 2,
+        },
+      });
+
+      // Callbacks don't fire for optimistic updates.
+      expect(callbacks.onFailure).not.toBeCalled();
+      expect(callbacks.onSuccess).not.toBeCalled();
+    });
+  });
+
+  describe('commit()', () => {
     describe('variable validation', () => {
       it('complains about missing `input` variable', () => {
-        variables = {
+        const variables = {
           inptu: /* <- Note the typo. */ {
             feedbackId: 'aFeedbackId',
           },
           likersCount: '10',
         };
-        const mutation = new RelayGraphQLMutation(feedbackLikeQuery, variables);
-        expect(() => mutation.commitUpdate(environment))
+        const mutation = RelayGraphQLMutation.create(
+          feedbackLikeQuery,
+          variables,
+          environment
+        );
+        expect(() => mutation.commit())
           .toFailInvariant(
             'RelayGraphQLMutation: Required `input` variable is missing ' +
             '(supplied variables were: [inptu, likersCount]).'
@@ -118,17 +271,21 @@ describe('RelayGraphQLMutation', function() {
       });
 
       it('complains about missing non-`input` variables', () => {
-        variables = {
+        const variables = {
           input: {
             feedbackId: 'aFeedbackId',
           },
         };
-        const mutation = new RelayGraphQLMutation(feedbackLikeQuery, variables);
+        const mutation = RelayGraphQLMutation.create(
+          feedbackLikeQuery,
+          variables,
+          environment
+        );
 
         // Need to actually print the query to see this invariant.
         sendMutation.mockImplementation(request => request.getQueryString());
 
-        expect(() => mutation.commitUpdate(environment))
+        expect(() => mutation.commit())
           .toFailInvariant(
             'callsFromGraphQL(): Expected a declared value for variable, ' +
             '`$likersCount`.'
@@ -184,25 +341,21 @@ describe('RelayGraphQLMutation', function() {
           }
         );
 
-        variables = {
-          input: {
-            feedbackId: 'aFeedbackId',
-          },
-          likersCount: 10,
-        };
-
         // Creating the mutation does not send it.
-        const mutation = new RelayGraphQLMutation(feedbackLikeQuery, variables);
-        expect(sendMutation.mock.calls.length).toBe(0);
-
-        callbacks = {
+        const callbacks = {
           onFailure: jest.fn(),
           onSuccess: jest.fn(),
         };
-        const transaction = mutation.commitUpdate(
+        const mutation = new RelayGraphQLMutation(
+          feedbackLikeQuery,
+          feedbackLikeVariables,
+          null,
           environment,
           callbacks
         );
+        expect(sendMutation.mock.calls.length).toBe(0);
+
+        const transaction = mutation.commit();
         const id = transaction.getID();
         expect(queue.getStatus(id)).toBe(COMMITTING);
         expect(sendMutation.mock.calls.length).toBe(1);
@@ -312,6 +465,86 @@ describe('RelayGraphQLMutation', function() {
             },
           });
         });
+      });
+
+      describe('collision keys', () => {
+        it('enqueues colliding keys', () => {
+          // Colliding keys: only first transaction runs.
+          const mutation1 = new RelayGraphQLMutation(
+            feedbackLikeQuery,
+            feedbackLikeVariables,
+            null,
+            environment,
+            null,
+            'aKey'
+          );
+          const mutation2 = new RelayGraphQLMutation(
+            feedbackLikeQuery,
+            feedbackLikeVariables,
+            null,
+            environment,
+            null,
+            'aKey'
+          );
+          const transaction1 = mutation1.commit();
+          const transaction2 = mutation2.commit();
+          expect(queue.getStatus(transaction1.getID())).toBe(COMMITTING);
+          expect(queue.getStatus(transaction2.getID())).toBe(COMMIT_QUEUED);
+        });
+
+        it('allows non-collding keys to send concurrently', () => {
+          // Non-colliding keys: both transactions run.
+          const mutation1 = new RelayGraphQLMutation(
+            feedbackLikeQuery,
+            feedbackLikeVariables,
+            null,
+            environment,
+            'oneKey'
+          );
+          const mutation2 = new RelayGraphQLMutation(
+            feedbackLikeQuery,
+            feedbackLikeVariables,
+            null,
+            environment,
+            'anotherKey'
+          );
+          const transaction1 = mutation1.commit();
+          const transaction2 = mutation2.commit();
+          expect(queue.getStatus(transaction1.getID())).toBe(COMMITTING);
+          expect(queue.getStatus(transaction2.getID())).toBe(COMMITTING);
+        });
+
+        it('auto-generates non-colliding keys if none provided', () =>{
+          const mutation1 = RelayGraphQLMutation.create(
+            feedbackLikeQuery,
+            feedbackLikeVariables,
+            environment
+          );
+          const mutation2 = RelayGraphQLMutation.create(
+            feedbackLikeQuery,
+            feedbackLikeVariables,
+            environment
+          );
+          const transaction1 = mutation1.commit();
+          const transaction2 = mutation2.commit();
+          expect(queue.getStatus(transaction1.getID())).toBe(COMMITTING);
+          expect(queue.getStatus(transaction2.getID())).toBe(COMMITTING);
+        });
+      });
+
+      it('complains if committed twice', () => {
+        const mutation = RelayGraphQLMutation.create(
+          feedbackLikeQuery,
+          feedbackLikeVariables,
+          environment
+        );
+        mutation.commit();
+
+        // Note: we're actually relying on RelayMutationTransaction invariant.
+        expect(() => mutation.commit()).toFailInvariant(
+          'RelayMutationTransaction: Only transactions with status `CREATED` ' +
+          'or `UNCOMMITTED` can be committed.'
+        );
       });
     });
   });
