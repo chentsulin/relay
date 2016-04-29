@@ -7,129 +7,129 @@ permalink: docs/api-reference-relay-ql.html
 next: api-reference-relay-mutation
 ---
 
-Relay fragments, mutations, and queries must be specified using ES6 template literals tagged with `Relay.QL`. For example:
+Relay fragment、mutation、和 query 必須使用 ES6 template literal 以 `Relay.QL` 做標記來指定。例如：
 
 ```
 var fragment = Relay.QL`
-  fragment on User {
-    name
-  }
+	fragment on User {
+		name
+	}
 `;
 ```
 
-To execute this code, Relay needs access to the schema - which can be too large to bundle inside the application. Instead, these `Relay.QL` template expressions are transpiled into JavaScript descriptions via the `babel-relay-plugin`. This schema information allows Relay to understand things like the types of field arguments, which fields are connections or lists, and how to efficiently refetch records from the server.
+要執行這段程式碼，Relay 需要存取 schema - 它可能會太大而無法 bundle 到應用程式裡。作為替代，我們 藉由 `babel-relay-plugin` 把這些 `Relay.QL` template expressions 編譯成 JavaScript 描述。這份 schema 資訊讓 Relay 了解像是欄位參數的 type、哪一個欄位是 connection 或是 list，還有如何有效地從伺服器重新抓取 record 等等。
 
-## Related APIs
+## 相關的 API
 
-`Relay.QL` objects are used by the following APIs:
+`Relay.QL` 物件被以下的 API 使用：
 
 <ul class="apiIndex">
-  <li>
-    <pre>() => Relay.QL`fragment on ...`</pre>
-    Specify the data dependencies of a `Relay.Container` as GraphQL fragments.
-  </li>
-  <li>
-    <pre>(Component) => Relay.QL`query ...`</pre>
-    Specify the queries of a `Relay.Route`.
-  </li>
-  <li>
-    <pre>Relay.QL`mutation { fieldName }`</pre>
-    Specify the mutation field in a `Relay.Mutation`.
-  </li>
-  <li>
-    <pre>var fragment = Relay.QL`fragment on ...`;</pre>
-    Reusable fragments to compose within the above use cases.
-  </li>
+	<li>
+		<pre>() => Relay.QL`fragment on ...`</pre>
+		指定一個 `Relay.Container` 的資料依賴關係為 GraphQL fragment。
+	</li>
+	<li>
+		<pre>(Component) => Relay.QL`query ...`</pre>
+		指定一個 `Relay.Route` 的 query。
+	</li>
+	<li>
+		<pre>Relay.QL`mutation { fieldName }`</pre>
+		在一個 `Relay.Mutation` 中指定 mutation 欄位。
+	</li>
+	<li>
+		<pre>var fragment = Relay.QL`fragment on ...`;</pre>
+		可以在上述的使用案例內合成的可重用的 fragment。
+	</li>
 </ul>
 
 
-## Fragment Composition
+## Fragment 的合成
 
-Fragments can be composed in one of two ways:
+可以用兩者之一的方式來合成 Fragment：
 
-- Composing child component fragments in a parent fragment.
-- Composing fragments defined as local variables.
+- 在 parent fragment 合成 child component 的 fragment。
+- 合成被定義為區域變數的 fragment。
 
 ### Container.getFragment()
 
-Composing the fragments of child components is discussed in detail in the [Containers Guide](guides-containers.html), but here's a quick example:
+合成 child component 的 fragment 在 [Containers Guide](guides-containers.html) 中有被詳細的討論，不過這裡有一個簡單的例子：
 
 ```{5}
 Relay.createContainer(Foo, {
-  fragments: {
-    bar: () => Relay.QL`
-      fragment on Bar {
-        ${ChildComponent.getFragment('childFragmentName')},
-      }
-    `,
-  }
+	fragments: {
+		bar: () => Relay.QL`
+			fragment on Bar {
+				${ChildComponent.getFragment('childFragmentName')},
+			}
+		`,
+	}
 });
 ```
 
 ### Inline Fragments
 
-Fragments may also compose other fragments that are assigned to local variables:
+Fragment 也可以合成其他被指定給區域變數的 fragment：
 
 ```{3-7,14,21}
-// An inline fragment - useful in small quantities, but best not to share
-// between modules.
+// 一個 inline fragment - 在小量使用時很有用，不過最好不要在 module 之間
+// 共享。
 var userFragment = Relay.QL`
-  fragment on User {
-    name,
-  }
+	fragment on User {
+		name,
+	}
 `;
 Relay.createContainer(Story, {
-  fragments: {
-    bar: () => Relay.QL`
-      fragment on Story {
-        author {
-          # Fetch the same information about the story's author ...
-          ${userFragment},
-        },
-        comments {
-          edges {
-            node {
-              author {
-                # ... and the authors of the comments.
-                ${userFragment},
-              },
-            },
-          },
-        },
-      }
-    `,
-  }
+	fragments: {
+		bar: () => Relay.QL`
+			fragment on Story {
+				author {
+					# 抓取有關於這個 story 的 author 的一樣資訊 ...
+					${userFragment},
+				},
+				comments {
+					edges {
+						node {
+							author {
+								# ... 以及 comments 的 author。
+								${userFragment},
+							},
+						},
+					},
+				},
+			}
+		`,
+	}
 });
 ```
 
-Note that it is *highly* recommended that `Relay.Container`s define their own fragments and avoid sharing inline `var fragment = Relay.QL...` values between containers or files. If you find yourself wanting to share inline fragments, it's likely a sign that it's time to refactor and introduce a new container.
+注意，*強烈*建議 `Relay.Container` 定義它們自己的 fragment 並避免在 container 或是檔案之間共享 inline `var fragment = Relay.QL...` 的值。如果你發現自己想要共享 inline fragment，這可能是一個信號表示是時候重構並引入一個新的 container 了。
 
-### Conditional fields
+### 條件式欄位
 
-You can conditionally include or skip a field based on the value of a boolean variable.
+你可以根據一個 boolean 變數的值條件式的 include 或 skip 一個欄位。
 
 ```{4,9}
 Relay.createContainer(Story, {
-  initialVariables: {
-    numCommentsToShow: 10,
-    showComments: false,
-  },
-  fragments: {
-    story: (variables) => Relay.QL`
-      fragment on Story {
-        comments(first: $numCommentsToShow) @include(if: $showComments) {
-          edges {
-            node {
-              author { name },
-              id,
-              text,
-            },
-          },
-        },
-      }
-    `,
-  }
+	initialVariables: {
+		numCommentsToShow: 10,
+		showComments: false,
+	},
+	fragments: {
+		story: (variables) => Relay.QL`
+			fragment on Story {
+				comments(first: $numCommentsToShow) @include(if: $showComments) {
+					edges {
+						node {
+							author { name },
+							id,
+							text,
+						},
+					},
+				},
+			}
+		`,
+	}
 });
 ```
 
-Wherever the inverse grammar serves you better, you can use `@skip(if: ...)` instead of `@include(if: ...)`.
+如果哪裡反面的語法可以讓你感覺更好，那你可以使用 `@skip(if: ...)` 來取代 `@include(if: ...)`。
