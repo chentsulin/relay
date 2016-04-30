@@ -8,16 +8,16 @@ indent: true
 next: graphql-connections
 ---
 
-Both `Faction` and `Ship` have identifiers that we can use to refetch them. We
-expose this capability to Relay through the `Node` interface and the `node`
-field on the root query type.
+`Faction` 和 `Ship` 都有識別碼，讓我們可以用來重新抓取它們。我們
+透過 `Node` 介面和在 root query type 上的 `node` 欄位
+來把這個功能暴露給 Relay。
 
-The `Node` interface contains a single field, `id`, which is a `ID!`. The
-`node` root field takes a single argument, a `ID!`, and returns a `Node`.
-These two work in concert to allow refetching; if we pass the `id` returned in
-that field to the `node` field, we get the object back.
+`Node` 介面包含一個欄位，`id`，它是一個 `ID!`。
+`node` root 欄位接受一個參數，一個 `ID!`，並回傳一個 `Node`。
+這兩個東西一起合作來達成重新抓取；如果我們把那個欄位回傳的 `id` 傳進
+`node` 欄位，我們可以把物件取回來。
 
-Let's see this in action, and query for the ID of the rebels:
+讓我們來在實例中看看這個，並 query rebels 的 ID：
 
 ```
 query RebelsQuery {
@@ -28,7 +28,7 @@ query RebelsQuery {
 }
 ```
 
-returns
+回傳
 
 ```json
 {
@@ -39,7 +39,7 @@ returns
 }
 ```
 
-So now we know the ID of the Rebels in our system. We can now refetch them:
+因此在我們系統中現在我們知道這些 Rebel 的 ID 了。我們現在可以重新抓取它們：
 
 ```
 query RebelsRefetchQuery {
@@ -52,7 +52,7 @@ query RebelsRefetchQuery {
 }
 ```
 
-returns
+回傳
 
 ```json
 {
@@ -63,8 +63,8 @@ returns
 }
 ```
 
-If we do the same thing with the Empire, we'll find that it returns a different
-ID, and we can refetch it as well:
+如果我們對 Empire 做一樣的事，我們會發現它回傳一個不同的
+ID，而我們同樣可以重新抓取它：
 
 ```
 query EmpireQuery {
@@ -75,7 +75,7 @@ query EmpireQuery {
 }
 ```
 
-yields
+產生
 
 ```json
 {
@@ -86,7 +86,7 @@ yields
 }
 ```
 
-and
+而
 
 ```
 query EmpireRefetchQuery {
@@ -99,7 +99,7 @@ query EmpireRefetchQuery {
 }
 ```
 
-yields
+產生
 
 ```json
 {
@@ -110,17 +110,16 @@ yields
 }
 ```
 
-The `Node` interface and `node` field assume globally unique IDs for this
-refetching. A system without globally unique IDs can usually synthesize them
-by combining the type with the type-specific ID, which is what was done
-in this example.
+`Node` 介面和 `node` 欄位針對這個重新抓取假設全域有唯一的 ID。沒有全域唯一的 ID 的系統 通常可以
+藉由組合 type 以及 type-specific ID 來合成它們，也就是在
+在這個範例中所做的。
 
-The IDs we got back were base64 strings. IDs are designed to be opaque (the
-only thing that should be passed to the `id` argument on `node` is the
-unaltered result of querying `id` on some object in the system), and base64ing
-a string is a useful convention in GraphQL to remind viewers that the string is
-an opaque identifier.
+我們取回的這些 ID 是 base64 字串。ID 被設計成不透明的 (
+唯一應該要被傳遞給 `node` 的 `id` 參數的東西，是在系統中 query 一些物件的 `id`
+的不變結果)，而
+在 GraphQL 中把一個字串做 base64 處理是一個有用的慣例，以提醒 viewer 這個字串是
+一個不透明的識別碼。
 
-Complete details on how the server should behave are
-available in the
-[GraphQL Object Identification](../graphql/objectidentification.htm) spec.
+關於伺服器應該有怎樣的行為的完整細節
+可以在
+[GraphQL Object Identification](../graphql/objectidentification.htm) spec 找到。
