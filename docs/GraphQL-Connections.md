@@ -8,12 +8,12 @@ indent: true
 next: graphql-mutations
 ---
 
-A faction has many ships in the Star Wars universe. Relay contains functionality
-to make manipulating one-to-many relationships easy, using a standardized way
-of expressing these one-to-many relationships. This standard connection
-model offers ways of slicing and paginating through the connection.
+在 Star Wars universe 中，一個 faction 有許多 ship。Relay 包含
+讓操作一對多關聯變得簡單的功能，使用一個標準化的方式
+來表達這些一對多關聯。這個標準的 connection
+模型提供透過 connection 來處理 slice 和 paginate 的方法。
 
-Let's take the rebels, and ask for their first ship:
+讓我們先選擇 rebels，並查詢它們的第一個 ship：
 
 ```
 query RebelsShipsQuery {
@@ -30,7 +30,7 @@ query RebelsShipsQuery {
 }
 ```
 
-yields
+產生
 
 ```json
 {
@@ -49,10 +49,9 @@ yields
 }
 ```
 
-That used the `first` argument to `ships` to slice the result set down to the
-first one. But what if we wanted to paginate through it? On each edge, a cursor
-will be exposed that we can use to paginate. Let's ask for the first two this
-time, and get the cursor as well:
+這對 `ships` 使用 `first` 參數來把結果集切到只剩
+第一個。不過那如果我們想要用它做 paginate 呢？在每一個 edge 上，一個
+我們可以用來 paginate 的 cursor 會被顯露。這次讓我們查詢前兩個，並同樣的取回 cursor：
 
 ```
 query MoreRebelShipsQuery {
@@ -70,7 +69,7 @@ query MoreRebelShipsQuery {
 }
 ```
 
-and we get back
+而我們取回
 
 ```json
 {
@@ -96,10 +95,10 @@ and we get back
 }
 ```
 
-Notice that the cursor is a base64 string. That's the pattern from earlier: the
-server is reminding us that this is an opaque string. We can pass this string
-back to the server as the `after` argument to the `ships` field, which will let
-us ask for the next three ships after the last one in the previous result:
+要注意，cursor 是一個 base64 字串。這是一個前面看過的模式：
+伺服器提醒我們這是一個不透明的字串。我們可以把這個字串傳回
+伺服器作為 `ships` 欄位的 `after` 參數，這或讓
+我們查詢在前一次結果的最後一筆的下三個 ship：
 
 ```
 query EndOfRebelShipsQuery {
@@ -117,7 +116,7 @@ query EndOfRebelShipsQuery {
 }
 ```
 
-gives us
+給我們
 
 ```json
 
@@ -150,7 +149,7 @@ gives us
 }
 ```
 
-Sweet! Let's keep going and get the next four!
+太棒了！讓我們繼續前進並取得後四個！
 
 ```
 query RebelsQuery {
@@ -168,7 +167,7 @@ query RebelsQuery {
 }
 ```
 
-yields
+產生
 
 ```json
 {
@@ -181,12 +180,12 @@ yields
 }
 ```
 
-Hm. There were no more ships; guess there were only five in the system for
-the rebels. It would have been nice to know that we'd reached the
-end of the connection, without having to do another round trip in order
-to verify that. The connection model exposes this capability with a type
-called `PageInfo`. So let's issue the two queries that got us ships again,
-but this time ask for `hasNextPage`:
+嗯。沒有 ship；猜測應該是在系統中 rebel 只有五個
+ship。如果能知道我們已經碰到 connection 的末端的話
+很不錯，就不需要再一次往返
+來驗證這件事。connection 模型用一個叫做 `PageInfo` 的 type 來
+使用這個功能。因此讓我們發送兩個 query 再一次的幫我們把 ships 取回，
+但這次要查詢 `hasNextPage`:
 
 ```
 query EndOfRebelShipsQuery {
@@ -216,7 +215,7 @@ query EndOfRebelShipsQuery {
 }
 ```
 
-and we get back
+而我們取回
 
 ```json
 {
@@ -265,12 +264,12 @@ and we get back
 }
 ```
 
-So on the first query for ships, GraphQL told us there was a next page,
-but on the next one, it told us we'd reached the end of the connection.
+因此在第一次對 ships 的 query，GraphQL 告訴我們有下一個 page，
+但是在下一次，它告訴我們已經碰到 connection 的末端。
 
-Relay uses all of this functionality to build out abstractions around
-connections, to make these easy to work with efficiently without having
-to manually manage cursors on the client.
+Relay 使用這所有的功能來打造 connection
+相關的抽象，讓這些能有效的運作而不需要
+在客戶端上手動的管理 cursor。
 
-Complete details on how the server should behave are
-available in the [GraphQL Cursor Connections](../graphql/connections.htm) spec.
+關於伺服器應該有怎樣的行為的完整細節
+可以在 [GraphQL Cursor Connections](../graphql/connections.htm) spec 找到。
