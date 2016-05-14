@@ -22,7 +22,7 @@ const RelayVariable = require('RelayVariable');
 const generateRQLFieldAlias = require('generateRQLFieldAlias');
 
 describe('RelayQueryField', () => {
-  const {getNode} = RelayTestUtils;
+  const {getNode, getVerbatimNode} = RelayTestUtils;
 
   let aliasedIdField;
   let cursorField;
@@ -56,10 +56,10 @@ describe('RelayQueryField', () => {
           friends(first:"1") {
             edges {
               node {
-                special_id: id,
-              },
-            },
-          },
+                special_id: id
+              }
+            }
+          }
         }
       }
     `);
@@ -81,7 +81,7 @@ describe('RelayQueryField', () => {
 
     const friendsScalarFieldRQL = Relay.QL`
       fragment on User {
-        friend_scalar: friends
+        friends_scalar: friends
           (first:"10",after:"offset",orderby:"name") {
           edges {
             node {
@@ -235,8 +235,8 @@ describe('RelayQueryField', () => {
     const query = getNode(Relay.QL`
       fragment on Story {
         feedback {
-          id,
-          canViewerComment,
+          id
+          canViewerComment
         }
       }
     `).getChildren()[0];
@@ -287,7 +287,7 @@ describe('RelayQueryField', () => {
 
   it('returns the schema/application names', () => {
     expect(friendsScalarField.getSchemaName()).toBe('friends');
-    expect(friendsScalarField.getApplicationName()).toBe('friend_scalar');
+    expect(friendsScalarField.getApplicationName()).toBe('friends_scalar');
 
     expect(friendsVariableField.getSchemaName()).toBe('friends');
     expect(friendsVariableField.getApplicationName()).toBe('friends_variable');
@@ -431,7 +431,9 @@ describe('RelayQueryField', () => {
   describe('getSerializationKey()', () => {
     it('serializes all calls', () => {
       expect(friendsScalarField.getSerializationKey()).toBe(
-        generateRQLFieldAlias('friends.after(offset).first(10).orderby(name)')
+        generateRQLFieldAlias(
+          'friends.friends_scalar.after(offset).first(10).orderby(name)'
+        )
       );
     });
 
@@ -457,6 +459,34 @@ describe('RelayQueryField', () => {
       const pictureVariable =
         getNode(pictureVariableRQL, variables).getChildren()[0];
       expect(pictureVariable.getSerializationKey()).toBe(key);
+    });
+
+    it('includes the alias on fields with calls', () => {
+      const fragment = getVerbatimNode(Relay.QL`
+        fragment on User {
+          const: profilePicture(size: "100") { uri }
+          var: profilePicture(size: $size) { uri }
+        }
+      `, {
+        size: 100,
+      });
+      const children = fragment.getChildren();
+      expect(children[0].getSerializationKey()).toBe(
+        generateRQLFieldAlias('profilePicture.const.size(100)')
+      );
+      expect(children[1].getSerializationKey()).toBe(
+        generateRQLFieldAlias('profilePicture.var.size(100)')
+      );
+    });
+
+    it('excludes the alias on fields without calls', () => {
+      const fragment = getVerbatimNode(Relay.QL`
+        fragment on User {
+          alias: username
+        }
+      `);
+      const children = fragment.getChildren();
+      expect(children[0].getSerializationKey()).toBe('username');
     });
   });
 
@@ -648,7 +678,7 @@ describe('RelayQueryField', () => {
       {name: 'first', value: 25},
     ]);
     expect(clonedFeed.getSerializationKey()).toEqual(
-      generateRQLFieldAlias('friends.first(25)')
+      generateRQLFieldAlias('friends.friends_variable.first(25)')
     );
     expect(clonedFeed.getStorageKey()).toEqual('friends');
 

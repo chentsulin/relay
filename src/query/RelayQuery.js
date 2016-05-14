@@ -8,7 +8,6 @@
  *
  * @providesModule RelayQuery
  * @flow
- * @typechecks
  */
 
 'use strict';
@@ -1125,13 +1124,19 @@ class RelayQueryField extends RelayQueryNode {
   getSerializationKey(): string {
     let serializationKey = this.__serializationKey__;
     if (!serializationKey) {
-      serializationKey = generateRQLFieldAlias(
-        this.getSchemaName() +
-        this.getCallsWithValues()
+      let key = this.getSchemaName();
+      const calls = this.getCallsWithValues();
+      if (calls.length) {
+        const alias = (this.__concreteNode__: ConcreteField).alias;
+        if (alias != null) {
+          key += '.' + alias;
+        }
+        key += calls
           .map(serializeRelayQueryCall)
           .sort()
-          .join('')
-      );
+          .join('');
+      }
+      serializationKey = generateRQLFieldAlias(key);
       this.__serializationKey__ = serializationKey;
     }
     return serializationKey;

@@ -8,7 +8,6 @@
  *
  * @providesModule RelayTypes
  * @flow
- * @typechecks
  */
 
 'use strict';
@@ -169,7 +168,7 @@ export type CacheManager = {
   ) => void;
 };
 
-export type CacheReadCallbacks = {
+export type CacheProcessorCallbacks = {
   onSuccess?: () => void;
   onFailure?: () => void;
 };

@@ -7,7 +7,6 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @providesModule RelayReadyState
- * @typechecks
  * @flow
  */
 
@@ -55,7 +54,12 @@ class RelayReadyState {
       return;
     }
     if (prevReadyState.done || prevReadyState.error) {
-      if (!nextReadyState.aborted) {
+      if (nextReadyState.stale) {
+        if (prevReadyState.error) {
+          this._mergeState(nextReadyState);
+        }
+        // Do nothing if stale data comes after server data.
+      } else if (!nextReadyState.aborted) {
         warning(
           false,
           'RelayReadyState: Invalid state change from `%s` to `%s`.',
@@ -65,8 +69,12 @@ class RelayReadyState {
       }
       return;
     }
+    this._mergeState(nextReadyState);
+  }
+
+  _mergeState(nextReadyState: PartialReadyState): void {
     this._readyState = {
-      ...prevReadyState,
+      ...this._readyState,
       ...nextReadyState,
     };
     if (this._scheduled) {

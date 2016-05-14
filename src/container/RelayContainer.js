@@ -7,7 +7,6 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @providesModule RelayContainer
- * @typechecks
  * @flow
  */
 
@@ -105,11 +104,12 @@ function createContainerComponent(
     _fragmentResolvers: {[key: string]: ?FragmentResolver};
 
     pending: ?{
-      variables: Variables;
+      rawVariables: Variables;
       request: Abortable;
     };
     state: {
       queryData: {[propName: string]: mixed};
+      rawVariables: Variables;
       relayProp: RelayProp;
     };
 
@@ -142,6 +142,7 @@ function createContainerComponent(
       this.pending = null;
       this.state = {
         queryData: {},
+        rawVariables: {},
         relayProp: {
           forceFetch: this.forceFetch.bind(this),
           getPendingTransactions: this.getPendingTransactions.bind(this),
@@ -244,10 +245,17 @@ function createContainerComponent(
       callback: ?ComponentReadyStateChangeCallback,
       forceFetch: boolean
     ): void {
-      const lastVariables = this.state.relayProp.variables;
+      validateVariables(initialVariables, partialVariables);
+      const lastVariables = this.state.rawVariables;
       const prevVariables =
-        this.pending ? this.pending.variables : lastVariables;
-      const nextVariables = mergeVariables(prevVariables, partialVariables);
+        this.pending ? this.pending.rawVariables : lastVariables;
+      const rawVariables = mergeVariables(prevVariables, partialVariables);
+      let nextVariables = rawVariables;
+      if (prepareVariables) {
+        const metaRoute = RelayMetaRoute.get(this.context.route.name);
+        nextVariables = prepareVariables(rawVariables, metaRoute);
+        validateVariables(initialVariables, nextVariables);
+      }
 
       this.pending && this.pending.request.abort();
 
@@ -280,6 +288,7 @@ function createContainerComponent(
           const queryData = this._getQueryData(this.props);
           partialState = {
             queryData,
+            rawVariables,
             relayProp: {
               ...this.state.relayProp,
               variables: nextVariables,
@@ -316,7 +325,7 @@ function createContainerComponent(
       }, 'RelayContainer.onReadyStateChange');
 
       const current = {
-        variables: nextVariables,
+        rawVariables,
         request: forceFetch ?
           this.context.relay.forceFetch(querySet, onReadyStateChange) :
           this.context.relay.primeCache(querySet, onReadyStateChange),
@@ -440,7 +449,7 @@ function createContainerComponent(
           resetPropOverridesForVariables(
             spec,
             nextProps,
-            state.relayProp.variables
+            state.rawVariables
           )
         );
       });
@@ -458,17 +467,26 @@ function createContainerComponent(
       prevVariables: Variables
     ): {
       queryData: {[propName: string]: mixed};
+      rawVariables: Variables,
       relayProp: RelayProp;
     } {
-      const nextVariables = getVariablesWithPropOverrides(
+      const rawVariables = getVariablesWithPropOverrides(
         spec,
         props,
         prevVariables
       );
+      let nextVariables = rawVariables;
+      if (prepareVariables) {
+        // TODO: Allow routes without names, #7856965.
+        const metaRoute = RelayMetaRoute.get(route.name);
+        nextVariables = prepareVariables(rawVariables, metaRoute);
+        validateVariables(initialVariables, nextVariables);
+      }
       this._updateFragmentPointers(props, route, nextVariables);
       this._updateFragmentResolvers(environment);
       return {
         queryData: this._getQueryData(props),
+        rawVariables,
         relayProp: (this.state.relayProp.route === route)
           && shallowEqual(this.state.relayProp.variables, nextVariables) ?
           this.state.relayProp :
@@ -586,10 +604,23 @@ function createContainerComponent(
           let dataIDs = null;
           propValue.forEach((item, ii) => {
             if (typeof item === 'object' && item != null) {
-              const dataID = RelayFragmentPointer.getDataID(item, fragment);
-              if (dataID) {
-                dataIDs = dataIDs || [];
-                dataIDs.push(dataID);
+              if (RelayFragmentPointer.hasConcreteFragment(item, fragment)) {
+                const dataID = RelayRecord.getDataIDForObject(item);
+                if (dataID) {
+                  dataIDs = dataIDs || [];
+                  dataIDs.push(dataID);
+                }
+              }
+              if (__DEV__) {
+                if (!route.useMockData && !this._didShowFakeDataWarning) {
+                  const isValid = validateFragmentProp(
+                    componentName,
+                    fragmentName,
+                    fragment,
+                    item
+                  );
+                  this._didShowFakeDataWarning = !isValid;
+                }
               }
             }
           });
@@ -613,22 +644,18 @@ function createContainerComponent(
             fragmentName,
             componentName
           );
-          dataIDOrIDs = RelayFragmentPointer.getDataID(propValue, fragment);
-        }
-        if (dataIDOrIDs == null) {
-          // TODO: Throw when we have mock data validation, #6332949.
+          if (RelayFragmentPointer.hasConcreteFragment(propValue, fragment)) {
+            dataIDOrIDs = RelayRecord.getDataIDForObject(propValue);
+          }
           if (__DEV__) {
             if (!route.useMockData && !this._didShowFakeDataWarning) {
-              this._didShowFakeDataWarning = true;
-              warning(
-                false,
-                'RelayContainer: Expected prop `%s` supplied to `%s` to ' +
-                'be data fetched by Relay. This is likely an error unless ' +
-                'you are purposely passing in mock data that conforms to ' +
-                'the shape of this component\'s fragment.',
+              const isValid = validateFragmentProp(
+                componentName,
                 fragmentName,
-                componentName
+                fragment,
+                propValue
               );
+              this._didShowFakeDataWarning = !isValid;
             }
           }
         }
@@ -649,7 +676,7 @@ function createContainerComponent(
               !RelayRecord.isRecord(props[propName]) ||
               typeof props[propName] !== 'object' ||
               props[propName] == null ||
-              !RelayFragmentPointer.getDataID(
+              !RelayFragmentPointer.hasFragment(
                 props[propName],
                 fragment
               ),
@@ -777,9 +804,6 @@ function createContainerComponent(
     );
     // TODO: Allow routes without names, #7856965.
     const metaRoute = RelayMetaRoute.get(route.name);
-    if (prepareVariables) {
-      variables = prepareVariables(variables, metaRoute);
-    }
     return RelayQuery.Fragment.create(
       fragment,
       metaRoute,
@@ -908,6 +932,21 @@ function getDeferredFragment(
   );
 }
 
+function validateVariables(
+  initialVariables: Variables,
+  partialVariables: ?Variables,
+): void {
+  if (partialVariables) {
+    for (const key in partialVariables) {
+      warning(
+        initialVariables.hasOwnProperty(key),
+        'RelayContainer: Expected query variable `%s` to be initialized in ' +
+        '`initialVariables`.',
+        key
+      );
+    }
+  }
+}
 
 function validateSpec(
   componentName: string,
@@ -1046,6 +1085,56 @@ function create(
   ContainerConstructor.moduleName = (null: ?string);
 
   return ContainerConstructor;
+}
+
+/**
+ * Returns whether the fragment `prop` contains a fragment pointer for the given
+ * fragment's data, warning if it does not.
+ */
+function validateFragmentProp(
+  componentName: string,
+  fragmentName: string,
+  fragment: RelayQuery.Fragment,
+  prop: Object
+): boolean {
+  const hasFragmentData = RelayFragmentPointer.hasFragment(
+    prop,
+    fragment
+  );
+  if (!hasFragmentData) {
+    const variables = fragment.getVariables();
+    const fetchedVariables = RelayFragmentPointer.getFragmentVariables(
+      prop,
+      fragment
+    );
+    warning(
+      false,
+      'RelayContainer: component `%s` was rendered with variables ' +
+      'that differ from the variables used to fetch fragment ' +
+      '`%s`. The fragment was fetched with variables `%s`, but rendered ' +
+      'with variables `%s`. This can indicate one of two possibilities: \n' +
+      ' - The parent set the correct variables in the query - ' +
+      '`%s.getFragment(\'%s\', {...})` - but did not pass the same ' +
+      'variables when rendering the component. Be sure to tell the ' +
+      'component what variables to use by passing them as props: ' +
+      '`<%s ... %s />`.\n' +
+      ' - You are intentionally passing fake data to this ' +
+      'component, in which case ignore this warning.',
+      componentName,
+      fragmentName,
+      fetchedVariables ?
+        fetchedVariables.map(vars => JSON.stringify(vars)).join(', ') :
+        '(not fetched)',
+      JSON.stringify(variables),
+      componentName,
+      fragmentName,
+      componentName,
+      Object.keys(variables).map(key => {
+        return `${key}={...}`;
+      }).join(' ')
+    );
+  }
+  return hasFragmentData;
 }
 
 module.exports = {create};

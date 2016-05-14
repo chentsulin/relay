@@ -7,7 +7,6 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @providesModule GraphQLQueryRunner
- * @typechecks
  * @flow
  */
 
@@ -229,11 +228,9 @@ function runQueries(
               remainingRequiredFetchMap,
               value => value.getQuery()
             );
-            storeData.readFromDiskCache(requiredQueryMap, {
+            storeData.restoreQueriesFromCache(requiredQueryMap, {
               onSuccess: () => {
-                if (hasItems(remainingRequiredFetchMap)) {
-                  readyState.update({ready: true, stale: true});
-                }
+                readyState.update({ready: true, stale: true});
               },
             });
           } else {

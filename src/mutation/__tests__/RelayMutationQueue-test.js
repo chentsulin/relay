@@ -526,4 +526,32 @@ describe('RelayMutationQueue', () => {
       expect(transaction3.getStatus()).toBe(COMMITTING);
     });
   });
+
+  describe('query tracking', () => {
+    it('passes along the query tracker to the mutation query builder', () => {
+      const tracker = storeData.getQueryTracker();
+      const transaction = mutationQueue.createTransaction(mockMutation);
+      RelayMutationQuery.buildQuery = jest.fn();
+      transaction.commit();
+
+      const calls = RelayMutationQuery.buildQuery.mock.calls;
+      expect(calls.length).toBe(1);
+      expect(calls[0].length).toBe(1);
+      expect(calls[0][0].tracker).toBe(tracker);
+    });
+
+    it('throws if used without a configured query tracker', () => {
+      const transaction = mutationQueue.createTransaction(mockMutation);
+      storeData.injectQueryTracker(null);
+      expect(() => transaction.commit()).toFailInvariant(
+        'RelayMutationQueue: a RelayQueryTracker was not configured but an ' +
+        'attempt to process a RelayMutation instance was made. Either use ' +
+        'RelayGraphQLMutation (which does not require a tracker), or use ' +
+        '`RelayStoreData.injectQueryTracker()` to configure a tracker. Be ' +
+        'aware that trackers are provided by default, so if you are seeing ' +
+        'this error it means that somebody has explicitly intended to opt ' +
+        'out of query tracking.'
+      );
+    });
+  });
 });

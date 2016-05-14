@@ -28,23 +28,26 @@ const RelayQuery = require('RelayQuery');
 const RelayRoute = require('RelayRoute');
 const RelayTestUtils = require('RelayTestUtils');
 
+const warning = require('warning');
+
 describe('RelayContainer', function() {
   let MockContainer;
   let MockComponent;
   let RelayTestRenderer;
 
+  let environment;
   let mockBarPointer;
   let mockFooFragment;
   let mockFooPointer;
   let mockRoute;
-  let environment;
+  let render;
 
   const {getNode, getPointer} = RelayTestUtils;
 
   beforeEach(function() {
     jest.resetModuleRegistry();
 
-    const render = jest.fn(function() {
+    render = jest.fn(function() {
       // Make it easier to expect prop values.
       render.mock.calls[render.mock.calls.length - 1].props = this.props;
       return <div />;
@@ -109,7 +112,7 @@ describe('RelayContainer', function() {
         fragments: {
           viewer: Relay.QL`
             fragment on Viewer {
-              newsFeed,
+              newsFeed
             }
           `,
         },
@@ -181,8 +184,8 @@ describe('RelayContainer', function() {
         fragments: {
           user: () => Relay.QL`
             fragment on Actor {
-              id,
-              name,
+              id
+              name
               ${MockProfileLink.getFragment('user')}
             }
           `,
@@ -192,7 +195,7 @@ describe('RelayContainer', function() {
         fragments: {
           user: () => Relay.QL`
             fragment on Actor {
-              id,
+              id
               url
             }
           `,
@@ -204,9 +207,9 @@ describe('RelayContainer', function() {
       );
       expect(fragment).toEqualQueryNode(getNode(Relay.QL`
         fragment on Actor {
-          id,
-          __typename,
-          name,
+          id
+          __typename
+          name
           ${Relay.QL`
             fragment on Actor {
               id,
@@ -254,7 +257,7 @@ describe('RelayContainer', function() {
         fragments: {
           viewer: variables => Relay.QL`
             fragment on Viewer {
-              ${MockProfile.getFragment('viewer').if(variables.hasSideshow)},
+              ${MockProfile.getFragment('viewer').if(variables.hasSideshow)}
             }
           `,
         },
@@ -294,7 +297,7 @@ describe('RelayContainer', function() {
             fragment on Viewer {
               ${MockProfile
                 .getFragment('viewer')
-                .unless(variables.hasSideshow)},
+                .unless(variables.hasSideshow)}
             }
           `,
         },
@@ -359,6 +362,172 @@ describe('RelayContainer', function() {
       'correctly set on the parent component\'s context ' +
       '(e.g. using <RelayRootContainer>).'
     );
+  });
+
+  describe('props.relay.variables', () => {
+    it('starts with initial variables', () => {
+      MockContainer = Relay.createContainer(MockComponent, {
+        initialVariables: {
+          public: 'instance',
+          private: 'instance',
+        },
+        fragments: {
+          foo: jest.fn(
+            () => Relay.QL`fragment on Node{id,name}`
+          ),
+        },
+      });
+      MockContainer.mock = {render};
+      RelayTestRenderer.render(
+        () => <MockContainer foo={mockFooPointer} />,
+        environment,
+        mockRoute
+      );
+      const props = MockContainer.mock.render.mock.calls[0].props;
+      expect(props.relay.variables).toEqual({
+        public: 'instance',
+        private: 'instance',
+      });
+    });
+
+    it('starts with initial + parent variables', () => {
+      MockContainer = Relay.createContainer(MockComponent, {
+        initialVariables: {
+          public: 'instance',
+          private: 'instance',
+        },
+        fragments: {
+          foo: jest.fn(
+            () => Relay.QL`fragment on Node{id,name}`
+          ),
+        },
+      });
+      MockContainer.mock = {render};
+      RelayTestRenderer.render(
+        () => <MockContainer foo={mockFooPointer} public="parent" />,
+        environment,
+        mockRoute
+      );
+      const props = MockContainer.mock.render.mock.calls[0].props;
+      expect(props.relay.variables).toEqual({
+        public: 'parent',
+        private: 'instance',
+      });
+    });
+
+    it('starts with prepared initial variables', () => {
+      const prepareVariables = jest.fn((vars, route) => {
+        expect(route.name).toBe(mockRoute.name);
+        return {
+          ...vars,
+          private: 'prepared',
+        };
+      });
+      MockContainer = Relay.createContainer(MockComponent, {
+        initialVariables: {
+          public: 'instance',
+          private: 'instance',
+        },
+        prepareVariables,
+        fragments: {
+          foo: jest.fn(
+            () => Relay.QL`fragment on Node{id,name}`
+          ),
+        },
+      });
+      MockContainer.mock = {render};
+      RelayTestRenderer.render(
+        () => <MockContainer foo={mockFooPointer} />,
+        environment,
+        mockRoute
+      );
+      const props = MockContainer.mock.render.mock.calls[0].props;
+      expect(props.relay.variables).toEqual({
+        public: 'instance',
+        private: 'prepared',
+      });
+    });
+
+    it('starts with prepared initial + parent variables', () => {
+      const prepareVariables = jest.fn((vars, route) => {
+        expect(route.name).toBe(mockRoute.name);
+        return {
+          ...vars,
+          private: 'prepared',
+        };
+      });
+      MockContainer = Relay.createContainer(MockComponent, {
+        initialVariables: {
+          public: 'instance',
+          private: 'instance',
+        },
+        prepareVariables,
+        fragments: {
+          foo: jest.fn(
+            () => Relay.QL`fragment on Node{id,name}`
+          ),
+        },
+      });
+      MockContainer.mock = {render};
+      RelayTestRenderer.render(
+        () => <MockContainer foo={mockFooPointer} public="parent" />,
+        environment,
+        mockRoute
+      );
+      const props = MockContainer.mock.render.mock.calls[0].props;
+      expect(props.relay.variables).toEqual({
+        public: 'parent',
+        private: 'prepared',
+      });
+    });
+
+    it('updates with prepared initial + parent variables', () => {
+      const prepareVariables = jest.fn((vars, route) => {
+        expect(route.name).toBe(mockRoute.name);
+        return {
+          ...vars,
+          private: 'prepared1',
+        };
+      });
+      MockContainer = Relay.createContainer(MockComponent, {
+        initialVariables: {
+          public: 'instance',
+          private: 'instance',
+        },
+        prepareVariables,
+        fragments: {
+          foo: jest.fn(
+            () => Relay.QL`fragment on Node{id,name}`
+          ),
+        },
+      });
+      MockContainer.mock = {render};
+      RelayTestRenderer.render(
+        () => <MockContainer foo={mockFooPointer} public="parent1" />,
+        environment,
+        mockRoute
+      );
+      const props = MockContainer.mock.render.mock.calls[0].props;
+      expect(props.relay.variables).toEqual({
+        public: 'parent1',
+        private: 'prepared1',
+      });
+
+      prepareVariables.mockImplementation(vars => ({
+        ...vars,
+        private: 'prepared2',
+      }));
+      RelayTestRenderer.render(
+        () => <MockContainer foo={mockFooPointer} public="parent2" />,
+        environment,
+        mockRoute
+      );
+      const nextProps = MockContainer.mock.render.mock.calls[1].props;
+      expect(nextProps.relay.variables).toEqual({
+        public: 'parent2',
+        private: 'prepared2',
+      });
+    });
   });
 
   it('creates resolvers for each query prop with a fragment pointer', () => {
@@ -604,14 +773,13 @@ describe('RelayContainer', function() {
     expect(props.bar).toBe(null);
     expect(props.foo).toBe(mockData);
 
-    expect([
-      'RelayContainer: Expected prop `%s` supplied to `%s` to ' +
-      'be data fetched by Relay. This is likely an error unless ' +
-      'you are purposely passing in mock data that conforms to ' +
-      'the shape of this component\'s fragment.',
-      'foo',
-      'MockComponent',
-    ]).toBeWarnedNTimes(1);
+    expect(warning.mock.calls.filter(call =>
+      call[0] === false && call[1].indexOf(
+        'RelayContainer: component `%s` was rendered with variables ' +
+        'that differ from the variables used to fetch fragment ' +
+        '`%s`.'
+      ) === 0
+    ).length).toBe(1);
   });
 
   it('warns if fragment pointer exists on a different prop', () => {
@@ -734,14 +902,13 @@ describe('RelayContainer', function() {
       mockRoute
     );
 
-    expect([
-      'RelayContainer: Expected prop `%s` supplied to `%s` to ' +
-      'be data fetched by Relay. This is likely an error unless ' +
-      'you are purposely passing in mock data that conforms to ' +
-      'the shape of this component\'s fragment.',
-      'bar',
-      'MockComponent',
-    ]).toBeWarnedNTimes(1);
+    expect(warning.mock.calls.filter(call =>
+      call[0] === false && call[1].indexOf(
+        'RelayContainer: component `%s` was rendered with variables ' +
+        'that differ from the variables used to fetch fragment ' +
+        '`%s`.'
+      ) === 0
+    ).length).toBe(1);
   });
 
   it('throws if some plural fragment items are null', () => {
@@ -854,7 +1021,9 @@ describe('RelayContainer', function() {
 
     const propNamesA = Object.keys(propsA);
     const propNamesB = Object.keys(propsB);
-    expect(propNamesA).toEqual(propNamesB);
+
+    // Fix for V8 bug where insertion order isn't preserved (see #10804655)
+    expect(propNamesA.sort()).toEqual(propNamesB.sort());
 
     propNamesA.forEach(propName => {
       expect(propsA[propName]).toBe(propsB[propName]);
@@ -867,7 +1036,7 @@ describe('RelayContainer', function() {
       '43': {__dataID__: '43', name: 'Tee'},
       '44': {__dataID__: '44', name: 'Toe'},
     };
-    const render = jest.fn(() => <div />);
+    render = jest.fn(() => <div />);
     const shouldComponentUpdate = jest.fn();
 
     const MockFastComponent = React.createClass({render, shouldComponentUpdate});
@@ -942,13 +1111,13 @@ describe('RelayContainer', function() {
   });
 
   it('applies `shouldComponentUpdate` properly', () => {
-    var mockDataSet = {
+    const mockDataSet = {
       '42': {__dataID__: '42', name: 'Tim'},
     };
-    var render = jest.genMockFunction().mockImplementation(() => <div />);
-    var shouldComponentUpdate = jest.fn(() => true);
+    render = jest.genMockFunction().mockImplementation(() => <div />);
+    const shouldComponentUpdate = jest.fn(() => true);
 
-    var MockAlwaysUpdateComponent = Relay.createContainer(
+    const MockAlwaysUpdateComponent = Relay.createContainer(
       React.createClass({render, shouldComponentUpdate}),
       {
         shouldComponentUpdate,
@@ -965,7 +1134,7 @@ describe('RelayContainer', function() {
     });
     mockFooFragment =
       getNode(MockAlwaysUpdateComponent.getFragment('foo').getFragment({}));
-    var mockPointerA = getPointer('42', mockFooFragment);
+    const mockPointerA = getPointer('42', mockFooFragment);
 
     RelayTestRenderer.render(
       () => <MockAlwaysUpdateComponent foo={mockPointerA} />,

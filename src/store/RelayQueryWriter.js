@@ -8,7 +8,6 @@
  *
  * @providesModule RelayQueryWriter
  * @flow
- * @typechecks
  */
 
 'use strict';
@@ -61,14 +60,14 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
   _forceIndex: number;
   _isOptimisticUpdate: boolean;
   _store: RelayRecordStore;
-  _queryTracker: RelayQueryTracker;
+  _queryTracker: ?RelayQueryTracker;
   _updateTrackedQueries: boolean;
   _writer: RelayRecordWriter;
 
   constructor(
     store: RelayRecordStore,
     writer: RelayRecordWriter,
-    queryTracker: RelayQueryTracker,
+    queryTracker: ?RelayQueryTracker,
     changeTracker: RelayChangeTracker,
     options?: WriterOptions
   ) {
@@ -186,6 +185,7 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
       this.recordCreate(recordID);
     }
     if (
+      this._queryTracker &&
       (this.isNewRecord(recordID) || this._updateTrackedQueries) &&
       (!RelayRecord.isClientID(recordID) || RelayQueryPath.isRootPath(path))
     ) {

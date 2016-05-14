@@ -52,13 +52,13 @@ var hidingSpots = [];
 var turnsRemaining = 3;
 
 export function checkHidingSpotForTreasure(id) {
-	if (hidingSpots.some(hs => hs.hasTreasure && hs.hasBeenChecked)) {
-		return;
-	}
-	turnsRemaining--;
-	var hidingSpot = getHidingSpot(id);
-	hidingSpot.hasBeenChecked = true;
-};
+  if (hidingSpots.some(hs => hs.hasTreasure && hs.hasBeenChecked)) {
+    return;
+  }
+  turnsRemaining--;
+  var hidingSpot = getHidingSpot(id);
+  hidingSpot.hasBeenChecked = true;
+}
 export function getHidingSpot(id) {
 	return hidingSpots.find(hs => hs.id === id)
 }

@@ -15,7 +15,6 @@ require('configureForRelayOSS');
 
 jest
   .unmock('GraphQLRange')
-  .unmock('getRangeBehavior')
   .unmock('GraphQLSegment');
 
 const GraphQLMutatorConstants = require('GraphQLMutatorConstants');
@@ -193,11 +192,11 @@ describe('RelayStoreData', function() {
     const query = getNode(Relay.QL`
       query {
         node(id:"123") {
-          id,
+          id
           hometown {
-            id,
-            url,
-          },
+            id
+            url
+          }
         }
       }
     `);
@@ -240,10 +239,10 @@ describe('RelayStoreData', function() {
     const query = getNode(Relay.QL`
       query {
         node(id:"123") {
-          id,
+          id
           screennames {
-            service,
-          },
+            service
+          }
         }
       }
     `);
@@ -293,19 +292,19 @@ describe('RelayStoreData', function() {
     const query = getNode(Relay.QL`
       query {
         node(id:"123") {
-          id,
+          id
           friends(first:"2") {
             edges {
               node {
                 id
-              },
-              cursor,
-            },
+              }
+              cursor
+            }
             pageInfo {
-              hasPreviousPage,
-              hasNextPage,
-            },
-          },
+              hasPreviousPage
+              hasNextPage
+            }
+          }
         }
       }
     `);
@@ -388,19 +387,19 @@ describe('RelayStoreData', function() {
     const query = getNode(Relay.QL`
       query {
         node(id:"123") {
-          id,
+          id
           friends(first:"2") {
             edges {
               node {
                 id
-              },
-              cursor,
-            },
+              }
+              cursor
+            }
             pageInfo {
-              hasPreviousPage,
-              hasNextPage,
-            },
-          },
+              hasPreviousPage
+              hasNextPage
+            }
+          }
         }
       }
     `);
@@ -456,11 +455,11 @@ describe('RelayStoreData', function() {
     const mutationQuery = getNode(Relay.QL`
       mutation {
         feedbackLike(input:$input) {
-          clientMutationId,
+          clientMutationId
           feedback {
-            id,
-            doesViewerLike,
-          },
+            id
+            doesViewerLike
+          }
         }
       }
     `);
@@ -493,19 +492,19 @@ describe('RelayStoreData', function() {
     const query = getNode(Relay.QL`
       query {
         node(id:"123") {
-          id,
+          id
           comments(first:"1") {
-            count,
+            count
             edges {
               node {
-                id,
-              },
-              cursor,
-            },
+                id
+              }
+              cursor
+            }
             pageInfo {
-              hasPreviousPage,
-              hasNextPage,
-            },
+              hasPreviousPage
+              hasNextPage
+            }
           }
         }
       }
@@ -544,22 +543,22 @@ describe('RelayStoreData', function() {
     const mutationQuery = getNode(Relay.QL`
       mutation {
         commentCreate(input:$input) {
-          clientMutationId,
+          clientMutationId
           feedback {
-            id,
+            id
             comments {
-              count,
-            },
-          },
+              count
+            }
+          }
           feedbackCommentEdge {
             node {
-              id,
-            },
-            cursor,
+              id
+            }
+            cursor
             source {
-              id,
-            },
-          },
+              id
+            }
+          }
         }
       }
     `);
@@ -615,19 +614,19 @@ describe('RelayStoreData', function() {
     const query = getNode(Relay.QL`
       query {
         node(id:"123") {
-          id,
+          id
           comments(first:"1") {
-            count,
+            count
             edges {
               node {
-                id,
-              },
-              cursor,
-            },
+                id
+              }
+              cursor
+            }
             pageInfo {
-              hasPreviousPage,
-              hasNextPage,
-            },
+              hasPreviousPage
+              hasNextPage
+            }
           }
         }
       }
@@ -665,14 +664,14 @@ describe('RelayStoreData', function() {
     const mutationQuery = getNode(Relay.QL`
       mutation {
         commentDelete(input:$input) {
-          clientMutationId,
-          deletedCommentId,
+          clientMutationId
+          deletedCommentId
           feedback {
-            id,
+            id
             comments {
-              count,
-            },
-          },
+              count
+            }
+          }
         }
       }
     `);

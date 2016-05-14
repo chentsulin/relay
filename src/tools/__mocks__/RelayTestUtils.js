@@ -180,6 +180,19 @@ const RelayTestUtils = {
     );
   },
 
+  /**
+   * The exact error string for an invalid token in a JSON string changed with
+   * node 6. This utility generates the right string to expect in test cases.
+   */
+  getJSONTokenError(token, position) {
+    let errorTemplate = null;
+    try {
+      JSON.parse('@');
+    } catch (error) {
+      return error.message.replace('@', token).replace('0', position);
+    }
+  },
+
   getPointer(dataID, fragment) {
     const RelayFragmentPointer = require('RelayFragmentPointer');
     const RelayQuery = require('RelayQuery');
@@ -608,7 +621,9 @@ const RelayTestUtils = {
     const RelayQueryWriter = require('RelayQueryWriter');
     const writeRelayQueryPayload = require('writeRelayQueryPayload');
 
-    queryTracker = queryTracker || new RelayQueryTracker();
+    queryTracker = queryTracker === null ?
+      null :
+      queryTracker || new RelayQueryTracker();
     options = options || {};
     const changeTracker = new RelayChangeTracker();
     const queryWriter = new RelayQueryWriter(

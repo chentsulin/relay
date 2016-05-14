@@ -16,7 +16,6 @@ require('configureForRelayOSS');
 jest
   .unmock('GraphQLRange')
   .unmock('GraphQLSegment')
-  .unmock('getRangeBehavior')
   .mock('warning');
 
 const GraphQLMutatorConstants = require('GraphQLMutatorConstants');
@@ -83,13 +82,13 @@ describe('writePayload()', () => {
         query {
           node(id:"feedback_id") {
             topLevelComments(first:"1") {
-              count,
+              count
               edges {
                 node {
-                  id,
-                },
-              },
-            },
+                  id
+                }
+              }
+            }
           }
         }
       `);
@@ -128,9 +127,9 @@ describe('writePayload()', () => {
           commentDelete(input:$input) {
             feedback {
               topLevelComments {
-                count,
-              },
-            },
+                count
+              }
+            }
           }
         }
       `, {
@@ -218,13 +217,13 @@ describe('writePayload()', () => {
         query {
           node(id:"feedback_id") {
             topLevelComments(first:"1") {
-              count,
+              count
               edges {
                 node {
-                  id,
-                },
-              },
-            },
+                  id
+                }
+              }
+            }
           }
         }
       `);
@@ -262,12 +261,12 @@ describe('writePayload()', () => {
       const mutation = getNode(Relay.QL`
         mutation {
           commentDelete(input:$input) {
-            deletedCommentId,
+            deletedCommentId
             feedback {
               topLevelComments {
-                count,
-              },
-            },
+                count
+              }
+            }
           }
         }
       `, {
@@ -347,12 +346,12 @@ describe('writePayload()', () => {
       const mutation = getNode(Relay.QL`
         mutation {
           commentDelete(input:$input) {
-            deletedCommentId,
+            deletedCommentId
             feedback {
               topLevelComments {
-                count,
-              },
-            },
+                count
+              }
+            }
           }
         }
       `, {
@@ -566,7 +565,7 @@ describe('writePayload()', () => {
         query {
           node(id:"feedback123") {
             topLevelComments(first:"1") {
-              count,
+              count
               edges {
                 node {
                   id
@@ -616,9 +615,9 @@ describe('writePayload()', () => {
       const mutation = getNode(Relay.QL`
         mutation {
           commentDelete(input:$input) {
-            deletedCommentId,
+            deletedCommentId
             feedback {
-              id,
+              id
               topLevelComments {
                 count
               }
@@ -714,9 +713,9 @@ describe('writePayload()', () => {
       const mutation = getNode(Relay.QL`
         mutation {
           commentDelete(input:$input) {
-            deletedCommentId,
+            deletedCommentId
             feedback {
-              id,
+              id
               topLevelComments {
                 count
               }
@@ -852,7 +851,7 @@ describe('writePayload()', () => {
       const mutation = getNode(Relay.QL`
         mutation {
           applicationRequestDeleteAll(input:$input) {
-            deletedRequestIds,
+            deletedRequestIds
           }
         }
       `, {
@@ -918,7 +917,7 @@ describe('writePayload()', () => {
       const mutation = getNode(Relay.QL`
         mutation {
           applicationRequestDeleteAll(input:$input) {
-            deletedRequestIds,
+            deletedRequestIds
           }
         }
       `, {
@@ -1015,7 +1014,7 @@ describe('writePayload()', () => {
         query {
           node(id:"feedback123") {
             topLevelComments(first:"1") {
-              count,
+              count
               edges {
                 node {
                   id
@@ -1058,11 +1057,11 @@ describe('writePayload()', () => {
         mutation {
           commentCreate(input:$input) {
             feedback {
-              id,
+              id
               topLevelComments {
-                count,
-              },
-            },
+                count
+              }
+            }
           }
         }
       `, {input: JSON.stringify(input)}
@@ -1125,23 +1124,23 @@ describe('writePayload()', () => {
         mutation {
           commentCreate(input:$input) {
             feedback {
-              id,
+              id
               topLevelComments {
-                count,
-              },
-            },
+                count
+              }
+            }
             feedbackCommentEdge {
-              cursor,
+              cursor
               node {
-                id,
+                id
                 body {
-                  text,
-                },
-              },
+                  text
+                }
+              }
               source {
-                id,
-              },
-            },
+                id
+              }
+            }
           }
         }
       `, {
@@ -1217,23 +1216,23 @@ describe('writePayload()', () => {
         mutation {
           commentCreate(input:$input) {
             feedback {
-              id,
+              id
               topLevelComments {
-                count,
-              },
-            },
+                count
+              }
+            }
             feedbackCommentEdge {
-              cursor,
+              cursor
               node {
-                id,
+                id
                 body {
-                  text,
-                },
-              },
+                  text
+                }
+              }
               source {
-                id,
-              },
-            },
+                id
+              }
+            }
           }
         }
       `, {
@@ -1312,23 +1311,23 @@ describe('writePayload()', () => {
         mutation {
           commentCreate(input:$input) {
             feedback {
-              id,
+              id
               topLevelComments {
-                count,
-              },
-            },
+                count
+              }
+            }
             feedbackCommentEdge {
-              cursor,
+              cursor
               node {
-                id,
+                id
                 body {
-                  text,
-                },
-              },
+                  text
+                }
+              }
               source {
-                id,
-              },
-            },
+                id
+              }
+            }
           }
         }
       `, {
@@ -1445,23 +1444,23 @@ describe('writePayload()', () => {
         mutation {
           commentCreate(input:$input) {
             feedback {
-              id,
+              id
               topLevelComments {
-                count,
-              },
-            },
+                count
+              }
+            }
             feedbackCommentEdge {
-              cursor,
+              cursor
               node {
-                id,
+                id
                 body {
-                  text,
-                },
-              },
+                  text
+                }
+              }
               source {
-                id,
-              },
-            },
+                id
+              }
+            }
           }
         }
       `, {

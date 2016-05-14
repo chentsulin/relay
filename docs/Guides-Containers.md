@@ -20,27 +20,26 @@ next: guides-routes
 
 ```
 class ProfilePicture extends React.Component {
-	render() {
-		// 預期 `user` prop 會有以下的形狀：
-		// {
-		//   profilePhoto: {
-		//     uri,
-		//     size
-		//   }
-		// }
-		var user = this.props.user;
-		return (
-			<View>
-				<Image uri={user.profilePhoto.uri} width={...} />
-				<Slider onChange={value => this.setSize(value)} />
-			</View>
-		);
-	}
+  render() {
+    // 預期 `user` prop 會有以下的形狀：
+    // {
+    //   profilePhoto: {
+    //     uri,
+    //   }
+    // }
+    var user = this.props.user;
+    return (
+      <View>
+        <Image uri={user.profilePhoto.uri} width={...} />
+        <Slider onChange={value => this.setSize(value)} />
+      </View>
+    );
+  }
 
-	// 更新 photo 的 size
-	setSize(photoSize) {
-		// 待完成：針對給定的 size 抓取 profile photo 的 URI ...
-	}
+  // 更新 photo 的 size
+  setSize(photoSize) {
+    // 待完成：針對給定的 size 抓取 profile photo 的 URI ...
+  }
 }
 ```
 
