@@ -7,47 +7,41 @@ permalink: docs/api-reference-relay-container.html
 next: api-reference-relay-route
 ---
 
-`RelayContainer` is a higher-order React component that lets a React component encode its data requirements.
+`RelayContainer` 是一個 hight-order React component，讓一個 React component 編碼它的要求。
 
-- Relay ensures that this data is available before the component is rendered.
-- Relay updates the component whenever the underlying data has changed.
+- Relay 確保 component 在被 render 之前，資料是可取得的。
+- 每當底層資料改變時，Relay 會更新 component。
 
-Relay containers are created using `Relay.createContainer`.
+使用 `Relay.createContainer` 來建立 Relay containers。
 
-## Overview
+## 概觀
 
-*Container Specification*
+*Container 規格*
 
 <ul class="apiIndex">
   <li>
     <a href="#fragments">
       <pre>fragments</pre>
-      Declare the component's data requirements using fragments.
+      宣告 component 的資料要求使用 fragments。
     </a>
   </li>
   <li>
     <a href="#initialvariables">
       <pre>initialVariables</pre>
-      The initial set of variable values available to this component's fragments.
+      初始設定的變數可用在這個 component 的 fragments。
     </a>
   </li>
   <li>
     <a href="#preparevariables">
       <pre>prepareVariables</pre>
-      A method to modify the variables based on the runtime environment or previous variable values.
-    </a>
-  </li>
-  <li>
-    <a href="#shouldcomponentupdate">
-      <pre>shouldComponentUpdate</pre>
-      Optionally override RelayContainer's default implementation of `shouldComponentUpdate`.
+      一個基於執行環境或先前變數可以修改變數的方法。
     </a>
   </li>
 </ul>
 
-*Properties and Methods*
+*屬性和方法*
 
-These are the methods and properties that the container will provide as `this.props.relay` in the plain React component.
+在純 React component 中，方法和屬性都是 container 將提供做為 `this.props.relay`。
 
 <ul class="apiIndex">
   <li>
@@ -82,7 +76,7 @@ These are the methods and properties that the container will provide as `this.pr
   </li>
 </ul>
 
-## Container Specification
+## Container 規格
 
 ### fragments
 
@@ -94,11 +88,11 @@ fragments: RelayQueryFragments<Tk> = {
 };
 ```
 
-Containers declare data requirements on `fragments` using GraphQL fragments.
+Container 要求宣告資料的 `fragments` 使用 GraphQL fragments。
 
-Only fields specified by these fragments will be populated in `this.props` when the component is rendered. This ensures that there are no implicit dependencies from a component on its parent component or any child components.
+當 component 被 render 時，只有透過這些 fragments 指定的欄位，會被填入 `this.props`。這可以確保一個 component 從在它的父 component 或其他任何的子 component 沒有隱式的依賴項目。
 
-#### Example
+#### 範例
 
 ```{8-14}
 class StarWarsShip extends React.Component {
@@ -118,9 +112,9 @@ module.exports = Relay.createContainer(StarWarsShip, {
 });
 
 ```
-In this example, the fields associated with the `ship` fragment will be made available on `this.props.ship`.
+在這個範例中，這個欄位與 `ship` fragment 關聯，可以在 `this.props.ship` 上使用。
 
-See also: [Containers > Relay Containers](guides-containers.html#relay-containers)
+也可以參考：[Containers > Relay Containers](guides-containers.html#relay-containers)
 
 ### initialVariables
 
@@ -128,9 +122,9 @@ See also: [Containers > Relay Containers](guides-containers.html#relay-container
 initialVariables: {[name: string]: mixed};
 ```
 
-The initial set of variable values available to this component's fragments.
+設定變數初始值可以提供給 component 的 fragemnts 使用。
 
-#### Example
+#### 範例
 
 ```{4}
 class ProfilePicture extends React.Component {...}
@@ -139,17 +133,17 @@ module.exports = Relay.createContainer(ProfilePicture, {
   initialVariables: {size: 50},
   fragments: {
     user: () => Relay.QL`
-      # The variable defined above is available here as `$size`.
-      # Any variable referenced here is required to have been defined in initialVariables above.
-      # An `undefined` variable value will throw an `Invariant Violation` exception.
-      # Use `null` to initialize unknown values.
+      # 上面定義的變數在這裡可以作為 `$size`。
+      # 在這裡參考的任何變數都需要被定義在 initalVariables 上。
+      # 一個 `undefined` 變數會拋出一個 `Invariant Violation` 的例外。
+      # 使用 `null` 來初始會未知的值。
       fragment on User { profilePicture(size: $size) { ... } }
     `,
   },
 });
 ```
 
-In this example, `profilePicture(size: 50)` will be fetched for the intial render.
+在這個範例中，會在初始 render 時，fetch `profilePicture(size: 50)`。
 
 ### prepareVariables
 
@@ -159,11 +153,11 @@ prepareVariables: ?(
 ) => {[name: string]: mixed}
 ```
 
-Containers can define a `prepareVariables` method which provides the opportunity to modify the variables that are available to fragments. The new variables can be generated based on the previous variables (or the `initialVariables` if no previous ones exist) in addition to the runtime environment.
+Container 可以定義一個 `prepareVariables` 方法，提供機會來修改可用的 fragments 變數。基於先前的變數（或如果先前不存在的 `initalVariables`），除了在 runtime 環境外，可以產生新的變數。
 
-This method is also called after the partial set of variables from `setVariables` has been applied. The variables returned are used to populate the fragments.
+這個方法從 `setVariables` 被應用時，也可以在設定局部變數後被呼叫。回傳的變數會被填入到 fragments。
 
-#### Example
+#### 範例
 
 ```{3-9}
 module.exports = Relay.createContainer(ProfilePicture, {
@@ -171,7 +165,7 @@ module.exports = Relay.createContainer(ProfilePicture, {
   prepareVariables: prevVariables => {
     return {
       ...prevVariables,
-      // If devicePixelRatio is `2`, the new size will be `100`.
+      // 如果 devicePixelRatio 是 `2`，新的 size 會為 `100`。
       size: prevVariables.size * window.devicePixelRatio,
     };
   },
@@ -179,25 +173,8 @@ module.exports = Relay.createContainer(ProfilePicture, {
 });
 ```
 
-### shouldComponentUpdate
-
-```
-shouldComponentUpdate: () => boolean;
-```
-
-RelayContainer implements a conservative default `shouldComponentUpdate` that returns `false` if no fragment props have changed and all other props are equal scalar values. This may block updates to components that receive data via context. To ensure an update in this case override the default behavior by specifying a `shouldComponentUpdate` function.
-
-#### Example
-
-```{2}
-module.exports = Relay.createContainer(ProfilePicture, {
-  shouldComponentUpdate: () => true,
-  // ...
-});
-```
-
-## Properties and Methods
-The properties and methods listed below can be accessed on `this.props.relay` from the wrapped React component.
+## 屬性和方法
+屬性和方法從被 wrap 的 React component 列出以下可以被存取的 `this.props.relay`。
 
 ### route
 
@@ -205,18 +182,18 @@ The properties and methods listed below can be accessed on `this.props.relay` fr
 route: RelayRoute
 ```
 
-Route is useful in providing the context which a component is being rendered in. It includes information about the `name`, `params`, and `queries` of the current route.
+當一個 component 在被 render 時，Route 提供的 context 是非常有用的。它包含 route 目前有關 `name`、`params`、和 `queries` 的資訊。
 
-#### Example
+#### 範例
 
 ```
 var name = this.props.relay.route.name;
 if (name === 'SuperAwesomeRoute') {
-  // Do something super cool.
+  // 做了一些很酷的東西。
 }
 ```
 
-See also: [Routes](guides-routes.html)
+參考：[Routes](guides-routes.html)
 
 ### variables
 
@@ -224,9 +201,9 @@ See also: [Routes](guides-routes.html)
 variables: {[name: string]: mixed}
 ```
 
-`variables` contains the set of variables that was used to fetch the current set of props.
+`variables` 包含了設定的變數，被用來 fetch 目前設定的 props。
 
-#### Example
+#### 範例
 
 ```{8}
 class ProfilePicture extends React.Component {
@@ -251,11 +228,11 @@ module.exports = Relay.createContainer(ProfilePicture, {
   },
 });
 ```
-In this example, the `width` of the rendered image will always correspond to the `$size` variable used to fetch the current version of `profilePicture.uri`.
+在這個範例中，被 render 的圖片 `width` 會對應到目前 `profilePicture.uri` 版本所 fetch 到的 `$size` 變數。
 
-> Note
+> 注意
 >
-> Never mutate `this.props.relay.variables` directly as it will not trigger data to be fetched properly. Treat `this.props.relay.variables` as if it were immutable, just like props.
+> 永遠不要直接 mutate `this.props.relay.variables`，它不會觸發資料被正確的 fetch。處理 `this.props.relay.variables` 就好像是 props，是 immutable 的。
 
 ### setVariables
 
@@ -263,13 +240,13 @@ In this example, the `width` of the rendered image will always correspond to the
 setVariables([partialVariables: Object, [onReadyStateChange: Function]]): void
 ```
 
-Components can change their data requirements by using `setVariables` to request an update to the current set of `variables`.
+Component 可以透過使用 `setVariables`，要求更新目前的設定的 `variables` 來改變資料。
 
-`this.props.relay.setVariables` can be called to update a subset or all of the variables at the same time. In return, Relay will use the new variables to attempt to fulfill the new fragment. This may involve sending a request to the server if data is not already available on the client.
+`this.props.relay.setVariables` 可以在同一個時間被呼叫更新一個子集或是所有變數。在回傳結果中，Relay 會使用新的變數來嘗試滿足新的 fragment。如果資料在客戶端已經不能使用的話，這可能涉及傳送一個請求到伺服器。
 
-An optional `onReadyStateChange` callback can be supplied to respond to the events involved with the data fulfillment.
+可以提供一個可選的 `onReadyStateChange` callback 來回應事件參與資料的實現。
 
-#### Example
+#### 範例
 
 ```{12-15}
 class Feed extends React.Component {
@@ -283,7 +260,7 @@ class Feed extends React.Component {
     );
   }
   _handleScrollLoad() {
-    // Increments the number of stories being rendered by 10.
+    // story 透過增加 10 的方式被 render。
     this.props.relay.setVariables({
       count: this.props.relay.variables.count + 10
     });
@@ -308,11 +285,11 @@ module.exports = Relay.createContainer(Feed, {
 });
 ```
 
-> Note
+> 注意
 >
-> `setVariables` does not immediately mutate `variables`, but creates a  pending state transition. `variables` will continue returning the previous values until `this.props` has been populated with data that fulfills the new variable values.
+> `setVariables` 不會立即 mutate `variables`，但是會建立一個 pending 的 state 過渡時期。`variables` 會持續回傳先前的變數，直到滿足新的變數值的資料填入了 `this.props`。
 
-See also: [Containers > Requesting Different Data](guides-containers.html#requesting-different-data), [Ready State](guides-ready-state.html)
+參考：[Containers > 請求不同的資料](guides-containers.html#requesting-different-data)、[Ready State](guides-ready-state.html)。
 
 ### forceFetch
 
@@ -320,17 +297,17 @@ See also: [Containers > Requesting Different Data](guides-containers.html#reques
 forceFetch([partialVariables: Object, [onReadyStateChange: Function]]): void
 ```
 
-`forceFetch` is similar to `setVariables` because it is also used to change the data requirements by altering `variables`.
+`forceFetch` 是類似於 `setVariables`，因為它也可以透過改變 `variables` 使用在要求更改資料。
 
-The two methods differ in that instead of sending a query that includes only fields missing from the client, `forceFetch` sends a request to refetch each and every fragment. This ensures that the props for the component are freshly fetched from the server.
+這兩種方法不同的地方是，`foreFetch` 傳送一個請求來重新 fetch 每個 fragment，而不是從客戶端傳送一個 query 只有包含缺少的欄位。這可以確保 component props 是剛從伺服器 fetch 回來的。
 
-An optional `onReadyStateChange` callback can be supplied to respond to the events involved with the data fulfillment.
+可以提供一個可選的 `onReadyStateChange` callback 來回應事件的涉及和資料實現。
 
-> Note
+> 注意
 >
-> `forceFetch` can be called with an empty set of partial variables, meaning it can trigger a refresh of the currently rendered set of data.
+> `forceFetch` 可以被一個空的部分變數設定呼叫，意思是它可以觸發 refresh 目前被 render 設定的資料的。
 
-See also: [Ready State](guides-ready-state.html)
+參考：[Ready State](guides-ready-state.html)
 
 ### hasOptimisticUpdate
 
@@ -338,9 +315,9 @@ See also: [Ready State](guides-ready-state.html)
 hasOptimisticUpdate(record: Object): boolean
 ```
 
-Calling `hasOptimisticUpdate` with a record from `this.props` will return whether that given record is affected by an optimistic mutation. It allows the component to render local optimistic changes differently from data that has successfully synchronized with the server.
+透過一個 optimistic mutation，呼叫 `hasOptimisticUpdate` 和一個從 `this.props` 回傳的 record，不論是否受到影響。它允許 component render local optimistic 的變化，以不同的方式從已成功與伺服器同步的資料。
 
-#### Example
+#### 範例
 
 ```
 class Feed extends React.Component {
@@ -351,8 +328,8 @@ class Feed extends React.Component {
         {edges.map(edge => {
           var node = edge.node;
           if (this.props.relay.hasOptimisticUpdate(node)) {
-            // Render pending story that has not been stored
-            // on the server using a diffrent component.
+            // 在伺服器使用一個不同的 component
+            // 來 render 還沒被 store 的 pending story。
             return (
               <PendingStory
                 key={edge.node.id}
@@ -394,7 +371,7 @@ module.exports = Relay.createContainer(Feed, {
 
 ```
 
-See also: [Mutations > Optimistic Updates](guides-mutations.html#optimistic-updates)
+參考：[Mutations > Optimistic 更新](guides-mutations.html#optimistic-updates)
 
 ### getPendingTransactions
 
@@ -402,21 +379,21 @@ See also: [Mutations > Optimistic Updates](guides-mutations.html#optimistic-upda
 getPendingTransactions(record: Object): ?Array<RelayMutationTransaction>
 ```
 
-Components can inspect pending mutations on any record (i.e. data made available in props with a corresponding fragment). Calling `getPendingTransactions` with a record will return a list of the pending mutation transactions that affect that particular record.
+Component 可以在任何的 record 檢查 pending mutations（例如：資料在 props 可用於一個相對應的 fragment）。呼叫 `getPendingTransactions` 和 record 將會回傳一個影響特定 record 的 pending mutation transaction 列表。
 
-Each `RelayMutationTransaction` has methods to check the status of the mutation and provide ways to rollback or resend the mutation as needed.
+每個 `RelayMutationTransaction` 有方法來檢查 mutation 的狀態和提供 rollback 的方式或根據需求重新傳送 mutation。
 
-#### Example
+#### 範例
 
 ```
 class Story extends React.Component {
   render() {
     var story = this.props.story;
     var transactions = this.props.relay.getPendingTransactions(story);
-    // For this example, assume there is only one transaction.
+    // 在這個範例，假設只有一個 transaction。
     var transaction = transactions ? transactions[0] : null;
     if (transaction) {
-      // Display an error message with a retry link if a mutation failed.
+      // 如果 mutation 失敗，顯示一個錯誤訊息和重試的連結。
       if (transaction.getStatus() === 'COMMIT_FAILED') {
         return (
           <span>
@@ -426,7 +403,7 @@ class Story extends React.Component {
         );
       }
     }
-    // Render story normally.
+    // 一般的 render story。
   }
 }
 
@@ -441,10 +418,10 @@ module.exports = Relay.createContainer(ProfilePicture, {
 });
 ```
 
-`RelayMutationTransaction.getStatus` can return one of the following strings:
+`RelayMutationTransaction.getStatus` 可以回傳以下其中一個 string：
 
-- `UNCOMMITTED` — Transaction hasn't yet been sent to the server. Transaction can be committed or rolled back.
-- `COMMIT_QUEUED` —  Transaction was committed but another transaction with the same collision key is pending, so the transaction has been queued to send to the server.
-- `COLLISION_COMMIT_FAILED` — Transaction was queued for commit but another transaction with the same collision key failed. All transactions in the collision queue, including this one, have been failed. Transaction can be recommitted or rolled back.
-- `COMMITTING` — Transaction is waiting for the server to respond.
-- `COMMIT_FAILED` — Transaction was sent to the server for comitting but failed.
+- `UNCOMMITTED` — Transaction 還沒被傳送到伺服器。Transaction 可以被 commit 或 rollback。
+- `COMMIT_QUEUED` —  Transaction 已經被 commit，但是其他具有相同衝突的 key transaction 正處於 pending，所以 transaction 已經被隊列並傳送到伺服器。
+- `COLLISION_COMMIT_FAILED` — Transaction 已經隊列等待 commit，但是其他相同衝突 key 的 transaction 失敗。所有在衝突隊列的 transaction，包含本身和已經失敗的。Transaction 可以重新被 commit 或 rollback。
+- `COMMITTING` — Transaction 等待伺服器的回應。
+- `COMMIT_FAILED` — Transaction 送到伺服器的 commit，但是失敗了。
