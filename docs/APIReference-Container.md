@@ -7,12 +7,12 @@ permalink: docs/api-reference-relay-container.html
 next: api-reference-relay-route
 ---
 
-`RelayContainer` 是一個 hight-order React component，讓一個 React component 編碼它的要求。
+`RelayContainer` 是一個 higher-order React component，讓一個 React component 編碼它的資料要求。
 
 - Relay 確保 component 在被 render 之前，資料是可取得的。
 - 每當底層資料改變時，Relay 會更新 component。
 
-使用 `Relay.createContainer` 來建立 Relay containers。
+Relay containers 是使用 `Relay.createContainer` 來建立的。
 
 ## 概觀
 
@@ -35,6 +35,12 @@ next: api-reference-relay-route
     <a href="#preparevariables">
       <pre>prepareVariables</pre>
       一個基於執行環境或先前變數可以修改變數的方法。
+    </a>
+  </li>
+  <li>
+    <a href="#shouldcomponentupdate">
+      <pre>shouldComponentUpdate</pre>
+      Optionally override RelayContainer's default implementation of `shouldComponentUpdate`.
     </a>
   </li>
 </ul>
@@ -169,6 +175,23 @@ module.exports = Relay.createContainer(ProfilePicture, {
       size: prevVariables.size * window.devicePixelRatio,
     };
   },
+  // ...
+});
+```
+
+### shouldComponentUpdate
+
+```
+shouldComponentUpdate: () => boolean;
+```
+
+RelayContainer implements a conservative default `shouldComponentUpdate` that returns `false` if no fragment props have changed and all other props are equal scalar values. This may block updates to components that receive data via context. To ensure an update in this case override the default behavior by specifying a `shouldComponentUpdate` function.
+
+#### Example
+
+```{2}
+module.exports = Relay.createContainer(ProfilePicture, {
+  shouldComponentUpdate: () => true,
   // ...
 });
 ```
