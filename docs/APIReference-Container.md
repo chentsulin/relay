@@ -7,9 +7,9 @@ permalink: docs/api-reference-relay-container.html
 next: api-reference-relay-route
 ---
 
-`RelayContainer` 是一個 higher-order React component，讓一個 React component 編碼它的資料要求。
+`RelayContainer` 是一個 higher-order React component，讓一個 React component 編碼它的資料需求。
 
-- Relay 確保 component 在被 render 之前，資料是可取得的。
+- Relay 確保 component 在被 render 之前，資料是可以取用的。
 - 每當底層資料改變時，Relay 會更新 component。
 
 Relay containers 是使用 `Relay.createContainer` 來建立的。
@@ -22,32 +22,32 @@ Relay containers 是使用 `Relay.createContainer` 來建立的。
   <li>
     <a href="#fragments">
       <pre>fragments</pre>
-      宣告 component 的資料要求使用 fragments。
+      使用 fragments 來宣告 component 的資料需求。
     </a>
   </li>
   <li>
     <a href="#initialvariables">
       <pre>initialVariables</pre>
-      初始設定的變數可用在這個 component 的 fragments。
+      這個 component 的 fragments 可以使用的一組初始變數值。
     </a>
   </li>
   <li>
     <a href="#preparevariables">
       <pre>prepareVariables</pre>
-      一個基於執行環境或先前變數可以修改變數的方法。
+      一個可以基於執行環境或先前變數的值來調整變數的方法。
     </a>
   </li>
   <li>
     <a href="#shouldcomponentupdate">
       <pre>shouldComponentUpdate</pre>
-      Optionally override RelayContainer's default implementation of `shouldComponentUpdate`.
+      可選擇性地覆寫掉 RelayContainer 的預設 `shouldComponentUpdate` 實作。
     </a>
   </li>
 </ul>
 
 *屬性和方法*
 
-在純 React component 中，方法和屬性都是 container 將提供做為 `this.props.relay`。
+在一般的 React component 中，container 將會提供一些方法和屬性做為 `this.props.relay`。
 
 <ul class="apiIndex">
   <li>
@@ -94,9 +94,9 @@ fragments: RelayQueryFragments<Tk> = {
 };
 ```
 
-Container 要求宣告資料的 `fragments` 使用 GraphQL fragments。
+Container 使用 GraphQL fragments 來在 `fragments` 宣告資料的需求。
 
-當 component 被 render 時，只有透過這些 fragments 指定的欄位，會被填入 `this.props`。這可以確保一個 component 從在它的父 component 或其他任何的子 component 沒有隱式的依賴項目。
+當 component 被 render 時，只有透過這些 fragments 指定的欄位，會被填入 `this.props`。這可以確保一個 component 從在它的父 component 或其他任何的子 component 沒有隱式的依賴關係。
 
 #### 範例
 
@@ -118,9 +118,9 @@ module.exports = Relay.createContainer(StarWarsShip, {
 });
 
 ```
-在這個範例中，這個欄位與 `ship` fragment 關聯，可以在 `this.props.ship` 上使用。
+在這個範例中，這個與 `ship` fragment 關聯的欄位，可以在 `this.props.ship` 上使用。
 
-也可以參考：[Containers > Relay Containers](guides-containers.html#relay-containers)
+也可以參閱：[Containers > Relay Containers](guides-containers.html#relay-containers)
 
 ### initialVariables
 
@@ -216,7 +216,7 @@ if (name === 'SuperAwesomeRoute') {
 }
 ```
 
-參考：[Routes](guides-routes.html)
+也可以參閱：[Routes](guides-routes.html)
 
 ### variables
 
@@ -312,7 +312,7 @@ module.exports = Relay.createContainer(Feed, {
 >
 > `setVariables` 不會立即 mutate `variables`，但是會建立一個 pending 的 state 過渡時期。`variables` 會持續回傳先前的變數，直到滿足新的變數值的資料填入了 `this.props`。
 
-參考：[Containers > 請求不同的資料](guides-containers.html#requesting-different-data)、[Ready State](guides-ready-state.html)。
+也可以參閱：[Containers > 請求不同的資料](guides-containers.html#requesting-different-data)、[Ready State](guides-ready-state.html)。
 
 ### forceFetch
 
@@ -330,7 +330,7 @@ forceFetch([partialVariables: Object, [onReadyStateChange: Function]]): void
 >
 > `forceFetch` 可以被一個空的部分變數設定呼叫，意思是它可以觸發 refresh 目前被 render 設定的資料的。
 
-參考：[Ready State](guides-ready-state.html)
+也可以參閱：[Ready State](guides-ready-state.html)
 
 ### hasOptimisticUpdate
 
@@ -394,7 +394,7 @@ module.exports = Relay.createContainer(Feed, {
 
 ```
 
-參考：[Mutations > Optimistic 更新](guides-mutations.html#optimistic-updates)
+也可以參閱：[Mutations > Optimistic 更新](guides-mutations.html#optimistic-updates)
 
 ### getPendingTransactions
 
