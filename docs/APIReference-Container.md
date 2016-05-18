@@ -128,7 +128,7 @@ module.exports = Relay.createContainer(StarWarsShip, {
 initialVariables: {[name: string]: mixed};
 ```
 
-設定變數初始值可以提供給 component 的 fragemnts 使用。
+這個 component 的 fragments 可以使用的一組初始變數值。
 
 #### 範例
 
@@ -139,17 +139,17 @@ module.exports = Relay.createContainer(ProfilePicture, {
   initialVariables: {size: 50},
   fragments: {
     user: () => Relay.QL`
-      # 上面定義的變數在這裡可以作為 `$size`。
-      # 在這裡參考的任何變數都需要被定義在 initalVariables 上。
-      # 一個 `undefined` 變數會拋出一個 `Invariant Violation` 的例外。
-      # 使用 `null` 來初始會未知的值。
+      # 在這裡可以用 `$size` 取用上面定義的變數。
+      # 在這裡參考的任何變數都需要被定義在上面的 initalVariables。
+      # 一個 `undefined` 的變數值會拋出一個 `Invariant Violation` 的例外。
+      # 使用 `null` 來初始化未知的值。
       fragment on User { profilePicture(size: $size) { ... } }
     `,
   },
 });
 ```
 
-在這個範例中，會在初始 render 時，fetch `profilePicture(size: 50)`。
+在這個範例中，會在初始 render 時，抓取 `profilePicture(size: 50)`。
 
 ### prepareVariables
 
@@ -159,9 +159,9 @@ prepareVariables: ?(
 ) => {[name: string]: mixed}
 ```
 
-Container 可以定義一個 `prepareVariables` 方法，提供機會來修改可用的 fragments 變數。基於先前的變數（或如果先前不存在的 `initalVariables`），除了在 runtime 環境外，可以產生新的變數。
+Container 可以定義一個 `prepareVariables` 方法，提供機會來調整 fragments 可以取用的變數。基於先前的變數（或如果先前的變數不存在的話， `initalVariables`）以及 runtime 環境，來產生新的變數。
 
-這個方法從 `setVariables` 被應用時，也可以在設定局部變數後被呼叫。回傳的變數會被填入到 fragments。
+這個方法也會在從 `setVariables` 來的一組變數被套用後被呼叫。回傳的變數會被填入到 fragments。
 
 #### 範例
 
@@ -187,7 +187,7 @@ shouldComponentUpdate: () => boolean;
 
 RelayContainer implements a conservative default `shouldComponentUpdate` that returns `false` if no fragment props have changed and all other props are equal scalar values. This may block updates to components that receive data via context. To ensure an update in this case override the default behavior by specifying a `shouldComponentUpdate` function.
 
-#### Example
+#### 範例
 
 ```{2}
 module.exports = Relay.createContainer(ProfilePicture, {
