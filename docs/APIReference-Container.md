@@ -185,7 +185,7 @@ module.exports = Relay.createContainer(ProfilePicture, {
 shouldComponentUpdate: () => boolean;
 ```
 
-RelayContainer implements a conservative default `shouldComponentUpdate` that returns `false` if no fragment props have changed and all other props are equal scalar values. This may block updates to components that receive data via context. To ensure an update in this case override the default behavior by specifying a `shouldComponentUpdate` function.
+RelayContainer 實做了一個傳統的預設 `shouldComponentUpdate`，在 fragment props 沒有改變而且所有其他的 props 都是相等的值時會回傳 `false`。這可能會阻擋藉由 context 接收資料的  component 的更新。為了確保在這個狀況能進行更新，可以透過指定一個 `shouldComponentUpdate` function 覆寫預設的行為。
 
 #### 範例
 
@@ -197,7 +197,7 @@ module.exports = Relay.createContainer(ProfilePicture, {
 ```
 
 ## 屬性和方法
-屬性和方法從被 wrap 的 React component 列出以下可以被存取的 `this.props.relay`。
+從被包覆的 React component 可以在 `this.props.relay` 存取列在下方的屬性和方法。
 
 ### route
 
@@ -205,7 +205,7 @@ module.exports = Relay.createContainer(ProfilePicture, {
 route: RelayRoute
 ```
 
-當一個 component 在被 render 時，Route 提供的 context 是非常有用的。它包含 route 目前有關 `name`、`params`、和 `queries` 的資訊。
+當一個 component 在被 render 時，Route 提供的 context 是非常有用的。它包含當下的 route 有關 `name`、`params`、和 `queries` 的資訊。
 
 #### 範例
 
@@ -224,7 +224,7 @@ if (name === 'SuperAwesomeRoute') {
 variables: {[name: string]: mixed}
 ```
 
-`variables` 包含了設定的變數，被用來 fetch 目前設定的 props。
+`variables` 包含了一組變數，被用來抓取當下的一組 props。
 
 #### 範例
 
