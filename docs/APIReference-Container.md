@@ -251,11 +251,11 @@ module.exports = Relay.createContainer(ProfilePicture, {
   },
 });
 ```
-在這個範例中，被 render 的圖片 `width` 會對應到目前 `profilePicture.uri` 版本所 fetch 到的 `$size` 變數。
+在這個範例中，被 render 的圖片 `width` 會對應到被用來抓取目前 `profilePicture.uri` 版本所使用的 `$size` 變數。
 
-> 注意
+> 附註
 >
-> 永遠不要直接 mutate `this.props.relay.variables`，它不會觸發資料被正確的 fetch。處理 `this.props.relay.variables` 就好像是 props，是 immutable 的。
+> 永遠不要直接改動 `this.props.relay.variables`，它不會正確的觸發抓取資料。把 `this.props.relay.variables` 當作是 immutable 的來處理，就像 props 一樣。
 
 ### setVariables
 
@@ -263,11 +263,11 @@ module.exports = Relay.createContainer(ProfilePicture, {
 setVariables([partialVariables: Object, [onReadyStateChange: Function]]): void
 ```
 
-Component 可以透過使用 `setVariables`，要求更新目前的設定的 `variables` 來改變資料。
+Component 可以透過使用 `setVariables` 要求更新目前的 `variables` 組合，來改變它們的資料需求。
 
-`this.props.relay.setVariables` 可以在同一個時間被呼叫更新一個子集或是所有變數。在回傳結果中，Relay 會使用新的變數來嘗試滿足新的 fragment。如果資料在客戶端已經不能使用的話，這可能涉及傳送一個請求到伺服器。
+可以在同時呼叫 `this.props.relay.setVariables` 更新所有變數或是它的一個子集合。這個的結果，Relay 會使用新的變數來嘗試滿足新的 fragment。如果資料在客戶端還不能使用的話，這可能涉及傳送一個請求到伺服器。
 
-可以提供一個可選的 `onReadyStateChange` callback 來回應事件參與資料的實現。
+可以選擇性的提供一個 `onReadyStateChange` callback 來回應關注資料滿足的事件。
 
 #### 範例
 
@@ -283,7 +283,7 @@ class Feed extends React.Component {
     );
   }
   _handleScrollLoad() {
-    // story 透過增加 10 的方式被 render。
+    // 把被 render 的 story 數量增加 10 個。
     this.props.relay.setVariables({
       count: this.props.relay.variables.count + 10
     });
@@ -308,7 +308,7 @@ module.exports = Relay.createContainer(Feed, {
 });
 ```
 
-> 注意
+> 附註
 >
 > `setVariables` 不會立即 mutate `variables`，但是會建立一個 pending 的 state 過渡時期。`variables` 會持續回傳先前的變數，直到滿足新的變數值的資料填入了 `this.props`。
 
