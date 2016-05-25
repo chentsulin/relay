@@ -402,9 +402,9 @@ module.exports = Relay.createContainer(Feed, {
 getPendingTransactions(record: Object): ?Array<RelayMutationTransaction>
 ```
 
-Component 可以在任何的 record 檢查 pending mutations（例如：資料在 props 可用於一個相對應的 fragment）。呼叫 `getPendingTransactions` 和 record 將會回傳一個影響特定 record 的 pending mutation transaction 列表。
+Component 可以對任何的 record（例如：在 props 上可以取用的資料與一個對應的 fragment）檢查是否有等待中的 mutation。用 record 去呼叫 `getPendingTransactions` 將會回傳一個影響特定 record 的等待中 mutation transaction 列表。
 
-每個 `RelayMutationTransaction` 有方法來檢查 mutation 的狀態和提供 rollback 的方式或根據需求重新傳送 mutation。
+每個 `RelayMutationTransaction` 有方法來檢查 mutation 的狀態並提供 rollback 的方式或根據需求重新傳送 mutation。
 
 #### 範例
 
@@ -441,10 +441,10 @@ module.exports = Relay.createContainer(ProfilePicture, {
 });
 ```
 
-`RelayMutationTransaction.getStatus` 可以回傳以下其中一個 string：
+`RelayMutationTransaction.getStatus` 可以回傳以下其中一個字串：
 
 - `UNCOMMITTED` — Transaction 還沒被傳送到伺服器。Transaction 可以被 commit 或 rollback。
-- `COMMIT_QUEUED` —  Transaction 已經被 commit，但是其他具有相同衝突的 key transaction 正處於 pending，所以 transaction 已經被隊列並傳送到伺服器。
-- `COLLISION_COMMIT_FAILED` — Transaction 已經隊列等待 commit，但是其他相同衝突 key 的 transaction 失敗。所有在衝突隊列的 transaction，包含本身和已經失敗的。Transaction 可以重新被 commit 或 rollback。
-- `COMMITTING` — Transaction 等待伺服器的回應。
-- `COMMIT_FAILED` — Transaction 送到伺服器的 commit，但是失敗了。
+- `COMMIT_QUEUED` —  Transaction 已經被 commit，但是另一個具有相同衝突的 key 的 transaction 還在等待中，所以 transaction 已經被放入隊列等待傳送到伺服器。
+- `COLLISION_COMMIT_FAILED` — Transaction 已經放入隊列等待 commit，但是另一個具有相同衝突 key 的 transaction 失敗了。所有在衝突的隊列中的 transaction，包含這個，都變成失敗。Transaction 可以重新被 commit 或 rollback。
+- `COMMITTING` — Transaction 正在等待伺服器的回應。
+- `COMMIT_FAILED` — Transaction 為了 commit 已經被送到伺服器，但是失敗了。
