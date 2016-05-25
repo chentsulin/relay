@@ -338,7 +338,7 @@ forceFetch([partialVariables: Object, [onReadyStateChange: Function]]): void
 hasOptimisticUpdate(record: Object): boolean
 ```
 
-透過一個 optimistic mutation，呼叫 `hasOptimisticUpdate` 和一個從 `this.props` 回傳的 record，不論是否受到影響。它允許 component render local optimistic 的變化，以不同的方式從已成功與伺服器同步的資料。
+用一個從 `this.props` 來的 record 呼叫 `hasOptimisticUpdate`，會回傳是否這個給定的 record 有受到 optimistic mutation 的影響。這讓 component 可以用不同的方式去 render 本地 optimistic 變更和成功與伺服器同步的資料。
 
 #### 範例
 
@@ -351,8 +351,8 @@ class Feed extends React.Component {
         {edges.map(edge => {
           var node = edge.node;
           if (this.props.relay.hasOptimisticUpdate(node)) {
-            // 在伺服器使用一個不同的 component
-            // 來 render 還沒被 store 的 pending story。
+            // 使用一個不同的 component 來 render
+            // 還沒被存到伺服器等待中的 story。
             return (
               <PendingStory
                 key={edge.node.id}
@@ -426,7 +426,7 @@ class Story extends React.Component {
         );
       }
     }
-    // 一般的 render story。
+    // 一般地 render story。
   }
 }
 
