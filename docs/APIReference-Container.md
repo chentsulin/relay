@@ -310,7 +310,7 @@ module.exports = Relay.createContainer(Feed, {
 
 > 附註
 >
-> `setVariables` 不會立即 mutate `variables`，但是會建立一個 pending 的 state 過渡時期。`variables` 會持續回傳先前的變數，直到滿足新的變數值的資料填入了 `this.props`。
+> `setVariables` 不會立即變動 `variables`，但是會建立一個等待的 state transition。`variables` 會持續回傳先前的值，直到滿足新的變數值的資料填入了 `this.props`。
 
 也可以參閱：[Containers > 請求不同的資料](guides-containers.html#requesting-different-data)、[Ready State](guides-ready-state.html)。
 
@@ -320,15 +320,15 @@ module.exports = Relay.createContainer(Feed, {
 forceFetch([partialVariables: Object, [onReadyStateChange: Function]]): void
 ```
 
-`forceFetch` 是類似於 `setVariables`，因為它也可以透過改變 `variables` 使用在要求更改資料。
+`forceFetch` 類似於 `setVariables`，因為它也可以用來透過修改 `variables` 來改變資料需求。
 
-這兩種方法不同的地方是，`foreFetch` 傳送一個請求來重新 fetch 每個 fragment，而不是從客戶端傳送一個 query 只有包含缺少的欄位。這可以確保 component props 是剛從伺服器 fetch 回來的。
+這兩種方法不同的地方在，`forceFetch` 傳送一個請求來重新抓取每個 fragment，而不是傳送一個只包含客戶端缺少欄位的 query。這可以確保 component props 是剛從伺服器抓取回來的。
 
-可以提供一個可選的 `onReadyStateChange` callback 來回應事件的涉及和資料實現。
+可以提供一個選擇性的 `onReadyStateChange` callback 來回應涉及資料滿足的事件。
 
 > 注意
 >
-> `forceFetch` 可以被一個空的部分變數設定呼叫，意思是它可以觸發 refresh 目前被 render 設定的資料的。
+> 可以用一組空的變數呼叫 `forceFetch`，這意味它可以觸發刷新當下被 render 的資料集。
 
 也可以參閱：[Ready State](guides-ready-state.html)
 
