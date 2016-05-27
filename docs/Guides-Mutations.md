@@ -7,33 +7,33 @@ permalink: docs/guides-mutations.html
 next: guides-network-layer
 ---
 
-Up until this point we have only interacted with the GraphQL endpoint to perform queries that fetch data. In this guide, you will learn how to use Relay to perform mutations – operations that consist of writes to the data store followed by a fetch of any changed fields.
+到目前為止，我們只有跟 GraphQL endpoint 互動去執行抓取資料的 query。在這份指南中，你將會學習到如何使用 Relay 去執行 mutation – 這個操作包括寫入到資料 store 並隨後抓取任何改變的欄位。
 
-## A complete example
+## 完整的範例
 
-Before taking a deep dive into the mutations API, let's look at a complete example. Here, we subclass `Relay.Mutation` to create a custom mutation that we can use to like a story.
+在我們深入 mutation API 之前，讓我們先看一個完整的範例。在這裡，我們繼承 `Relay.Mutation` 來建立一個可以用來 like story 的客製化 mutation。
 
 ```
 class LikeStoryMutation extends Relay.Mutation {
-  // This method should return a GraphQL operation that represents
-  // the mutation to be performed. This presumes that the server
-  // implements a mutation type named ‘likeStory’.
+  // 這個方法應該回傳一個 GraphQL 操作來代表
+  // 要被執行的 mutation。這裡假設伺服器
+  // 實作了一個叫做 ‘likeStory’ 的 mutation type。
   getMutation() {
     return Relay.QL`mutation {likeStory}`;
   }
-  // Use this method to prepare the variables that will be used as
-  // input to the mutation. Our ‘likeStory’ mutation takes exactly
-  // one variable as input – the ID of the story to like.
+  // 使用這個方法來準備要給 mutation 作為
+  // input 的變數。我們的 ‘likeStory’ mutation 剛好接收
+  // 一個變數作為 input – 要 like 的 story 的 ID。
   getVariables() {
     return {storyID: this.props.story.id};
   }
-  // Use this method to design a ‘fat query’ – one that represents every
-  // field in your data model that could change as a result of this mutation.
-  // Liking a story could affect the likers count, the sentence that
-  // summarizes who has liked a story, and the fact that the viewer likes the
-  // story or not. Relay will intersect this query with a ‘tracked query’
-  // that represents the data that your application actually uses, and
-  // instruct the server to include only those fields in its response.
+  // 使用這個方法來設計一個 ‘fat query’ – 一個代表在你的資料模型中每個
+  // 可能會因為這個 mutation 而改變的欄位。
+  // Like 一個 story 可能會影響 liker 的數量，
+  // 一個總結有誰 like 這個 story 的句子，還有正在觀看的人有沒有 like
+  // 這個 story。Relay 會用一個代表應用程式實際使用資料
+  // 的 ‘tracked query’ 來取交集做出這個 query，並
+  // 指示伺服器只把這些欄位加進它的回應中。
   getFatQuery() {
     return Relay.QL`
       fragment on LikeStoryPayload {
@@ -47,11 +47,11 @@ class LikeStoryMutation extends Relay.Mutation {
       }
     `;
   }
-  // These configurations advise Relay on how to handle the LikeStoryPayload
-  // returned by the server. Here, we tell Relay to use the payload to
-  // change the fields of a record it already has in the store. The
-  // key-value pairs of ‘fieldIDs’ associate field names in the payload
-  // with the ID of the record that we want updated.
+  // 這些設定建議 Relay 要如何處理伺服器回傳的
+  // LikeStoryPayload。下面，我們告訴 Relay 使用這個 payload 去
+  // 改變已經在 store 裡面的 record 的欄位。
+  // ‘fieldIDs’ 鍵值對把在 payload 中的欄位名稱關聯到
+  // 我們想要更新的 record 的 ID。
   getConfigs() {
     return [{
       type: 'FIELDS_CHANGE',
@@ -60,10 +60,10 @@ class LikeStoryMutation extends Relay.Mutation {
       },
     }];
   }
-  // This mutation has a hard dependency on the story's ID. We specify this
-  // dependency declaratively here as a GraphQL query fragment. Relay will
-  // use this fragment to ensure that the story's ID is available wherever
-  // this mutation is used.
+  // 這個 mutation 對 story 的 ID 有一個強硬的依賴關係。我們在這裡宣告式的
+  // 指定這個依賴關係作為一個 GraphQL query fragment。Relay 會
+  // 使用這個 fragment 來確保無論這個 mutation 在哪被使用
+  // 這個 story 的 ID 都可以使用。
   static fragments = {
     story: () => Relay.QL`
       fragment on Story {
@@ -74,12 +74,12 @@ class LikeStoryMutation extends Relay.Mutation {
 }
 ```
 
-Here's an example of this mutation in use by a `LikeButton` component:
+下面是這個 mutation 被 `LikeButton` component 使用的範例：
 
 ```
 class LikeButton extends React.Component {
   _handleLike = () => {
-    // To perform a mutation, pass an instance of one to `Relay.Store.commitUpdate`
+    // 要執行 mutation，必須傳遞一個 mutation 的實體給 `Relay.Store.commitUpdate`
     Relay.Store.commitUpdate(new LikeStoryMutation({story: this.props.story}));
   }
   render() {
@@ -96,9 +96,9 @@ class LikeButton extends React.Component {
 
 module.exports = Relay.createContainer(LikeButton, {
   fragments: {
-    // You can compose a mutation's query fragments like you would those
-    // of any other RelayContainer. This ensures that the data depended
-    // upon by the mutation will be fetched and ready for use.
+    // 你可以像你其他的那些 RelayContainer 一般
+    // 合成 mutation 的 query fragment。這可以確保
+    // mutation 依賴的資料會先被抓取並準備好可以使用。
     story: () => Relay.QL`
       fragment on Story {
         viewerDoesLike,
@@ -109,11 +109,11 @@ module.exports = Relay.createContainer(LikeButton, {
 });
 ```
 
-In this particular example, the only field that the `LikeButton` cares about is `viewerDoesLike`. That field will form part of the tracked query that Relay will intersect with the fat query of `LikeStoryMutation` to determine what fields to request as part of the server's response payload for the mutation. Another component elsewhere in the application might be interested in the likers count, or the like sentence. Since those fields will automatically be added to Relay's tracked query, the `LikeButton` need not worry about requesting them explicitly.
+在這個特定的例子中，`LikeButton` 唯一在意的欄位是 `viewerDoesLike`。那個欄位會成為 tracked query 的一部分，Relay 會用它跟 `LikeStoryMutation` 的 fat query 取交集，以決定針對這個 mutation 要請求什麼欄位作為伺服器回應 payload 的一部份。應用程式中別處的其他 component 可能也對 likers count，或是 like sentence 感興趣。由於這些欄位會自動地被加進 Relay 的 tracked query，`LikeButton` 不需要擔心需要明確地請求它們。
 
 ## Mutation props
 
-Any props that we pass to the constructor of a mutation will become available to its instance methods as `this.props`. Like in components used within Relay containers, props for which a corresponding fragment has been defined will be populated by Relay with query data:
+我們傳遞給 mutation constructor 的任何 props 可以在它的實體方法藉由 `this.props` 取用。就像在 Relay container 裡面使用的 component 中，那些有對應定義過的 fragment 的 props 會被 Relay 用 query 的資料填入：
 
 ```
 class LikeStoryMutation extends Relay.Mutation {
@@ -126,8 +126,8 @@ class LikeStoryMutation extends Relay.Mutation {
     `,
   };
   getMutation() {
-    // Here, viewerDoesLike is guaranteed to be available.
-    // We can use it to make this mutation polymorphic.
+    // 在這裡，viewerDoesLike 是保證可以使用的。
+    // 我們可以用它來讓這個 mutation 有點變化。
     return this.props.story.viewerDoesLike
       ? Relay.QL`mutation {unlikeStory}`
       : Relay.QL`mutation {likeStory}`;
@@ -136,9 +136,9 @@ class LikeStoryMutation extends Relay.Mutation {
 }
 ```
 
-## Fragment variables
+## Fragment 變數
 
-Like it can be done with [Relay containers](guides-containers.html), we can prepare variables for use by our mutation's fragment builders, based on the previous variables and the runtime environment.
+就像 [Relay containers](guides-containers.html) 一樣，我們可以基於先前的變數和執行期環境，準備變數給我們的 mutation 的 fragment builder 使用。
 
 ```
 class RentMovieMutation extends Relay.Mutation {
@@ -158,8 +158,8 @@ class RentMovieMutation extends Relay.Mutation {
     return {...prevVariables, ...overrideVariables};
   };
   static fragments = {
-    // Now we can use the variables we've prepared to fetch movies
-    // appropriate for the viewer's locale and preferences
+    // 現在我們可以使用這些我們準備用來抓取 movie 的變數
+    // 分配適合正在觀看的人的語言環境和喜好設定
     movie: () => Relay.QL`
       fragment on Movie {
         posterImage(lang: $lang) { url },
@@ -170,23 +170,23 @@ class RentMovieMutation extends Relay.Mutation {
 }
 ```
 
-## The fat query
+## fat query
 
-Changing one thing in a system can have a ripple effect that causes other things to change in turn. Imagine a mutation that we can use to accept a friend request. This can have wide implications:
+在系統中改變一個東西，可能會造成其他東西接著改變的連鎖反應。想像一個我們可以用來接受好友邀請的 mutation。這可能造成廣泛的影響：
 
-- both people's friend count will increment
-- an edge representing the new friend will be added to the viewer's `friends` connection
-- an edge representing the viewer will be added to the new friend's `friends` connection
-- the viewer's friendship status with the requester will change
+- 兩個人的 friend count 都將增加
+- 一個代表這個新的 friend 的 edge 會被添加到 viewer 的 `friends` connection
+- 一個代表 viewer 的 edge 會被添加到這個新的 friend 的 `friends` connection
+- viewer 與 requester 的 friendship 狀態會改變
 
-Design a fat query that covers every possible field that could change:
+設計一個涵蓋所有可能會改變的欄位的 fat query：
 
 ```
 class AcceptFriendRequestMutation extends Relay.Mutation {
   getFatQuery() {
-    // This presumes that the server-side implementation of this mutation
-    // returns a payload of type `AcceptFriendRequestPayload` that exposes
-    // `friendEdge`, `friendRequester`, and `viewer` fields.
+    // 這假設這個 mutation 的伺服器端實作
+    // 回傳一個 type `AcceptFriendRequestPayload` 的 payload，它包含
+    // `friendEdge`、`friendRequester`、和 `viewer` 欄位。
     return Relay.QL`
       fragment on AcceptFriendRequestPayload {
         friendEdge,
@@ -203,36 +203,37 @@ class AcceptFriendRequestMutation extends Relay.Mutation {
 }
 ```
 
-This fat query looks like any other GraphQL query, with one important distinction. We know some of these fields to be non-scalar (like `friendEdge` and `friends`) but notice that we have not named any of their children by way of a subquery. In this way, we indicate to Relay that *anything* under those non-scalar fields may change as a result of this mutation.
+這個 fat query 看起來就像其他的 GraphQL query，但是有一個重要的不同。我們知道這之中的某些欄位不是 scalar (像是 `friendEdge` 和 `friends`)，
+但是請注意，我們沒有經由 subquery 命名它們的任何 children。透過這種方式，我們暗示 Relay 在這些不是 scalar 的欄位之下的*任何東西*都可能會因為這個 mutation 而改變。
 
-> Note
+> 附註
 >
-> When designing a fat query, consider *all* of the data that might change as a result of the mutation – not just the data currently in use by your application. We don't need to worry about overfetching; this query is never executed without first intersecting it with a ‘tracked query’ of the data our application actually needs. If we omit fields in the fat query, we might observe data inconsistencies in the future when we add views with new data dependencies, or add new data dependencies to existing views.
+> 在設計 fat query 時，要考慮*所有*可能會因為 mutation 而改變的資料 – 不只是應用程式正在使用的資料。我們不需要擔心抓取了多餘的東西；這個 query 會與我們的應用程式實際上需要的資料的 ‘tracked query’ 取交集才執行。如果我們在 fat query 中忽略了任何欄位，我們可能會在未來添加新的 view 與資料依賴關係，或是添加新的資料依賴關係到既有的 view 時觀察到資料不一致。
 
-## Mutator configuration
+## 設定 Mutator
 
-We need to give Relay instructions on how to use the response payload from each mutation to update the client-side store. We do this by configuring the mutation with one or more of the following mutation types:
+我們需要給 Relay 如何從每一個 mutation 使用回應 payload 來更新客戶端的 store 的指示。我們透過用一個以上下述的 mutation type 去設定 mutation 來達成：
 
 ### `FIELDS_CHANGE`
 
-Any field in the payload that can be correlated by DataID with one or more records in the client-side store will be merged with the record(s) in the store.
+任何在 payload 中的欄位，如果可以透過 DataID 關聯到一個以上在客戶端的 store 中的 record，就會跟在 store 中的 record 合併。
 
-#### Arguments
+#### 參數
 
 - `fieldIDs: {[fieldName: string]: DataID | Array<DataID>}`
 
-  A map between a `fieldName` in the response and one or more DataIDs in the store.
+  一個把回應中的 `fieldName` 映射到一個以上在 store 中的 DataID 的 map。
 
-#### Example
+#### 範例
 
 ```
 class RenameDocumentMutation extends Relay.Mutation {
-  // This mutation declares a dependency on a document's ID
+  // 這個 mutation 宣告一個依賴關係在 document 的 ID 上
   static fragments = {
     document: () => Relay.QL`fragment on Document { id }`,
   };
-  // We know that only the document's name can change as a result
-  // of this mutation, and specify it here in the fat query.
+  // 我們知道只有這個 document 的 name 有可能因為
+  // 這個 mutation 而改變，所以把它指定在這裡的 fat query 中。
   getFatQuery() {
     return Relay.QL`
       fragment on RenameDocumentMutationPayload { updatedDocument { name } }
@@ -244,8 +245,8 @@ class RenameDocumentMutation extends Relay.Mutation {
   getConfigs() {
     return [{
       type: 'FIELDS_CHANGE',
-      // Correlate the `updatedDocument` field in the response
-      // with the DataID of the record we would like updated.
+      // 把在回應中的 `updatedDocument` 欄位關聯
+      // 到我們想要更新的 record 的 DataID。
       fieldIDs: {updatedDocument: this.props.document.id},
     }];
   }
@@ -255,37 +256,37 @@ class RenameDocumentMutation extends Relay.Mutation {
 
 ### `NODE_DELETE`
 
-Given a parent, a connection, and one or more DataIDs in the response payload, Relay will remove the node(s) from the connection and delete the associated record(s) from the store.
+給定一個 parent、一個 connection、和一個以上的 DataID 在回應的 payload 中，Relay 會從 connection 移除這個 node 並從 store 刪除相關的 record。
 
-#### Arguments
+#### 參數
 
 - `parentName: string`
 
-  The field name in the response that represents the parent of the connection
+  在回應中代表這個 connection 的 parent 的欄位名稱
 
 - `parentID: string`
 
-  The DataID of the parent node that contains the connection
+  包含這個 connection 的 parent node 的 DataID
 
 - `connectionName: string`
 
-  The field name in the response that represents the connection
+  在回應中代表這個 connection 的欄位名稱
 
 - `deletedIDFieldName: string`
 
-  The field name in the response that contains the DataID of the deleted node
+  在回應中包含 deleted node 的 DataID 的欄位名稱
 
-#### Example
+#### 範例
 
 ```
 class DestroyShipMutation extends Relay.Mutation {
-  // This mutation declares a dependency on an enemy ship's ID
-  // and the ID of the faction that ship belongs to.
+  // 這個 mutation 宣告一個依賴關係在一個敵軍的 ship 的 ID
+  // 和 ship 屬於的 faction 的 ID 上。
   static fragments = {
     ship: () => Relay.QL`fragment on Ship { id, faction { id } }`,
   };
-  // Destroying a ship will remove it from a faction's fleet, so we
-  // specify the faction's ships connection as part of the fat query.
+  // Destroy 一個 ship 會從一個 faction 的 fleet 移除它，因此我們
+  // 指定這個 faction 的 ships connection 作為 fat query 的一部份。
   getFatQuery() {
     return Relay.QL`
       fragment on DestroyShipMutationPayload {
@@ -309,43 +310,43 @@ class DestroyShipMutation extends Relay.Mutation {
 
 ### `RANGE_ADD`
 
-Given a parent, a connection, and the name of the newly created edge in the response payload Relay will add the node to the store and attach it to the connection according to the range behavior specified.
+在回應 payload 中給定一個 parent、一個 connection、和新建立的 edge 的名稱，Relay 將會把這個 node 添加到 store 並依照指定的 range behavior 把它附加到這個 connection。
 
-#### Arguments
+#### 參數
 
 - `parentName: string`
 
-  The field name in the response that represents the parent of the connection
+  在回應中代表這個 connection 的 parent 的欄位名稱
 
 - `parentID: string`
 
-  The DataID of the parent node that contains the connection
+  包含這個 connection 的 parent node 的 DataID
 
 - `connectionName: string`
 
-  The field name in the response that represents the connection
+  在回應中代表這個 connection 的欄位名稱
 
 - `edgeName: string`
 
-  The field name in the response that represents the newly created edge
+  在回應中代表新建立的 edge 的欄位名稱
 
 - `rangeBehaviors: {[call: string]: GraphQLMutatorConstants.RANGE_OPERATIONS} | (connectionArgs: {[argName: string]: string}) => $Enum<GraphQLMutatorConstants.RANGE_OPERATIONS>`
 
-  A map between printed, dot-separated GraphQL calls *in alphabetical order* and the behavior we want Relay to exhibit when adding the new edge to connections under the influence of those calls or a function accepting an array of connection arguments, returning that behavior.
+  一個 printed、dot-separated *依字母順序*的 GraphQL calls 以及我們想要 Relay 在這些 calls 的影響下添加新的 edge 到 connections 表現的 behavior 之間的 map 或是一個接收一個 connection 參數的陣列，回傳那個 behavior 的 function。
 
-For example, `rangeBehaviors` could be written this way:
+例如，可以用這種方式撰寫 `rangeBehaviors`：
 
 ```
 const rangeBehaviors = {
-  // When the ships connection is not under the influence
-  // of any call, append the ship to the end of the connection
+  // 當這些 ships connection 沒有受到任何 call 的影響
+  // ，把 ship 附加到這個 connection 的尾端
   '': 'append',
-  // Prepend the ship, wherever the connection is sorted by age
+  // 在這個 connection 依照時間排序時，把這個 ship 附加到前端
   'orderby(newest)': 'prepend',
 };
 ```
 
-Or this way, with the same results:
+或是用這種方式，會得到一樣的結果：
 
 ```
 const rangeBehaviors = ({orderby}) => {
@@ -358,19 +359,19 @@ const rangeBehaviors = ({orderby}) => {
 
 ```
 
-Behaviors can be one of `'append'`, `'ignore'`, `'prepend'`, `'refetch'`, or `'remove'`.
+Behaviors 可以是 `'append'`、`'ignore'`、`'prepend'`、`'refetch'`、或是 `'remove'` 的其中一個。
 
-#### Example
+#### 範例
 
 ```
 class IntroduceShipMutation extends Relay.Mutation {
-  // This mutation declares a dependency on the faction
-  // into which this ship is to be introduced.
+  // 這個 mutation 宣告一個依賴關係在
+  // 這個 ship 要被 introduce 進去的 faction 上。
   static fragments = {
     faction: () => Relay.QL`fragment on Faction { id }`,
   };
-  // Introducing a ship will add it to a faction's fleet, so we
-  // specify the faction's ships connection as part of the fat query.
+  // Introduce 一個 ship 會把它添加到 faction 的 fleet，因此我們
+  // 指定這個 faction 的 ships connection 作為 fat query 的一部份。
   getFatQuery() {
     return Relay.QL`
       fragment on IntroduceShipPayload {
@@ -387,10 +388,10 @@ class IntroduceShipMutation extends Relay.Mutation {
       connectionName: 'ships',
       edgeName: 'newShipEdge',
       rangeBehaviors: {
-        // When the ships connection is not under the influence
-        // of any call, append the ship to the end of the connection
+        // 當這些 ships connection 沒有受到任何 call 的影響，
+        // 把 ship 附加到這個 connection 的尾端
         '': 'append',
-        // Prepend the ship, wherever the connection is sorted by age
+        // 在這個 connection 依照時間排序時，把這個 ship 附加到前端
         'orderby(newest)': 'prepend',
       },
     }];
@@ -401,42 +402,42 @@ class IntroduceShipMutation extends Relay.Mutation {
 
 ### `RANGE_DELETE`
 
-Given a parent, a connection, one or more DataIDs in the response payload, and a path between the parent and the connection, Relay will remove the node(s) from the connection but leave the associated record(s) in the store.
+給定一個 parent、一個 connection、一個以上在回應 payload 中的 DataID，和 一個 parent 和 connection 之間的 path，Relay 會從這個 connection 移除這些 node，但把相關的 record 留在 store 中。
 
-#### Arguments
+#### 參數
 
 - `parentName: string`
 
-  The field name in the response that represents the parent of the connection
+  在回應中代表這個 connection 的 parent 的欄位名稱
 
 - `parentID: string`
 
-  The DataID of the parent node that contains the connection
+  包含這個 connection 的 parent node 的 DataID
 
 - `connectionName: string`
 
-  The field name in the response that represents the connection
+  在回應中代表這個 connection 的欄位名稱
 
 - `deletedIDFieldName: string | Array<string>`
 
-  The field name in the response that contains the DataID of the removed node, or the path to the node removed from the connection
+  在回應中包含被移除的 node 的 DataID 的欄位名稱，或到從這個 connection 被移除的 node 的 path
 
 - `pathToConnection: Array<string>`
 
-  Any array containing the field names between the parent and the connection, including the parent and the connection
+  一個包含 parent 和 connection 之間的欄位名稱的陣列，包括 parent 和 connection
 
 
-#### Example
+#### 範例
 
 ```
 class RemoveTagMutation extends Relay.Mutation {
-  // This mutation declares a dependency on the
-  // todo from which this tag is being removed.
+  // 這個 mutation 宣告一個依賴關係在
+  // 被移除 tag 的那個 todo 上。
   static fragments = {
     todo: () => Relay.QL`fragment on Todo { id }`,
   };
-  // Removing a tag from a todo will affect its tags connection
-  // so we specify it here as part of the fat query.
+  // 從一個 todo 移除一個 tag 會影響它的 tags connection
+  // 所以我們在這裡指定它作為 fat query 的一部份。
   getFatQuery() {
     return Relay.QL`
       fragment on RemoveTagMutationPayload {
@@ -460,9 +461,9 @@ class RemoveTagMutation extends Relay.Mutation {
 
 ### `REQUIRED_CHILDREN`
 
-A `REQUIRED_CHILDREN` config is used to append additional children to the mutation query. You may need to use this, for example, to fetch fields on a new object created by the mutation (and which Relay would normally not attempt to fetch because it has not previously fetched anything for that object).
+`REQUIRED_CHILDREN` 設定用來把額外的 children 附加到 mutation query 上。你可能會需要使用這個，例如，要抓取在一個 mutation 建立的新物件上的欄位 (而那是 Relay 通常不會嘗試去抓取的，因為它先前沒有為那個物件抓取任何東西)。
 
-Data fetched as a result of a `REQUIRED_CHILDREN` config is not written into the client store, but you can add code that processes it in the `onSuccess` callback that you pass into `commitUpdate()`:
+因為 `REQUIRED_CHILDREN` 設定而被抓取的資料不會被寫入客戶端的 store，不過你可以在傳遞進去 `commitUpdate()` 的 `onSuccess` callback 添加對其處理的程式碼：
 
 ```
 Relay.Store.commitUpdate(
@@ -475,11 +476,11 @@ Relay.Store.commitUpdate(
 );
 ```
 
-#### Arguments
+#### 參數
 
 - `children: Array<RelayQuery.Node>`
 
-#### Example
+#### 範例
 
 ```
 class CreateCouponMutation extends Relay.Mutation<Props> {
@@ -491,11 +492,11 @@ class CreateCouponMutation extends Relay.Mutation<Props> {
 
   getFatQuery() {
     return Relay.QL`
-      // Note the use of `pattern: true` here to show that this
-      // connection field is to be used for pattern-matching only
-      // (to determine what to fetch) and that Relay shouldn't
-      // require the usual connection arguments like (`first` etc)
-      // to be present.
+      // 注意，在這裡使用 `pattern: true` 來表示這個
+      // connection 欄位只用於模式匹配
+      // (以決定要抓取什麼) 所以 Relay 不應該
+      // 要求平常的 connection 參數像是 (`first` 等等)
+      // 存在。
       fragment on CouponCreatePayload @relay(pattern: true) {
         coupons
       }
@@ -504,10 +505,10 @@ class CreateCouponMutation extends Relay.Mutation<Props> {
 
   getConfigs() {
     return [{
-      // If we haven't shown the coupons in the UI at the time the
-      // mutation runs, they've never been fetched and the `coupons`
-      // field in the fat query would normally be ignored.
-      // `REQUIRED_CHILDREN` forces it to be retrieved anyway.
+      // 如果我們在這個 mutation 執行的時候
+      // 尚未在 UI 上顯示這些 coupons，它們尚未被抓取過而且
+      // 在 fat query 中的 `coupons` 欄位通常會被忽略。
+      // `REQUIRED_CHILDREN` 則會強迫無論如何去取回它。
       type: RelayMutationType.REQUIRED_CHILDREN,
       children: [
         Relay.QL`
@@ -521,16 +522,16 @@ class CreateCouponMutation extends Relay.Mutation<Props> {
 }
 ```
 
-## Optimistic updates
+## Optimistic 更新
 
-All of the mutations we've performed so far have waited on a response from the server before updating the client-side store. Relay offers us a chance to craft an optimistic response of the same shape based on what we expect the server's response to be in the event of a successful mutation.
+目前為止，我們執行過所有的 mutation 都有在更新客戶端的 store 之前等待從伺服器來的回應。Relay 提供一個機會給我們基於我們預期在 mutation 成功的情況下伺服器的回應會是什麼，去精巧的製作一個相同形狀的 optimistic 回應。
 
-Let's craft an optimistic response for the `LikeStoryMutation` example above:
+讓我們來為上面的 `LikeStoryMutation` 範例精巧的製作一個 optimistic 回應：
 
 ```
 class LikeStoryMutation extends Relay.Mutation {
   /* ... */
-  // Here's the fat query from before
+  // 這是從前面來的 fat query
   getFatQuery() {
     return Relay.QL`
       fragment on LikeStoryPayload {
@@ -544,8 +545,8 @@ class LikeStoryMutation extends Relay.Mutation {
       }
     `;
   }
-  // Let's craft an optimistic response that mimics the shape of the
-  // LikeStoryPayload, as well as the values we expect to receive.
+  // 讓我們來精巧的製作一個模仿 LikeStoryPayload 形狀
+  // ，以及我們預期接收到的值的 optimistic 回應。
   getOptimisticResponse() {
     return {
       story: {
@@ -557,9 +558,9 @@ class LikeStoryMutation extends Relay.Mutation {
       },
     };
   }
-  // To be able to increment the likers count, and flip the viewerDoesLike
-  // bit, we need to ensure that those pieces of data will be available to
-  // this mutation, in addition to the ID of the story.
+  // 要能夠去增加 likers 的 count，以及切換 viewerDoesLike
+  // ，我們需要確保這些資料可以讓這個 mutation
+  // 取用，還有 story 的 ID。
   static fragments = {
     story: () => Relay.QL`
       fragment on Story {
@@ -573,4 +574,4 @@ class LikeStoryMutation extends Relay.Mutation {
 }
 ```
 
-You don't have to mimic the entire response payload. Here, we've punted on the like sentence, since it's difficult to localize on the client side. When the server responds, Relay will treat its payload as the source of truth, but in the meantime, the optimistic response will be applied right away, allowing the people who use our product to enjoy instant feedback after having taken an action.
+你不需要模擬完整的回應 payload。在這裡，我們把 like sentence 踢到一邊，因為要在客戶端上處理在地化很困難。當伺服器回應時，Relay 會把它的 payload 當作真相來源，不過在這期間，這個 optimistic 回應會立刻被套用，讓使用我們產品的人們能在做了一個動作後享受立即的回饋。

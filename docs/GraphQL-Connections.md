@@ -49,9 +49,9 @@ query RebelsShipsQuery {
 }
 ```
 
-這對 `ships` 使用 `first` 參數來把結果集切到只剩
-第一個。不過那如果我們想要用它做 paginate 呢？在每一個 edge 上，一個
-我們可以用來 paginate 的 cursor 會被顯露。這次讓我們查詢前兩個，並同樣的取回 cursor：
+使用 `first` 參數來把這對 `ships` 結果集切到只剩
+第一個。不過那如果我們想要用它做 paginate 呢？在每一個 edge 上，會有一個
+我們可以用來 paginate 的 cursor。這次讓我們查詢前兩個，並如法炮製的取回 cursor：
 
 ```
 query MoreRebelShipsQuery {

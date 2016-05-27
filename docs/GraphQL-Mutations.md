@@ -9,7 +9,7 @@ next: graphql-further-reading
 ---
 
 Relay 使用一個常見的模式來處理 mutation，它們是
-在 mutation type 上的 root field 並伴隨一個單一參數：`input`，而 input 跟 output
+在 mutation type 上的 root 欄位並伴隨一個單一參數：`input`，而 input 跟 output
 都包含一個客戶端 mutation 識別碼用來協調請求和
 回應。
 
