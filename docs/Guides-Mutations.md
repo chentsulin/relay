@@ -79,8 +79,11 @@ class LikeStoryMutation extends Relay.Mutation {
 ```
 class LikeButton extends React.Component {
   _handleLike = () => {
-    // 要執行 mutation，必須傳遞一個 mutation 的實體給 `Relay.Store.commitUpdate`
-    Relay.Store.commitUpdate(new LikeStoryMutation({story: this.props.story}));
+    // 要執行 mutation，必須傳遞一個 mutation 的實體給
+    // `this.props.relay.commitUpdate`
+    this.props.relay.commitUpdate(
+      new LikeStoryMutation({story: this.props.story})
+    );
   }
   render() {
     return (
@@ -410,9 +413,9 @@ class IntroduceShipMutation extends Relay.Mutation {
 
   在回應中代表這個 connection 的 parent 的欄位名稱
 
-- `parentID: string`
+- `parentID?: string`
 
-  包含這個 connection 的 parent node 的 DataID
+  包含這個 connection 的 parent node 的 DataID。Omit if the parent node does not 有 ID。
 
 - `connectionName: string`
 
@@ -466,7 +469,7 @@ class RemoveTagMutation extends Relay.Mutation {
 因為 `REQUIRED_CHILDREN` 設定而被抓取的資料不會被寫入客戶端的 store，不過你可以在傳遞進去 `commitUpdate()` 的 `onSuccess` callback 添加對其處理的程式碼：
 
 ```
-Relay.Store.commitUpdate(
+this.props.relay.commitUpdate(
   new CreateCouponMutation(),
   {
     onSuccess: response => this.setState({

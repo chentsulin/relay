@@ -33,7 +33,7 @@ class TodoListFooter extends Component {
       this._handleRemoveCompletedTodosPress.bind(this);
   }
   _handleRemoveCompletedTodosPress() {
-    Relay.Store.commitUpdate(
+    this.props.relay.commitUpdate(
       new RemoveCompletedTodosMutation({
         todos: this.props.viewer.todos,
         viewer: this.props.viewer,
@@ -64,17 +64,14 @@ export default Relay.createContainer(TodoListFooter, {
   initialVariables: {
     status: 'any',
   },
-  prepareVariables(prevVars) {
-    return {
-      ...prevVars,
-      limit: 2147483647,  // GraphQLInt
-    };
-  },
   fragments: {
     viewer: () => Relay.QL`
       fragment on User {
         completedCount
-        todos(status: $status, first: $limit) {
+        todos(
+          status: $status,
+          first: 2147483647  # max GraphQLInt
+        ) {
           ${RemoveCompletedTodosMutation.getFragment('todos')}
         }
         totalCount

@@ -28,6 +28,11 @@ Relay 的 `Store` 提供一個 API 來把 mutation 發送到伺服器。
   </li>
 </ul>
 
+**附註：**同樣地，`applyUpdate` 和 `commitUpdate` 方法也會
+被提供在藉由 `Relay.Container` 傳遞到 components 的
+ `this.props.relay` prop 上。它們能在當下運作中的 `Relay.Environment`
+ 的 context 中 dispatch mutations。
+
 ## 方法
 
 ### commitUpdate (static 方法)

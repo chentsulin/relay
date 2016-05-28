@@ -62,12 +62,12 @@ Relay containers 是使用 `Relay.createContainer` 來建立的。
   </li>
   <li>
     <a href="#setvariables">
-      <pre>setVariables([partialVariables, [onReadyStateChange]])</pre>
+      <pre>setVariables([partialVariables[, onReadyStateChange]])</pre>
     </a>
   </li>
   <li>
     <a href="#forcefetch">
-      <pre>forceFetch([partialVariables, [onReadyStateChange]]) </pre>
+      <pre>forceFetch([partialVariables[, onReadyStateChange]]) </pre>
     </a>
   </li>
   <li>
@@ -78,6 +78,17 @@ Relay containers 是使用 `Relay.createContainer` 來建立的。
   <li>
     <a href="#getpendingtransactions">
       <pre>getPendingTransactions(record) </pre>
+    </a>
+  </li>
+</ul>
+
+*Static 方法*
+
+<ul class="apiIndex">
+  <li>
+    <a href="#getfragment">
+      <pre>getFragment(name[, vars])</pre>
+      在 parent fragment 中取得一個包含 container fragment 的 reference。
     </a>
   </li>
 </ul>
@@ -448,3 +459,82 @@ module.exports = Relay.createContainer(ProfilePicture, {
 - `COLLISION_COMMIT_FAILED` — Transaction 已經放入隊列等待 commit，但是另一個具有相同衝突 key 的 transaction 失敗了。所有在衝突的隊列中的 transaction，包含這個，都變成失敗。Transaction 可以重新被 commit 或 rollback。
 - `COMMITTING` — Transaction 正在等待伺服器的回應。
 - `COMMIT_FAILED` — Transaction 為了 commit 已經被送到伺服器，但是失敗了。
+
+## Static 方法
+
+### getFragment
+
+```
+getFragment(
+  fragmentName: string,
+  variables?: {[name: string]: mixed}
+): RelayFragmentReference
+```
+
+在 parent fragment 中取得一個包含 child container 的 fragment 的 reference。
+
+#### 範例
+
+Fragment 合成可以透過 ES6 template string interpolation 和 `getFragment` 來達成：
+
+```{6}
+// Parent.js
+Relay.createContainer(Parent, {
+  fragments: {
+    parentFragment: () => Relay.QL`
+      fragment on Foo {
+        id
+        ${Child.getFragment('childFragment')}
+      }
+    `,
+  }
+});
+// Child.js
+Relay.createContainer(Child, {
+  initialVariables: {
+    size: 64,
+  },
+  fragments: {
+    childFragment: () => Relay.QL`
+      fragment on Foo {
+        photo(size: $size) { uri }
+      }
+    `,
+  }
+});
+```
+
+在這個範例中，無論 `Parent` 何時被抓取，`Child` 的 fragment 也會被抓取。在 render 時，`<Parent>` 將會只能存取 `props.foo.id` 欄位；從 child fragment 來的資料將會被[*遮罩*](http://facebook.github.io/relay/docs/thinking-in-relay.html#data-masking)。預設情況下，`childFragment` 會使用它對應的初始變數。Relay 將會抓取 `photo(size: 64)`。當 `<Child>` 被 render 後，它也會讓初始變數能以 `props.relay.variables = {size: 64}` 的方式取用。
+
+#### 覆寫 Fragment 變數
+
+有時 parent 需要去覆寫 child component 的預設變數。試想，如果我們想要用 128 的 photo size 來取代預設的 64 去 render 上面的 `Child`。要做到這個，我們必須確保 fragment *和* container 都知道這個自訂的變數。要在 *query* 中設定自訂的變數，使用 `getFragment` 的第二個參數：
+
+```{6}
+// Parent.js
+Relay.createContainer(Parent, {
+  fragments: {
+    parentFragment: () => Relay.QL`
+      fragment on Foo {
+        id
+        ${Child.getFragment('childFragment', {size: 128}
+      }
+    `,
+  }
+});
+```
+
+現在 Relay 會用 size 128 去抓取 photo - 不過 `Child` container 不會自動地知道這個變數。我們必須透過傳遞這個變數值作為 prop 來告訴它：
+
+```{4}
+const Parent = (props) => {
+  return (
+    <Child
+      childFragment={props.parentFragment}
+      size={128}
+    />;
+  );
+}
+```
+
+現在 Relay 會抓取大一點的 photo size *而且* `Child` 會知道要 render 它。
