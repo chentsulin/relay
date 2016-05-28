@@ -7,9 +7,9 @@ permalink: docs/api-reference-relay-renderer.html
 next: api-reference-relay-root-container
 ---
 
-**Relay.Renderer** is a replacement for `Relay.RootContainer` that composes a `Relay.ReadyStateRenderer` and performs data fetching for a given `queryConfig`.
+**Relay.Renderer** 替代一個 `Relay.RootContainer`，compose 成一個 `Relay.ReadyStateRenderer`，並根據給定的 `queryConfig` 執行資料的 fetch。
 
-## Overview
+## 概觀
 
 *Props*
 
@@ -17,31 +17,31 @@ next: api-reference-relay-root-container
   <li>
     <a href="#container">
       <pre>Container</pre>
-      Relay container that defines fragments and the view to render.
+      Relay container 定義 fragments 和 view 的 render。
     </a>
   </li>
   <li>
     <a href="#forcefetch">
       <pre>forceFetch</pre>
-      Whether to send a server request regardless of data available on the client.
+      無論客戶端資料是否可用，發送一個伺服器請求。
     </a>
   </li>
   <li>
     <a href="#queryconfig">
       <pre>queryConfig</pre>
-       `QueryConfig` or `Relay.Route` that defines the query roots.
+       `QueryConfig` 或 `Relay.Route` 定義 query 的 root。
     </a>
   </li>
   <li>
     <a href="#environment">
       <pre>environment</pre>
-      An instance of `Relay.Environment` or any object that implements the `RelayEnvironment` interface.
+      在 `RelayEnvironment` 介面的一個 `Relay.Environment` 實例或任何物件的實作。
     </a>
   </li>
     <li>
     <a href="#render">
       <pre>render</pre>
-      Called to render when data requirements are being fulfilled.
+      當資料要求完成時，呼叫 render。
     </a>
   </li>
   <li>
@@ -56,34 +56,34 @@ next: api-reference-relay-root-container
 ### Container
 
 ```
-Container: RelayContainer
+Container：RelayContainer
 ```
 
-Must be a valid `RelayContainer`. Relay will attempt to fulfill its data requirements before rendering it.
+必須是一個有效的 `RelayContainer`。Relay 會嘗試在 render 之前，完成資料的請求。
 
 ### forceFetch
 
 ```
-forceFetch: boolean
+forceFetch：boolean
 ```
 
-If supplied and set to true, a request for data will always be made to the server regardless of whether data on the client is available already.
+如果提供並設定為 true，不管在客戶端的資料是否可用，總是向伺服器發送資料請求。
 
 ### QueryConfig
 
 ```
-queryConfig: RelayRoute
+queryConfig：RelayRoute
 ```
 
-Either an instance of `Relay.Route` or an object with the `name`, `queries`, and optionally the `params` properties.
+任一個 `Relay.Route` 的實例，或一個物件都需要 `name`、`queries` 和可選的 `params` 屬性。
 
 ### Environment
 
 ```
-environment: RelayEnvironment
+environment：RelayEnvironment
 ```
 
-An object that conforms to the `Relay.Environment` interface, such as `Relay.Store`.
+一個符合 `Relay.Environment` interface 的物件，像是 `Relay.Store`。
 
 ### render
 
@@ -97,15 +97,15 @@ render({
 }): ?React$Element
 ```
 
-If the render callback is not supplied, the default behavior is to render the container if data is available, the existing view if one exists, or nothing.
+如果 render callback 不提供，如果資料可用的話，預設行為是 render 現有存在或不存在的 view 到 container。
 
-If the callback returns `undefined`, the previously rendered view (or nothing if there is no previous view) is rendered (e.g. when transitioning from one `queryConfig` to another).
+如果 callback 回傳 `undefined`，先前被 render 的 view （如果先前都沒有 view 的話什麼都不做）被 render（例如：當從一個 `queryConfig` 到其他部份時）。
 
-#### Example
+#### 範例
 
 ```{4-6}
-// In this example, `ErrorComponent` and `LoadingComponent`
-// simply display a static error message / loading indicator.
+// 在這個範例中，`ErrorComponent` 和 `LoadingComponent`
+// 簡單的顯示一個 靜態錯誤訊息和載入進度。
 <Relay.Renderer
   Container={ProfilePicture}
   queryConfig={profileRoute}
@@ -136,6 +136,6 @@ onReadyStateChange(
 ): void
 ```
 
-This callback prop is called as the various events of data resolution occur.
+這個 callback prop 被做為發生各種事件的資料解析。
 
-See also: [Ready State](guides-ready-state.html)
+也可以參閱：[Ready State](guides-ready-state.html)
