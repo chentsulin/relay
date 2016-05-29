@@ -56,7 +56,7 @@ next: api-reference-relay-root-container
 ### Container
 
 ```
-Container：RelayContainer
+Container: RelayContainer
 ```
 
 必須是一個有效的 `RelayContainer`。Relay 會嘗試在 render 之前，完成資料的請求。
@@ -64,7 +64,7 @@ Container：RelayContainer
 ### forceFetch
 
 ```
-forceFetch：boolean
+forceFetch: boolean
 ```
 
 如果提供並設定為 true，不管在客戶端的資料是否可用，總是向伺服器發送資料請求。
@@ -72,7 +72,7 @@ forceFetch：boolean
 ### QueryConfig
 
 ```
-queryConfig：RelayRoute
+queryConfig: RelayRoute
 ```
 
 任一個 `Relay.Route` 的實例，或一個物件都需要 `name`、`queries` 和可選的 `params` 屬性。
@@ -80,7 +80,7 @@ queryConfig：RelayRoute
 ### Environment
 
 ```
-environment：RelayEnvironment
+environment: RelayEnvironment
 ```
 
 一個符合 `Relay.Environment` interface 的物件，像是 `Relay.Store`。
