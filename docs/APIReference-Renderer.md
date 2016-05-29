@@ -29,7 +29,7 @@ next: api-reference-relay-root-container
   <li>
     <a href="#queryconfig">
       <pre>queryConfig</pre>
-       `QueryConfig` 或 `Relay.Route` 定義 query 的 root。
+       `QueryConfig` 或定義 query root 的 `Relay.Route`。
     </a>
   </li>
   <li>
