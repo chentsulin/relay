@@ -136,6 +136,6 @@ onReadyStateChange(
 ): void
 ```
 
-這個 callback prop 被做為發生各種事件的資料解析。
+這個 callback prop 被呼叫作為各種事件發生的資料解析。
 
 也可以參閱：[Ready State](guides-ready-state.html)
