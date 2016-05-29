@@ -7,9 +7,9 @@ permalink: docs/api-reference-relay-root-container.html
 next: api-reference-relay-ql
 ---
 
-**Relay.RootContainer** is a React component that attempts to fulfill the data required in order to render an instance of `Component` for a given `route`.
+**Relay.RootContainer** 是一個 React component，嘗試完成對於給定 `route` 的 `Component` 實例完成資料的 render。
 
-## Overview
+## 概觀
 
 *Props*
 
@@ -17,37 +17,37 @@ next: api-reference-relay-ql
   <li>
     <a href="#component">
       <pre>Component</pre>
-      Relay container that defines fragments and the view to render.
+      Relay container 定義 fragments 和需要 render 的 view。
     </a>
   </li>
   <li>
     <a href="#route">
       <pre>route</pre>
-      Route that defines the query roots.
+      定義根 query root 的 Route。
     </a>
   </li>
   <li>
     <a href="#forcefetch">
       <pre>forceFetch</pre>
-      Whether to send a server request regardless of data available on the client.
+      無論客戶端資料是否可用，發送一個伺服器請求。
     </a>
   </li>
   <li>
     <a href="#renderloading">
       <pre>renderLoading</pre>
-      Called to render when data requirements are being fulfilled.
+      當資料要求正完成時，呼叫 render。
     </a>
   </li>
   <li>
     <a href="#renderfetched">
       <pre>renderFetched</pre>
-      Called to render when data requirements are fulfilled.
+      當資料要求完成時，呼叫 render。
     </a>
   </li>
   <li>
     <a href="#renderfailure">
       <pre>renderFailure</pre>
-      Called to render when data failed to be fulfilled.
+      當資料要求完成且失敗時，呼叫 render。
     </a>
   </li>
   <li>
@@ -65,9 +65,9 @@ next: api-reference-relay-ql
 Component: RelayContainer
 ```
 
-Must be a valid `RelayContainer`. Relay will attempt to fulfill its data requirements before rendering it.
+必須是一個有效的 `RelayContainer`。Relay 會嘗試在 render 之前，完成資料的請求。
 
-See also: [Root Container > Component and Route](guides-root-container.html#component-and-route)
+參閱：[Root Container > Component 和 Route](guides-root-container.html#component-and-route)
 
 ### route
 
@@ -75,9 +75,9 @@ See also: [Root Container > Component and Route](guides-root-container.html#comp
 route: RelayRoute
 ```
 
-Either an instance of `Relay.Route` or an object with the `name`, `queries`, and optionally the `params` properties.
+任一個 `Relay.Route` 的實例，或一個物件都需要 `name`、`queries` 和可選的 `params` 屬性。
 
-See also: [Root Container > Component and Route](guides-root-container.html#component-and-route)
+參閱：[Root Container > Component 和 Route](guides-root-container.html#component-and-route)
 
 ### forceFetch
 
@@ -85,9 +85,9 @@ See also: [Root Container > Component and Route](guides-root-container.html#comp
 forceFetch: boolean
 ```
 
-If supplied and set to true, a request for data will always be made to the server regardless of whether data on the client is available to immediately fulfill the data requirements.
+如果 render callback 不提供，如果資料可用的話，預設行為是 render 現有存在或不存在的 view 到 container。
 
-See also: [Root Container > Force Fetching](guides-root-container.html#force-fetching)
+參閱：[Root Container > Force Fetching](guides-root-container.html#force-fetching)
 
 ### renderLoading
 
@@ -95,9 +95,9 @@ See also: [Root Container > Force Fetching](guides-root-container.html#force-fet
 renderLoading(): ?ReactElement
 ```
 
-When data requirements have yet to be fulfilled, `renderLoading` is called to render the view. If this returns `undefined`, the previously rendered view (or nothing if there is no previous view) is rendered.
+當資料請求還沒完成時，`renderLoading` 會被呼叫 render view。如果回傳 `undefined`，先前被 render 的 view （如果先前都沒有 view 的話什麼都不做）被 render。
 
-#### Example
+#### 範例
 
 ```{4-6}
 <Relay.RootContainer
@@ -109,7 +109,7 @@ When data requirements have yet to be fulfilled, `renderLoading` is called to re
 />
 ```
 
-See also: [Root Container > renderLoading](guides-root-container.html#renderloading)
+參閱：[Root Container > renderLoading](guides-root-container.html#renderloading)
 
 ### renderFetched
 
@@ -120,9 +120,9 @@ renderFetched(
 ): ?ReactElement
 ```
 
-When all data requirements are fulfilled, `renderFetched` is called to render the view. This callback is expected to spread `data` into the supplied `Container` when rendering it.
+當所有資料請求完成時，`renderFetched` 會被呼叫 render view。當 render 時，這個 callback 預期會 spread `data` 提供給 `Container`。
 
-#### Example
+#### 範例
 
 ```{4-10}
 <Relay.RootContainer
@@ -138,7 +138,7 @@ When all data requirements are fulfilled, `renderFetched` is called to render th
 />
 ```
 
-See also: [Root Container > renderFetched](guides-root-container.html#renderfetched)
+參閱：[Root Container > renderFetched](guides-root-container.html#renderfetched)
 
 ### renderFailure
 
@@ -146,9 +146,9 @@ See also: [Root Container > renderFetched](guides-root-container.html#renderfetc
 renderFailure(error: Error, retry: Function): ?ReactElement
 ```
 
-When data requirements failed to be fulfilled, `renderFailure` is called to render the view.
+當資料請求完成且失敗時，`renderFailure` 會被呼叫 render view。
 
-#### Example
+#### 範例
 
 ```{4-11}
 <Relay.RootContainer
@@ -165,7 +165,7 @@ When data requirements failed to be fulfilled, `renderFailure` is called to rend
 />
 ```
 
-See also: [Root Container > renderFailure](guides-root-container.html#renderfailure)
+參閱：[Root Container > renderFailure](guides-root-container.html#renderfailure)
 
 ### onReadyStateChange
 
@@ -181,6 +181,6 @@ onReadyStateChange(
 ): void
 ```
 
-This callback prop is called as the various events of data resolution occurs.
+這個 callback prop 被呼叫作為各種事件發生的資料解析。
 
-See also: [Ready State](guides-ready-state.html)
+參閱：[Ready State](guides-ready-state.html)
