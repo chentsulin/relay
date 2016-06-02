@@ -7,7 +7,7 @@ permalink: docs/api-reference-relay-renderer.html
 next: api-reference-relay-root-container
 ---
 
-**Relay.Renderer** 替代一個 `Relay.RootContainer`，compose 成一個 `Relay.ReadyStateRenderer`，並根據給定的 `queryConfig` 執行資料的 fetch。
+**Relay.Renderer** 是一個 `Relay.RootContainer` 的替代品，它合成一個 `Relay.ReadyStateRenderer`，並根據給定的 `queryConfig` 執行資料的抓取。
 
 ## 概觀
 
@@ -17,7 +17,7 @@ next: api-reference-relay-root-container
   <li>
     <a href="#container">
       <pre>Container</pre>
-      Relay container 定義 fragments 和 view 的 render。
+      定義 fragments 和要 render 的 view 的 Relay container。
     </a>
   </li>
   <li>
@@ -29,19 +29,19 @@ next: api-reference-relay-root-container
   <li>
     <a href="#queryconfig">
       <pre>queryConfig</pre>
-       `QueryConfig` 或定義 query root 的 `Relay.Route`。
+       `QueryConfig` 或定義了 query root 的 `Relay.Route`。
     </a>
   </li>
   <li>
     <a href="#environment">
       <pre>environment</pre>
-      在 `RelayEnvironment` 介面的一個 `Relay.Environment` 實例或任何物件的實作。
+      一個 `Relay.Environment` 的實體或實作了 `RelayEnvironment` 介面的任何物件。
     </a>
   </li>
     <li>
     <a href="#render">
       <pre>render</pre>
-      當資料要求完成時，呼叫 render。
+      當資料要求被滿足時，呼叫 render。
     </a>
   </li>
   <li>
@@ -59,7 +59,7 @@ next: api-reference-relay-root-container
 Container: RelayContainer
 ```
 
-必須是一個有效的 `RelayContainer`。Relay 會嘗試在 render 之前，完成資料的請求。
+必須是一個有效的 `RelayContainer`。Relay 會在 render 之前，完成嘗試去滿足它的資料的需求。
 
 ### forceFetch
 
@@ -67,7 +67,7 @@ Container: RelayContainer
 forceFetch: boolean
 ```
 
-如果提供並設定為 true，不管在客戶端的資料是否可用，總是向伺服器發送資料請求。
+如果提供並設定為 true，不管在客戶端的資料是否已經可以使用，總是向伺服器發送資料請求。
 
 ### QueryConfig
 
@@ -75,7 +75,7 @@ forceFetch: boolean
 queryConfig: RelayRoute
 ```
 
-任一個 `Relay.Route` 的實例，或一個物件都需要 `name`、`queries` 和可選的 `params` 屬性。
+一個 `Relay.Route` 的實體，或是一個有 `name`、`queries` 和可選的 `params` 屬性的物件。
 
 ### Environment
 
@@ -83,7 +83,7 @@ queryConfig: RelayRoute
 environment: RelayEnvironment
 ```
 
-一個符合 `Relay.Environment` interface 的物件，像是 `Relay.Store`。
+一個符合 `Relay.Environment` 介面的物件，例如 `Relay.Store`。
 
 ### render
 
@@ -97,15 +97,15 @@ render({
 }): ?React$Element
 ```
 
-如果 render callback 不提供，如果資料可用的話，預設行為是 render 現有存在或不存在的 view 到 container。
+如果沒有提供 render callback，且資料可用的話，預設的行為是如果有既存的 view 就 render 它，如果沒有則不 render 東西到 container。
 
-如果 callback 回傳 `undefined`，先前被 render 的 view （如果先前都沒有 view 的話什麼都不做）被 render（例如：當從一個 `queryConfig` 到其他部份時）。
+如果 callback 回傳 `undefined`（例如：當從一個 `queryConfig` transition 到另一個時），render 先前被 render 的 view （或如果先前沒有 view 的話不 render 任何東西）。
 
 #### 範例
 
 ```{4-6}
 // 在這個範例中，`ErrorComponent` 和 `LoadingComponent`
-// 簡單的顯示一個 靜態錯誤訊息和載入進度。
+// 簡單的顯示一個靜態錯誤訊息和載入指示符。
 <Relay.Renderer
   Container={ProfilePicture}
   queryConfig={profileRoute}
@@ -136,6 +136,6 @@ onReadyStateChange(
 ): void
 ```
 
-這個 callback prop 被呼叫作為各種事件發生的資料解析。
+這個 callback prop 會在各種資料解析事件發生時被呼叫。
 
 也可以參閱：[Ready State](guides-ready-state.html)
