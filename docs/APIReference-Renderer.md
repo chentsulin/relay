@@ -59,7 +59,7 @@ next: api-reference-relay-root-container
 Container: RelayContainer
 ```
 
-必須是一個有效的 `RelayContainer`。Relay 會在 render 之前，完成嘗試去滿足它的資料的需求。
+必須是一個有效的 `RelayContainer`。Relay 會在 render 之前，嘗試去滿足它的資料需求。
 
 ### forceFetch
 
