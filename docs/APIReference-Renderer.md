@@ -41,7 +41,7 @@ next: api-reference-relay-root-container
     <li>
     <a href="#render">
       <pre>render</pre>
-      當資料要求被滿足時，呼叫 render。
+      當資料要求被滿足時，呼叫它來 render。
     </a>
   </li>
   <li>
