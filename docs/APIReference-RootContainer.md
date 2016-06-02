@@ -85,7 +85,7 @@ route: RelayRoute
 forceFetch: boolean
 ```
 
-如果 render callback 不提供，如果資料可用的話，預設行為是 render 現有存在或不存在的 view 到 container。
+如果提供並設定為 true，不管在客戶端的資料是否可以立刻滿足資料需求，總是向伺服器發送資料請求。
 
 也可以參閱：[Root Container > Force Fetching](guides-root-container.html#force-fetching)
 
@@ -181,6 +181,6 @@ onReadyStateChange(
 ): void
 ```
 
-這個 callback prop 被呼叫作為各種事件發生的資料解析。
+這個 callback prop 會在各種資料解析事件發生時被呼叫。
 
 也可以參閱：[Ready State](guides-ready-state.html)
