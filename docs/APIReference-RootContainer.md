@@ -7,7 +7,7 @@ permalink: docs/api-reference-relay-root-container.html
 next: api-reference-relay-ql
 ---
 
-**Relay.RootContainer** 是一個 React component，嘗試完成對於給定 `route` 的 `Component` 實例完成資料的 render。
+**Relay.RootContainer** 是一個 React component，它會針對給定的 `route` 嘗試去滿足需要的資料來 render `Component` 的實體。
 
 ## 概觀
 
@@ -95,7 +95,7 @@ forceFetch: boolean
 renderLoading(): ?ReactElement
 ```
 
-當資料請求還沒完成時，`renderLoading` 會被呼叫 render view。如果回傳 `undefined`，先前被 render 的 view （如果先前都沒有 view 的話什麼都不做）被 render。
+當資料需求還沒被滿足時，會呼叫 `renderLoading` 來 render view。如果它回傳 `undefined`，會 render 先前被 render 的 view （或如果先前沒有 view 的話不 render 任何東西）。
 
 #### 範例
 
@@ -120,7 +120,7 @@ renderFetched(
 ): ?ReactElement
 ```
 
-當所有資料請求完成時，`renderFetched` 會被呼叫 render view。當 render 時，這個 callback 預期會 spread `data` 提供給 `Container`。
+當所有資料需求被滿足時，會呼叫 `renderFetched` 來 render view。在 render 被提供的 `Container` 時，這個 callback 應該會會把 `data` 傳給它。
 
 #### 範例
 
@@ -146,7 +146,7 @@ renderFetched(
 renderFailure(error: Error, retry: Function): ?ReactElement
 ```
 
-當資料請求完成且失敗時，`renderFailure` 會被呼叫 render view。
+當滿足資料需求失敗時，會呼叫 `renderFailure` 來 render view。
 
 #### 範例
 
