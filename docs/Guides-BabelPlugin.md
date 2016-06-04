@@ -109,6 +109,43 @@ fs.writeFileSync(
 
 如果你是使用不同的 GraphQL 伺服器實作，我們建議調整上面的範例成從你的 GraphQL 伺服器載入 schema (例如，藉由一個 HTTP 請求) 並接著把結果存成 JSON。
 
+An example using `fetch` looks like this:
+
+```javascript
+const fetch = require('node-fetch');
+const fs = require('fs');
+const {
+  buildClientSchema,
+  introspectionQuery,
+  printSchema,
+} = require('graphql/utilities');
+const path = require('path');
+const schemaPath = path.join(__dirname, 'schema');
+
+const SERVER = 'http://example.com/graphql';
+
+// Save JSON of full schema introspection for Babel Relay Plugin to use
+fetch(`${SERVER}`, {
+  method: 'POST',
+  headers: {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({'query': introspectionQuery}),
+}).then(res => res.json()).then(schemaJSON => {
+  fs.writeFileSync(
+    `${schemaPath}.json`,
+    JSON.stringify(schemaJSON, null, 2)
+  );
+
+  // Save user readable type system shorthand of schema
+  const graphQLSchema = buildClientSchema(schemaJSON.data);
+  fs.writeFileSync(
+    `${schemaPath}.graphql`,
+    printSchema(graphQLSchema)
+  );
+});
+```
 
 ## 額外的選項
 
