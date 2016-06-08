@@ -7,34 +7,34 @@ permalink: docs/api-reference-relay-mutation.html
 next: api-reference-relay-proptypes
 ---
 
-Relay makes use of GraphQL mutations; operations that enable us to mutate data on the client and server. To create a mutation for use in our app, we subclass `Relay.Mutation` and implement, at minimum, the four abstract methods listed below.
+Relay 利用 GraphQL 的 mutations；它是讓我們去 mutate 在客戶端與伺服器上的資料的操作。要建立一個 mutation 在我們的應用程式中使用，我們必須繼承 `Relay.Mutation` 並至少實作列在下方的四個 abstract 方法。
 
-## Overview
+## 概觀
 
-*Properties*
+*屬性*
 
 <ul class="apiIndex">
   <li>
     <a href="#fragments-static-property">
       <pre>static fragments</pre>
-      Declare this mutation's data dependencies here
+      在這裡宣告這個 mutation 的資料依賴關係
     </a>
   </li>
   <li>
     <a href="#initialvariables-static-property">
       <pre>static initialVariables</pre>
-      A default set of variables to make available to this mutation's fragment builders
+      讓一組預設的變數在這個 mutation 的 fragment builder 可以取用
     </a>
   </li>
   <li>
     <a href="#preparevariables-static-property">
       <pre>static prepareVariables</pre>
-      A method to modify the variables based on the runtime environment, previous variables, or the meta route
+      一個基於執行期環境、先前的變數、或是 meta route 來調整變數的方法
     </a>
   </li>
 </ul>
 
-*Methods*
+*方法*
 
 <ul class="apiIndex">
   <li>
@@ -89,25 +89,25 @@ Relay makes use of GraphQL mutations; operations that enable us to mutate data o
   </li>
 </ul>
 
-## Properties
+## 屬性
 
-### fragments (static property)
+### fragments (static 屬性)
 
 ```
 static fragments: RelayMutationFragments<$Keys<Tp>>
 
-// Type of RelayMutationFragments
+// RelayMutationFragments 的 type
 type RelayMutationFragments<Tk> = {
   [key: Tk]: FragmentBuilder;
 };
 
-// Type of FragmentBuilder
+// FragmentBuilder 的 type
 type FragmentBuilder = (variables: Variables) => RelayConcreteNode;
 ```
 
-We declare our mutations' data dependencies here, just as we would with a container. This is particularly useful to ensure that a set of fields we might want to use in this mutation's optimistic response have been fetched.
+我們在這裡宣告 mutations 的資料依賴關係，就像我們對 container 做的一樣。這對用來確保我們可能會想要在這個 mutation 的 optimistic 回應中使用的一組欄位已經被抓取特別有用。
 
-#### Example
+#### 範例
 
 ```{2-9}
 class LikeStoryMutation extends Relay.Mutation {
@@ -120,34 +120,34 @@ class LikeStoryMutation extends Relay.Mutation {
     `,
   };
   getOptimisticResponse() {
-    // this.props.story.likers.count and this.props.story.viewerDoesLike
-    // are guaranteed to have been fetched since we've declared
-    // them to be part of this mutation's data dependencies above.
+    // 可以保證 this.props.story.likers.count 和
+    // this.props.story.viewerDoesLike 已經被抓取，因為我們已經在上面宣告
+    // 它們為這個 mutation 的資料依賴關係的一部份。
     return { /* ... */ };
   }
 }
 ```
 
-See also:
-[Mutations > Fragment variables](guides-mutations.html#fragment-variables) and
-[Mutations > Optimistic updates](guides-mutations.html#optimistic-updates)
+也可以參閱：
+[Mutations > Fragment 變數](guides-mutations.html#fragment-variables) 和
+[Mutations > Optimistic 更新](guides-mutations.html#optimistic-updates)
 
-### initialVariables (static property)
+### initialVariables (static 屬性)
 
 ```
 static initialVariables: {[name: string]: mixed};
 ```
 
-The defaults we specify here will become available to our fragment builders:
+我們在這裡指定的預設值將可以在我們 fragment builder 取用：
 
-#### Example
+#### 範例
 
 ```
 class ChangeTodoStatusMutation extends Relay.Mutation {
   static initialVariables = {orderby: 'priority'};
   static fragments = {
     todos: () => Relay.QL`
-      # The variable defined above is available here as $orderby
+      # 上面定義的變數在這裡可以作為 $orderby 取用
       fragment on User { todos(orderby: $orderby) { ... } }
     `,
   };
@@ -155,10 +155,10 @@ class ChangeTodoStatusMutation extends Relay.Mutation {
 }
 ```
 
-See also:
-[Mutations > Fragment variables](guides-mutations.html#fragment-variables)
+也可以參閱：
+[Mutations > Fragment 變數](guides-mutations.html#fragment-variables)
 
-### prepareVariables (static property)
+### prepareVariables (static 屬性)
 
 ```
 static prepareVariables: ?(
@@ -166,15 +166,15 @@ static prepareVariables: ?(
   route: RelayMetaRoute,
 ) => {[name: string]: mixed}
 
-// Type of `route` argument
+// `route` 參數的 type
 type RelayMetaRoute = {
   name: string;
 }
 ```
 
-If we provide to a mutation a method that conforms to the signature described above, it will be given the opportunity to modify the fragment builders' variables, based on the previous variables (or the `initialVariables` if no previous ones exist), the meta route, and the runtime environment. Whatever variables this method returns will become available to this mutation's fragment builders.
+如果我們提供給 mutation 一個方法符合上面所描述的 signature，它會有一個機會基於先前的變數 (或是如果前面沒有的話會是 `initialVariables`)、meta route、和執行期環境，去調整 fragment builder 的變數。無論這個方法回傳什麼變數都會可以在這個 mutation 的 fragment builder 取用。
 
-#### Example
+#### 範例
 
 ```
 class BuySongMutation extends Relay.Mutation {
@@ -191,31 +191,31 @@ class BuySongMutation extends Relay.Mutation {
 }
 ```
 
-See also:
-[Mutations > Fragment variables](guides-mutations.html#fragment-variables)
+也可以參閱：
+[Mutations > Fragment 變數](guides-mutations.html#fragment-variables)
 
-## Methods
+## 方法
 
 ### constructor
 
-Create a mutation instance using the `new` keyword, optionally passing it some props. Note that `this.props` is *not* available inside the constructor function, but are set for all the methods mentioned below (`getCollisionKey`, `getOptimisticResponse`, etc). This restriction is due to the fact that mutation props may depend on data from the RelayEnvironment, which isn't known until the mutation is applied with `applyUpdate` or `commitUpdate`.
+透過 `new` 關鍵字建立一個 mutation 實體，選擇性地傳遞給它一些 props。要注意的是，`this.props` 在 constructor function 裡面是*不*可取用的，不過在所有下面提到的方法 (`getCollisionKey`、`getOptimisticResponse`，等等) 都是設置好的。這個限制是因爲實際上 mutation props 可能依賴從 RelayEnvironment 來的資料，而它直到這個 mutation 被用 `applyUpdate` 或是 `commitUpdate` 套用都無法知道。
 
-#### Example
+#### 範例
 
 ```
 var bookFlightMutation = new BuyPlaneTicketMutation({airport: 'yvr'});
 Relay.Store.commitUpdate(bookFlightMutation);
 ```
 
-### getConfigs (abstract method)
+### getConfigs (abstract 方法)
 
 ```
 abstract getConfigs(): Array<{[key: string]: mixed}>
 ```
 
-Implement this required method to give Relay instructions on how to use the response payload from each mutation to update the client-side store.
+實作這個必要的方法來提供有關如何從每個 mutation 去使用回應 payload 來更新客戶端的 store 的指示給 Relay。
 
-#### Example
+#### 範例
 
 ```
 class LikeStoryMutation extends Relay.Mutation {
@@ -230,17 +230,17 @@ class LikeStoryMutation extends Relay.Mutation {
 }
 ```
 
-See also: [Mutations > Mutator configuration](guides-mutations.html#mutator-configuration)
+也可以參閱：[Mutations > Mutator 設定](guides-mutations.html#mutator-configuration)
 
-### getFatQuery (abstract method)
+### getFatQuery (abstract 方法)
 
 ```
 abstract getFatQuery(): GraphQL.Fragment
 ```
 
-Implement this required method to design a ‘fat query’ – one that represents every field in your data model that could change as a result of this mutation.
+實作這個必要的方法來設計一個 ‘fat query’ – 一個代表在你的資料模型中每個可能會因為這個 mutation 的結果而改變的那些欄位。
 
-#### Example
+#### 範例
 
 ```
 class BuySongMutation extends Relay.Mutation {
@@ -258,18 +258,18 @@ class BuySongMutation extends Relay.Mutation {
 }
 ```
 
-See also:
-[Mutations > The fat query](guides-mutations.html#the-fat-query)
+也可以參閱：
+[Mutations > fat query](guides-mutations.html#the-fat-query)
 
-### getMutation (abstract method)
+### getMutation (abstract 方法)
 
 ```
 abstract getMutation(): GraphQL.Mutation
 ```
 
-Implement this required method to return a GraphQL mutation operation that represents the mutation to be performed.
+實作這個必要的方法來回傳一個 GraphQL mutation 操作來代表要被執行的 mutation。
 
-#### Example
+#### 範例
 
 ```
 class LikeStoryMutation extends Relay.Mutation {
@@ -281,33 +281,33 @@ class LikeStoryMutation extends Relay.Mutation {
 }
 ```
 
-### getVariables (abstract method)
+### getVariables (abstract 方法)
 
 ```
 abstract getVariables(): {[name: string]: mixed}
 ```
 
-Implement this required method to prepare variables to be used as input to the mutation.
+實作這個必要的方法來準備要用作為 mutation 的 input 的變數。
 
-#### Example
+#### 範例
 
 ```
 class DestroyShipMutation extends Relay.Mutation {
   getVariables() {
     return {
-      // Assume that the server exposes a `destroyShip` mutation
-      // that accepts a `shipIDToDestroy` variable as input:
+      // 假設伺服器有一個 `destroyShip` mutation，
+      // 它接收一個 `shipIDToDestroy` 變數作為 input：
       shipIDToDestroy: this.props.ship.id,
     };
   }
 }
 ```
 
-> Warning
+> 警告
 >
-> The term ‘variables’ here refers to the input to the server-side mutation, **not** to the variables made available to this mutation's fragment builders.
+> 這裡的說的「變數」是指送給伺服器端 mutation 的 input，**不是**指這個 mutation 的 fragment builder 可以取用的變數。
 
-### getFragment (static method)
+### getFragment (static 方法)
 
 ```
 static getFragment(
@@ -315,13 +315,13 @@ static getFragment(
   variableMapping?: Variables
 ): RelayFragmentReference
 
-// Type of the variableMapping argument
+// variableMapping 參數的 type
 type Variables = {[name: string]: mixed};
 ```
 
-Gets a fragment reference for use in a parent's query fragment.
+取得一個 fragment 的參考在 parent 的 query fragment 使用。
 
-#### Example
+#### 範例
 
 ```{8}
 class StoryComponent extends React.Component {
@@ -338,7 +338,7 @@ class StoryComponent extends React.Component {
 }
 ```
 
-You can also pass variables to the mutation's fragment builder from the outer fragment that contains it.
+你也可以從包含這個 mutation 的外部 fragment 傳遞變數到它的 fragment builder。
 
 ```{8-11}
 class Movie extends React.Component {
@@ -358,9 +358,9 @@ class Movie extends React.Component {
 }
 ```
 
-> Hint
+> 提示
 >
-> In that last example, think of `$format` and `variables.format` as the same value.
+> 在最後一個範例中，把 `$format` 和 `variables.format` 想成是一樣的值。
 
 ### getCollisionKey
 
@@ -368,14 +368,14 @@ class Movie extends React.Component {
 getCollisionKey(): ?string
 ```
 
-Implement this method to return a collision key. Relay will send any mutations having the same collision key to the server serially and in-order.
+實作這個方法來回傳一個會衝突的 key。Relay 會照順序來送出任何有同樣會衝突的 key 的 mutation 到伺服器。
 
-#### Example
+#### 範例
 
 ```
 class LikeStoryMutation extends Relay.Mutation {
   getCollisionKey() {
-    // Give the same key to like mutations that affect the same story
+    // 給一樣的 key 給影響同一個 story 的 like mutation
     return `like_${this.props.story.id}`;
   }
 }
@@ -386,13 +386,13 @@ class LikeStoryMutation extends Relay.Mutation {
 ```
 getFiles(): ?FileMap
 
-// Type of the FileMap object
+// FileMap 物件的 type
 type FileMap = {[key: string]: File};
 ```
 
-Implement this method to return a map of `File` objects to upload as part of a mutation.
+實作這個方法來回傳一個要上傳的 `File` 物件的 map 作為 mutation 的一部份。
 
-#### Example
+#### 範例
 
 ```
 class AttachDocumentMutation extends Relay.Mutation {
@@ -418,9 +418,9 @@ class FileUploader extends React.Component {
 getOptimisticConfigs(): Array<{[key: string]: mixed}>
 ```
 
-Implement this method in cases where the mutator configuration needed to handle the optimistic response needs to be different than the one that handles the server response.
+在處理 optimistic 回應的 mutator 設定需要與處理伺服器回應的 mutator 設定不同時實作這個方法。
 
-See also: [Relay.Mutation::getConfigs()](#getconfigs-abstract-method)
+也可以參閱：[Relay.Mutation::getConfigs()](#getconfigs-abstract-method)
 
 ### getOptimisticResponse
 
@@ -428,9 +428,9 @@ See also: [Relay.Mutation::getConfigs()](#getconfigs-abstract-method)
 getOptimisticResponse(): ?{[key: string]: mixed}
 ```
 
-Implement this method to craft an optimistic response having the same shape as the server response payload. This optimistic response will be used to preemptively update the client cache before the server returns, giving the impression that the mutation completed instantaneously.
+實作這個方法去精巧的製作一個跟伺服器回應的 payload 相同形狀的 optimistic 回應。這個 optimistic 回應會在伺服器回傳之前被用來預先更新客戶端快取，給人一種這個 mutation 立刻完成的印象。
 
-#### Example
+#### 範例
 
 ```
 class LikeStoryMutation extends Relay.Mutation {
@@ -448,4 +448,4 @@ class LikeStoryMutation extends Relay.Mutation {
 }
 ```
 
-See also: [Mutations > Optimistic updates](guides-mutations.html#optimistic-updates)
+也可以參閱：[Mutations > Optimistic 更新](guides-mutations.html#optimistic-updates)
