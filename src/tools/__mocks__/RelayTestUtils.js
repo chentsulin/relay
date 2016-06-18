@@ -140,6 +140,44 @@ const RelayTestUtils = {
     );
   },
 
+  /**
+   * Strips leading indentation from a multi-line string, enabling you to use
+   * template literals in tests while maintaining nice nesting.
+   *
+   * An optional padding string can be supplied to force a fixed indent to be
+   * applied back after stripping.
+   */
+  dedent(string, padding = '') {
+    const blankLine = /^\s*$/;
+    const lines = string.split('\n');
+
+    // Remove any entirely blank leading or trailing lines.
+    if (lines.length && lines[0].match(blankLine)) {
+      lines.shift();
+    }
+    if (lines.length && lines[lines.length - 1].match(blankLine)) {
+      lines.pop();
+    }
+
+    const minLeadingSpace = lines.reduce((acc, line) => {
+      if (line.match(blankLine)) {
+        return acc;
+      }
+      const leadingWhitespace = line.match(/^(\s*)/);
+      return Math.min(
+        acc,
+        leadingWhitespace ? leadingWhitespace[1].length : 0,
+      );
+    }, Infinity);
+
+    return lines.map(line => {
+      if (line.match(blankLine)) {
+        return '';
+      }
+      return padding + line.slice(minLeadingSpace);
+    }).join('\n');
+  },
+
   defer(fragment) {
     const QueryBuilder = require('QueryBuilder');
     const RelayFragmentReference = require('RelayFragmentReference');
@@ -576,12 +614,14 @@ const RelayTestUtils = {
     const indentSize = 2;
     const indent = indentBy.bind(null, indentSize);
     const printedQuery = printRelayQuery(flattenRelayQuery(node));
+    /* eslint-disable no-console-disallow */
     console.log(
       'Node:\n' +
       indent(prettifyQueryString(printedQuery.text, indentSize)) + '\n\n' +
       'Variables:\n' +
       indent(prettyStringify(printedQuery.variables, indentSize)) + '\n'
     );
+    /* eslint-enable no-console-disallow */
   },
 
   /**
