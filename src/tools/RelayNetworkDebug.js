@@ -21,10 +21,10 @@ import type RelayQueryRequest from 'RelayQueryRequest';
 const performanceNow = require('performanceNow');
 
 export type RelayNetworkDebuggable = {
-  name: string;
-  type: string;
-  promise: Promise<any>;
-  logResult: (error: ?Object, response: ?Object) => void;
+  name: string,
+  type: string,
+  promise: Promise<any>,
+  logResult: (error: ?Object, response: ?Object) => void,
 };
 
 class RelayNetworkDebugger {
@@ -107,7 +107,9 @@ let networkDebugger: ?RelayNetworkDebugger;
 const RelayNetworkDebug = {
   init(environment: RelayEnvironment = Relay.Store): void {
     networkDebugger && networkDebugger.uninstall();
-    networkDebugger = new RelayNetworkDebugger(environment);
+    if (console.groupCollapsed) { // without groupCollapsed RelayNetworkDebug is too noisy
+      networkDebugger = new RelayNetworkDebugger(environment);
+    }
   },
 
   logRequest(request: RelayNetworkDebuggable): void {

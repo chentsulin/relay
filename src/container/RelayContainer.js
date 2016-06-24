@@ -56,13 +56,13 @@ type FragmentPointer = {
 export type RelayContainerSpec = {
   fragments: {
     [propName: string]: RelayQLFragmentBuilder
-  };
-  initialVariables?: Variables;
+  },
+  initialVariables?: Variables,
   prepareVariables?: (
     prevVariables: Variables,
     route: RelayMetaRoute
-  ) => Variables;
-  shouldComponentUpdate?: () => boolean;
+  ) => Variables,
+  shouldComponentUpdate?: () => boolean,
 };
 export type RelayLazyContainer = Function;
 
@@ -105,13 +105,13 @@ function createContainerComponent(
     _fragmentResolvers: {[key: string]: ?FragmentResolver};
 
     pending: ?{
-      rawVariables: Variables;
-      request: Abortable;
+      rawVariables: Variables,
+      request: Abortable,
     };
     state: {
-      queryData: {[propName: string]: mixed};
-      rawVariables: Variables;
-      relayProp: RelayProp;
+      queryData: {[propName: string]: mixed},
+      rawVariables: Variables,
+      relayProp: RelayProp,
     };
 
     constructor(props, context) {
@@ -152,6 +152,7 @@ function createContainerComponent(
           hasFragmentData: this.hasFragmentData.bind(this),
           hasOptimisticUpdate: this.hasOptimisticUpdate.bind(this),
           hasPartialData: this.hasPartialData.bind(this),
+          pendingVariables: null,
           route,
           setVariables: this.setVariables.bind(this),
           variables: {},
@@ -294,11 +295,17 @@ function createContainerComponent(
             rawVariables,
             relayProp: {
               ...this.state.relayProp,
+              pendingVariables: null,
               variables: nextVariables,
             },
           };
         } else {
-          partialState = {};
+          partialState = {
+            relayProp: {
+              ...this.state.relayProp,
+              pendingVariables: isComplete ? null : nextVariables,
+            },
+          };
         }
         const mounted = this.mounted;
         if (mounted) {
@@ -472,9 +479,9 @@ function createContainerComponent(
       propVariables: Variables,
       prevVariables: ?Variables
     ): {
-      queryData: {[propName: string]: mixed};
+      queryData: {[propName: string]: mixed},
       rawVariables: Variables,
-      relayProp: RelayProp;
+      relayProp: RelayProp,
     } {
       const rawVariables = getVariablesWithPropOverrides(
         spec,
@@ -1008,9 +1015,11 @@ function getComponentName(Component: ReactClass<any>): string {
   const ComponentClass = getReactComponent(Component);
   if (ComponentClass) {
     name = ComponentClass.displayName || ComponentClass.name;
-  } else {
+  } else if (typeof Component === 'function') {
     // This is a stateless functional component.
-    name = 'props => ReactElement';
+    name = Component.displayName || Component.name || 'StatelessComponent';
+  } else {
+    name = 'ReactElement';
   }
   return name;
 }

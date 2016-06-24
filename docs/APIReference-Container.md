@@ -56,6 +56,11 @@ Relay containers 是使用 `Relay.createContainer` 來建立的。
     </a>
   </li>
   <li>
+    <a href="#pendingvariables">
+      <pre>pendingVariables </pre>
+    </a>
+  </li>
+  <li>
     <a href="#variables">
       <pre>variables</pre>
     </a>
@@ -267,6 +272,65 @@ module.exports = Relay.createContainer(ProfilePicture, {
 > 附註
 >
 > 永遠不要直接改動 `this.props.relay.variables`，它不會正確的觸發抓取資料。把 `this.props.relay.variables` 當作是 immutable 的來處理，就像 props 一樣。
+
+### pendingVariables
+
+```
+pendingVariables: ?{[name: string]: mixed}
+```
+
+`pendingVariables` contains the set of variables that are being used to fetch the new props, i.e. when `this.props.relay.setVariables()` or `this.props.relay.forceFetch()` are called and the corresponding request is in flight.
+
+If no request is in flight pendingVariables is `null`.
+
+#### Example
+
+```{12}
+class ProfilePicture extends React.Component {
+  requestRandomPictureSize = () => {
+    const randIntMin = 10;
+    const randIntMax = 200;
+    const size = (Math.floor(Math.random() * (randIntMax - randIntMin + 1)) + randIntMin);
+    this.props.relay.setVariables({size});
+  }
+
+  render() {
+    const {relay, user} = this.props;
+    const {pendingVariables} = relay;
+    if (pendingVariables && 'size' in pendingVariables) {
+      // Profile picture with new size is loading
+      return (
+        <View>
+          <LoadingSpinner />
+        </View>
+      )
+    }
+
+    return (
+      <View>
+        <Image
+          uri={user.profilePicture.uri}
+          width={relay.variables.size}
+        />
+        <button onclick={this.requestRandomPictureSize}>
+          Request random picture size
+        </button>
+      </View>
+    );
+  }
+}
+module.exports = Relay.createContainer(ProfilePicture, {
+  initialVariables: {size: 50},
+  fragments: {
+    user: () => Relay.QL`
+      fragment on User { profilePicture(size: $size) { ... } }
+    `,
+  },
+});
+```
+
+In this example, whenever a picture with a new size is being loaded a spinner is displayed instead of the picture.
+
 
 ### setVariables
 

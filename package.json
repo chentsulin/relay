@@ -1,7 +1,7 @@
 {
   "name": "react-relay",
   "description": "A framework for building data-driven React applications.",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "keywords": [
     "graphql",
     "react",
@@ -34,7 +34,7 @@
     "react-static-container": "^1.0.1"
   },
   "peerDependencies": {
-    "babel-relay-plugin": "0.9.0",
+    "babel-relay-plugin": "0.9.1",
     "react": "^15.0.0 || ^0.14.0"
   },
   "devDependencies": {
@@ -54,7 +54,7 @@
     "gulp-babel": "^6.1.2",
     "gulp-derequire": "^2.1.0",
     "gulp-flatten": "^0.2.0",
-    "gulp-header": "^1.8.2",
+    "gulp-header": "1.8.2",
     "gulp-util": "^3.0.7",
     "jest": "^12.1.1",
     "object-assign": "^4.1.0",

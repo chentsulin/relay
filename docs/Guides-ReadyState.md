@@ -25,6 +25,10 @@ next: guides-mutations
 
   如果失敗的話，這是一個 `Error` 的實體。反之，這會是 `null`。
 
+- `events: Array<ReadyStateEvent>`
+
+  This is an array of events received so far (see `ReadyStateEvent` below).
+
 - `stale: boolean`
 
   當「正在 force fetch」時，在伺服器請求完成之前，如果因為資料在客戶端可用而 `ready` 是 true，那這會是 true。
@@ -32,6 +36,19 @@ next: guides-mutations
 - `aborted: boolean`
 
   是否請求已經被中止。
+
+## `ReadyStateEvent`
+
+- `ABORT`
+- `CACHE_RESTORED_REQUIRED`
+- `CACHE_RESTORE_FAILED`
+- `CACHE_RESTORE_START`
+- `NETWORK_QUERY_ERROR`
+- `NETWORK_QUERY_RECEIVED_ALL`
+- `NETWORK_QUERY_RECEIVED_REQUIRED`
+- `NETWORK_QUERY_START`
+- `STORE_FOUND_ALL`
+- `STORE_FOUND_REQUIRED`
 
 ## 範例
 

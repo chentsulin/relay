@@ -14,6 +14,7 @@ Relay 是一個 JavaScript 框架，用來建置資料驅動的 React 應用程�
 
 ```
 git clone https://github.com/facebook/relay.git
+git checkout 081b4a3f17dcf
 cd relay/examples/todo && npm install
 npm start
 ```
