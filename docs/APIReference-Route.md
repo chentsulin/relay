@@ -19,24 +19,30 @@ Relay 使用 routes 來定義 Relay 應用程式的 entry point。
 *屬性*
 
 <ul class="apiIndex">
-	<li>
-		<a href="#paramdefinitions-static-property">
-			<pre>static paramDefinitions</pre>
-			宣告預期的參數。
-		</a>
-	</li>
-	<li>
-		<a href="#queries-static-property">
-			<pre>static queries</pre>
-			宣告一組 query root。
-		</a>
-	</li>
-	<li>
-		<a href="#routename-static-property">
-			<pre>static routeName</pre>
-			宣告這個 route 類別的名稱。
-		</a>
-	</li>
+  <li>
+    <a href="#paramdefinitions-static-property">
+      <pre>static paramDefinitions</pre>
+      宣告預期的參數。
+    </a>
+  </li>
+  <li>
+    <a href="#prepareparams-static-property">
+      <pre>static prepareParams</pre>
+      宣個額外的參數或是參數轉換。
+    </a>
+  </li>
+  <li>
+    <a href="#queries-static-property">
+      <pre>static queries</pre>
+      宣告一組 query root。
+    </a>
+  </li>
+  <li>
+    <a href="#routename-static-property">
+      <pre>static routeName</pre>
+      宣告這個 route 類別的名稱。
+    </a>
+  </li>
 </ul>
 
 *方法*
@@ -70,6 +76,35 @@ class ProfileRoute extends Relay.Route {
 }
 ```
 
+### prepareParams (static 屬性)
+
+```
+static prepareParams: ?(prevParams: {[prevParam: string]: mixed}) => {[param: string]: mixed};
+```
+
+Routes 可以使用 `prepareParams` 來提供預設參數，或者把傳進去的參數傳過去、轉換或隱藏。
+
+#### 範例
+
+```
+class ProfileRoute extends Relay.Route {
+  static queries = {
+    viewer: () => Relay.QL`query { viewer }`
+  };
+  static prepareParams = (prevParams) => {
+    return {
+      // 把提供的基本參數組傳過去：
+      ...prevParams,
+      // 轉換一個參數來符合內部的需求：
+      id: toGlobalId('Profile', prevParams.id),
+      // 提供一個起始的 `limit` 變數：
+      limit: 10,
+    }
+  }
+  // ...
+}
+```
+
 ### queries (static 屬性)
 
 ```
@@ -90,6 +125,7 @@ class ProfileRoute extends Relay.Route {
 	// ...
 }
 ```
+In this example the Route should be initialized with a `userID` which gets passed on to the query. That `userID` variable will automatically be passed down to the top-level container and can be used there if needed. Further the top-level RelayContainer is expected to have a `user` fragment with the fields to be queried.
 
 ### routeName (static 屬性)
 
