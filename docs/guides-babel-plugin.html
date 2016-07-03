@@ -83,10 +83,27 @@ fs<span class="token punctuation">.</span><span class="token function">writeFile
     <span class="token template-string"><span class="token string">`</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>schemaPath<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">.graphql`</span></span><span class="token punctuation">,</span>
     <span class="token function">printSchema</span><span class="token punctuation">(</span>graphQLSchema<span class="token punctuation">)</span>
   <span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></pre><h2><a class="anchor" name=""></a>額外的選項 <a class="hash-link" href="#">#</a></h2><p><code>babel-relay-plugin</code> 預設會捕捉 GraphQL 驗證錯誤並印出它們而不會退出程序。編譯後的程式碼也會在執行期 throw 一樣的錯誤，讓它無論你是看 terminal 還是瀏覽器 console 都很明顯有東西出問題了。</p><p>當在為產品環境部署變異程式碼時，這個 plugin 可以設定成遇到驗證問題時立刻 throw：</p><pre class="prism language-javascript">
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></pre><h2><a class="anchor" name=""></a>額外的選項 <a class="hash-link" href="#">#</a></h2><p><code>babel-relay-plugin</code> 預設會捕捉 GraphQL 驗證錯誤並印出它們而不會退出程序。編譯後的程式碼也會在執行期 throw 一樣的錯誤，讓它無論你是看 terminal 還是瀏覽器 console 都很明顯有東西出問題了。</p><p>當在為產品環境部署編譯程式碼時，這個 plugin 可以設定成遇到驗證問題時立刻 throw。這個 plugin 可以更進一步用以下選項為不同的環境客製化：</p><pre class="prism language-javascript">
 babel<span class="token punctuation">.</span><span class="token function">transform</span><span class="token punctuation">(</span>source<span class="token punctuation">,</span> <span class="token punctuation">{</span>
   plugins<span class="token punctuation">:</span> <span class="token punctuation">[</span>
-    <span class="token punctuation">[</span><span class="token function">getBabelRelayPlugin</span><span class="token punctuation">(</span>schemaData<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">{</span>enforceSchema<span class="token punctuation">:</span> <span class="token keyword">true</span><span class="token punctuation">}</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+    <span class="token punctuation">[</span><span class="token function">getBabelRelayPlugin</span><span class="token punctuation">(</span>schemaData<span class="token punctuation">,</span> <span class="token punctuation">{</span>
+      <span spellcheck="true" class="token comment">// 只有 `enforceSchema` 是 `false` 而且 `debug` 是 `true` 時，</span>
+      <span spellcheck="true" class="token comment">// 會在建置期間印出驗證錯誤。</span>
+      debug<span class="token punctuation">:</span> <span class="token keyword">false</span><span class="token punctuation">,</span>
+      <span spellcheck="true" class="token comment">// 隱藏所有會被印出的警告 。</span>
+      suppressWarnings<span class="token punctuation">:</span> <span class="token keyword">false</span><span class="token punctuation">,</span>
+      <span spellcheck="true" class="token comment">// 可以添加自訂的 validator。</span>
+      <span spellcheck="true" class="token comment">// 提供規則覆寫預設，並忽略預設的規則。</span>
+      validator<span class="token punctuation">:</span> <span class="token punctuation">(</span>GraphQL<span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token punctuation">(</span>schema<span class="token punctuation">,</span> ast<span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token punctuation">{</span>
+          <span spellcheck="true" class="token comment">// 回傳一個 `Error` 實體的陣列。</span>
+          <span class="token keyword">return</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">{</span>
+    <span spellcheck="true" class="token comment">// 當它在建置期間驗證 queries 時會拋出錯誤。</span>
+    enforceSchema<span class="token punctuation">:</span> <span class="token keyword">true</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
   <span class="token punctuation">]</span><span class="token punctuation">,</span>
 <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></pre></div><div class="docs-prevnext"><a class="docs-next" href="graphql-relay-specification.html#content">Next →</a></div></div></section><footer class="wrap"><div class="right">©2016 Facebook Inc.</div></footer></div><div id="fb-root"></div><script>
             !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+"://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");
