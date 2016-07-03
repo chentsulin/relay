@@ -58,13 +58,13 @@ var StoryContainer = Relay.createContainer(Story, {
 
 ## Render
 
-在 React 中，render 一個 view 需要兩個 input：要 render 的 *component*，和一個要 render 進去的 *root* DOM (UI) node。Render Relay container 也類似：我們需要一個要 render 的 *container*，和一個 graph 中的 *root* 來從那邊開始我們的 query。我們也必須確保用於 container 的 query 有被執行並可能會想要在資料正在被抓取時顯示一個載入指示燈。類似於 `ReactDOM.render(component, domNode)`，Relay 也提供 `<RelayRootContainer Component={...} route={...}>` 來達成這個目的。那個 component 是要 render 的東西，而 route 則提供指定要抓取*哪個*東西的 query。下面是我們會如何去 render `<StoryContainer>`：
+在 React 中，render 一個 view 需要兩個 input：要 render 的 *component*，和一個要 render 進去的 *root* DOM (UI) node。Render Relay container 也類似：我們需要一個要 render 的 *container*，和一個 graph 中的 *root* 來從那邊開始我們的 query。我們也必須確保用於 container 的 query 有被執行並可能會想要在資料正在被抓取時顯示一個載入指示燈。類似於 `ReactDOM.render(component, domNode)`，Relay 也提供 `<Relay.Renderer Container={...} queryConfig={...}>` 來達成這個目的。那個 container 是要 render 的東西，而 queryConfig 則提供指定要抓取*哪個*東西的 query。下面是我們會如何去 render `<StoryContainer>`：
 
 ```javascript
 ReactDOM.render(
-  <RelayRootContainer
-    Component={StoryContainer}
-    route={{
+  <Relay.Renderer
+    Container={StoryContainer}
+    queryConfig={{
       queries: {
         story: () => Relay.QL`
           query {
@@ -78,7 +78,7 @@ ReactDOM.render(
 )
 ```
 
-`RelayRootContainer` 可以接著協調這些 queries 的抓取；把它們跟快取的資料做比較，抓取任何遺漏的資訊，更新快取，並最後在資料可以使用時 render `StoryContainer`。在正在抓取資料時預設不 render 任何東西，不過這個載入的 view 可以藉由 `renderLoading` prop 來客製化。就像 React 讓開發者們 render view 不需要直接操作背後的 view，Relay 和 `RelayRootContainer` 則去掉了直接與網路溝通的需要。
+`Relay.Renderer` 可以接著協調這些 queries 的抓取；把它們跟快取的資料做比較，抓取任何遺漏的資訊，更新快取，並最後在資料可以使用時 render `StoryContainer`。在正在抓取資料時預設不 render 任何東西，不過這個載入的 view 可以藉由 `render` prop 來客製化。就像 React 讓開發者們 render view 不需要直接操作背後的 view，Relay 和 `Relay.Renderer` 則去掉了直接與網路溝通的需要。
 
 ## 資料遮罩
 

@@ -431,6 +431,6 @@ export default Relay.createContainer(App, {
 });
 ```
 
-在 Relay repository 中的 [`./examples/`](https://github.com/facebook/relay/tree/081b4a3f17dcf/examples) 目錄下可以找到一份可運作的 treasure hunt 副本。
+在 [relay-examples](https://github.com/relayjs/relay-examples) repository 中以找到一份可運作的 treasure hunt 副本。
 
 現在，我們現在已經完成這份教學，讓我們深入看看建置一個 GraphQL 客戶端框架代表什麼意思還有要如何把它跟比較傳統的 REST 系統的客戶端做比較。

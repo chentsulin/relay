@@ -25,7 +25,7 @@ next: tutorial
 
 2. **一個 GraphQL 伺服器**
 
-  任何伺服器都可以學習載入 schema 並用 GraphQL 溝通。我們的[範例](https://github.com/facebook/relay/tree/081b4a3f17dcf/examples)使用 Express。
+  任何伺服器都可以學習載入 schema 並用 GraphQL 溝通。我們的[範例](https://github.com/relayjs/relay-examples)使用 Express。
 
   - 在 [npm](https://www.npmjs.com/package/express-graphql) 上的 **[express-graphql](https://github.com/graphql/express-graphql)**
 

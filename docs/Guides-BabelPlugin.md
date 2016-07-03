@@ -151,12 +151,29 @@ fetch(`${SERVER}`, {
 
 `babel-relay-plugin` 預設會捕捉 GraphQL 驗證錯誤並印出它們而不會退出程序。編譯後的程式碼也會在執行期 throw 一樣的錯誤，讓它無論你是看 terminal 還是瀏覽器 console 都很明顯有東西出問題了。
 
-當在為產品環境部署變異程式碼時，這個 plugin 可以設定成遇到驗證問題時立刻 throw：
+當在為產品環境部署編譯程式碼時，這個 plugin 可以設定成遇到驗證問題時立刻 throw。這個 plugin 可以更進一步用以下選項為不同的環境客製化：
 
 ```javascript
 babel.transform(source, {
   plugins: [
-    [getBabelRelayPlugin(schemaData), {enforceSchema: true}],
+    [getBabelRelayPlugin(schemaData, {
+      // 只有 `enforceSchema` 是 `false` 而且 `debug` 是 `true` 時，
+      // 會在建置期間印出驗證錯誤。
+      debug: false,
+      // 隱藏所有會被印出的警告 。
+      suppressWarnings: false,
+      // 可以添加自訂的 validator。
+      // 提供規則覆寫預設，並忽略預設的規則。
+      validator: (GraphQL) => {
+        return (schema, ast) => {
+          // 回傳一個 `Error` 實體的陣列。
+          return [];
+        };
+      },
+    }), {
+    // 當它在建置期間驗證 queries 時會拋出錯誤。
+    enforceSchema: true,
+    }],
   ],
 });
 ```

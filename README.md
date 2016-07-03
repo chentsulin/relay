@@ -10,12 +10,11 @@ Relay 是一個 JavaScript 框架，用來建置資料驅動的 React 應用程�
 
 ## 範例
 
-這個 repository 附帶一個 [TodoMVC](http://todomvc.com/) 的實作。請試著：
+[relay-examples](https://github.com/relayjs/relay-examples) repository 附帶一個 [TodoMVC](http://todomvc.com/) 的實作。請試著：
 
 ```
-git clone https://github.com/facebook/relay.git
-git checkout 081b4a3f17dcf
-cd relay/examples/todo && npm install
+git clone https://github.com/relayjs/relay-examples.git
+cd relay-examples/todo && npm install
 npm start
 ```
 
