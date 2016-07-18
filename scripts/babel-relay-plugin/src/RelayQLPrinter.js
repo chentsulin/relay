@@ -35,13 +35,13 @@ const {ID} = require('./RelayQLNodeInterface');
 
 export type Printable = Object;
 export type Substitution = {
-  name: string;
-  value: Printable;
+  name: string,
+  value: Printable,
 };
 
 type PrinterOptions = {
-  inputArgumentName: ?string;
-  snakeCase: boolean;
+  inputArgumentName: ?string,
+  snakeCase: boolean,
 };
 
 module.exports = function(t: any, options: PrinterOptions): Function {
@@ -197,7 +197,7 @@ module.exports = function(t: any, options: PrinterOptions): Function {
       const requisiteFields = {};
       let idFragment;
       if (fragmentType.hasField(ID)) {
-        requisiteFields.id = true;
+        requisiteFields[ID] = true;
       } else if (shouldGenerateIdFragment(fragment, fragmentType)) {
         idFragment = fragmentType.generateIdFragment();
       }
@@ -252,11 +252,11 @@ module.exports = function(t: any, options: PrinterOptions): Function {
             t.objectExpression(
               selectVariablesValue.map((item) => {
                 const value = item.getValue();
-                return property(value, this.printVariable(value))
+                return property(value, this.printVariable(value));
               })
             ),
           ]
-        )
+        );
       }
 
       return fragmentCode;
@@ -475,20 +475,20 @@ module.exports = function(t: any, options: PrinterOptions): Function {
       const fieldType = field.getType();
 
       const metadata: {
-        canHaveSubselections?: boolean;
-        inferredPrimaryKey?: ?string;
-        inferredRootCallName?: ?string;
-        isAbstract?: boolean;
-        isConnection?: boolean;
-        isFindable?: boolean;
-        isGenerated?: boolean;
-        isPlural?: boolean;
-        isRequisite?: boolean;
+        canHaveSubselections?: boolean,
+        inferredPrimaryKey?: ?string,
+        inferredRootCallName?: ?string,
+        isAbstract?: boolean,
+        isConnection?: boolean,
+        isFindable?: boolean,
+        isGenerated?: boolean,
+        isPlural?: boolean,
+        isRequisite?: boolean,
       } = {};
       const requisiteFields = {};
       let idFragment;
       if (fieldType.hasField(ID)) {
-        requisiteFields.id = true;
+        requisiteFields[ID] = true;
       } else if (shouldGenerateIdFragment(field, fieldType)) {
         idFragment = fieldType.generateIdFragment();
       }
@@ -746,7 +746,7 @@ module.exports = function(t: any, options: PrinterOptions): Function {
       field.findArgument('last'),
       field.findArgument('before'),
       field.findArgument('after'),
-    ]
+    ];
     let condition = (!first || !last) || (first.isVariable() && last.isVariable());
     if (!condition) {
       throw new RelayTransformError(
@@ -911,6 +911,7 @@ module.exports = function(t: any, options: PrinterOptions): Function {
   }
 
   function identify(str: string): Printable {
+    // $FlowFixMe
     return str.split('.').reduce((acc, name) => {
       if (!acc) {
         return t.identifier(name);

@@ -178,7 +178,7 @@ module.exports = function (t, options) {
         var requisiteFields = {};
         var idFragment = void 0;
         if (fragmentType.hasField(ID)) {
-          requisiteFields.id = true;
+          requisiteFields[ID] = true;
         } else if (shouldGenerateIdFragment(fragment, fragmentType)) {
           idFragment = fragmentType.generateIdFragment();
         }
@@ -379,7 +379,7 @@ module.exports = function (t, options) {
         var requisiteFields = {};
         var idFragment = void 0;
         if (fieldType.hasField(ID)) {
-          requisiteFields.id = true;
+          requisiteFields[ID] = true;
         } else if (shouldGenerateIdFragment(field, fieldType)) {
           idFragment = fieldType.generateIdFragment();
         }
@@ -677,6 +677,7 @@ module.exports = function (t, options) {
   }
 
   function identify(str) {
+    // $FlowFixMe
     return str.split('.').reduce(function (acc, name) {
       if (!acc) {
         return t.identifier(name);
