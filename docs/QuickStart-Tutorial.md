@@ -33,30 +33,30 @@ export class Game {}
 export class HidingSpot {}
 
 // Mock data
-var game = new Game();
+const game = new Game();
 game.id = '1';
 
-var hidingSpots = [];
+const hidingSpots = [];
 (function() {
-	var hidingSpot;
-	var indexOfSpotWithTreasure = Math.floor(Math.random() * 9);
-	for (var i = 0; i < 9; i++) {
-		hidingSpot = new HidingSpot();
-		hidingSpot.id = `${i}`;
-		hidingSpot.hasTreasure = (i === indexOfSpotWithTreasure);
-		hidingSpot.hasBeenChecked = false;
-		hidingSpots.push(hidingSpot);
-	}
+  let hidingSpot;
+  const indexOfSpotWithTreasure = Math.floor(Math.random() * 9);
+  for (let i = 0; i < 9; i++) {
+    hidingSpot = new HidingSpot();
+    hidingSpot.id = `${i}`;
+    hidingSpot.hasTreasure = (i === indexOfSpotWithTreasure);
+    hidingSpot.hasBeenChecked = false;
+    hidingSpots.push(hidingSpot);
+  }
 })();
 
-var turnsRemaining = 3;
+let turnsRemaining = 3;
 
 export function checkHidingSpotForTreasure(id) {
   if (hidingSpots.some(hs => hs.hasTreasure && hs.hasBeenChecked)) {
     return;
   }
   turnsRemaining--;
-  var hidingSpot = getHidingSpot(id);
+  const hidingSpot = getHidingSpot(id);
   hidingSpot.hasBeenChecked = true;
 }
 export function getHidingSpot(id) {
@@ -101,143 +101,143 @@ import {
 接著，讓我們來定義一個 node interface 和 type。我們只需要提供一個方式讓 Relay 能從一個 object 映射到與那個 object 相關聯的 GraphQL type，並從一個 global ID 映射到它指向的 object：
 
 ```
-var {nodeInterface, nodeField} = nodeDefinitions(
-	(globalId) => {
-		var {type, id} = fromGlobalId(globalId);
-		if (type === 'Game') {
-			return getGame(id);
-		} else if (type === 'HidingSpot') {
-			return getHidingSpot(id);
-		} else {
-			return null;
-		}
-	},
-	(obj) => {
-		if (obj instanceof Game) {
-			return gameType;
-		} else if (obj instanceof HidingSpot)  {
-			return hidingSpotType;
-		} else {
-			return null;
-		}
-	}
+const {nodeInterface, nodeField} = nodeDefinitions(
+  (globalId) => {
+    const {type, id} = fromGlobalId(globalId);
+    if (type === 'Game') {
+      return getGame(id);
+    } else if (type === 'HidingSpot') {
+      return getHidingSpot(id);
+    } else {
+      return null;
+    }
+  },
+  (obj) => {
+    if (obj instanceof Game) {
+      return gameType;
+    } else if (obj instanceof HidingSpot) {
+      return hidingSpotType;
+    } else {
+      return null;
+    }
+  }
 );
 ```
 
 再下來，讓我們來定義我們的 game 和 hiding spot types，還有在它們上面可以存取的 fields。
 
 ```
-var gameType = new GraphQLObjectType({
-	name: 'Game',
-	description: 'A treasure search game',
-	fields: () => ({
-		id: globalIdField('Game'),
-		hidingSpots: {
-			type: hidingSpotConnection,
-			description: 'Places where treasure might be hidden',
-			args: connectionArgs,
-			resolve: (game, args) => connectionFromArray(getHidingSpots(), args),
-		},
-		turnsRemaining: {
-			type: GraphQLInt,
-			description: 'The number of turns a player has left to find the treasure',
-			resolve: () => getTurnsRemaining(),
-		},
-	}),
-	interfaces: [nodeInterface],
+const gameType = new GraphQLObjectType({
+  name: 'Game',
+  description: 'A treasure search game',
+  fields: () => ({
+    id: globalIdField('Game'),
+    hidingSpots: {
+      type: hidingSpotConnection,
+      description: 'Places where treasure might be hidden',
+      args: connectionArgs,
+      resolve: (game, args) => connectionFromArray(getHidingSpots(), args),
+    },
+    turnsRemaining: {
+      type: GraphQLInt,
+      description: 'The number of turns a player has left to find the treasure',
+      resolve: () => getTurnsRemaining(),
+    },
+  }),
+  interfaces: [nodeInterface],
 });
 
-var hidingSpotType = new GraphQLObjectType({
-	name: 'HidingSpot',
-	description: 'A place where you might find treasure',
-	fields: () => ({
-		id: globalIdField('HidingSpot'),
-		hasBeenChecked: {
-			type: GraphQLBoolean,
-			description: 'True if this spot has already been checked for treasure',
-			resolve: (hidingSpot) => hidingSpot.hasBeenChecked,
-		},
-		hasTreasure: {
-			type: GraphQLBoolean,
-			description: 'True if this hiding spot holds treasure',
-			resolve: (hidingSpot) => {
-				if (hidingSpot.hasBeenChecked) {
-					return hidingSpot.hasTreasure;
-				} else {
-					return null;  // 噓... 這是秘密！
-				}
-			},
-		},
-	}),
-	interfaces: [nodeInterface],
+const hidingSpotType = new GraphQLObjectType({
+  name: 'HidingSpot',
+  description: 'A place where you might find treasure',
+  fields: () => ({
+    id: globalIdField('HidingSpot'),
+    hasBeenChecked: {
+      type: GraphQLBoolean,
+      description: 'True if this spot has already been checked for treasure',
+      resolve: (hidingSpot) => hidingSpot.hasBeenChecked,
+    },
+    hasTreasure: {
+      type: GraphQLBoolean,
+      description: 'True if this hiding spot holds treasure',
+      resolve: (hidingSpot) => {
+        if (hidingSpot.hasBeenChecked) {
+          return hidingSpot.hasTreasure;
+        } else {
+          return null;  // 噓... 這是秘密！
+        }
+      },
+    },
+  }),
+  interfaces: [nodeInterface],
 });
 ```
 
 因為一個 game 可以有許多個 hiding spots，我們需要建立一個 connection，讓我們可以使用來 把他們連結在一起。
 
 ```
-var {connectionType: hidingSpotConnection} =
-	connectionDefinitions({name: 'HidingSpot', nodeType: hidingSpotType});
+const {connectionType: hidingSpotConnection} =
+  connectionDefinitions({name: 'HidingSpot', nodeType: hidingSpotType});
 ```
 
 現在讓我們來把這些 types 連結到 root query type。
 
 ```
-var queryType = new GraphQLObjectType({
-	name: 'Query',
-	fields: () => ({
-		node: nodeField,
-		game: {
-			type: gameType,
-			resolve: () => getGame(),
-		},
-	}),
+const queryType = new GraphQLObjectType({
+  name: 'Query',
+  fields: () => ({
+    node: nodeField,
+    game: {
+      type: gameType,
+      resolve: () => getGame(),
+    },
+  }),
 });
 ```
 
 隨著 queries 已經完成，讓我們開始著手我們唯一的 mutation：消耗一個回合來檢查一個 spot 有沒有寶藏的那一個。在這裡，我們定義給 mutation 的 input (spot 的 id 用來檢查寶藏) 和在 mutation 發生之後所有客戶端可能會可能想要更新的 fields 清單。最後，我們實作一個方法來執行背後的 mutation。
 
 ```
-var CheckHidingSpotForTreasureMutation = mutationWithClientMutationId({
-	name: 'CheckHidingSpotForTreasure',
-	inputFields: {
-		id: { type: new GraphQLNonNull(GraphQLID) },
-	},
-	outputFields: {
-		hidingSpot: {
-			type: hidingSpotType,
-			resolve: ({localHidingSpotId}) => getHidingSpot(localHidingSpotId),
-		},
-		game: {
-			type: gameType,
-			resolve: () => getGame(),
-		},
-	},
-	mutateAndGetPayload: ({id}) => {
-		var localHidingSpotId = fromGlobalId(id).id;
-		checkHidingSpotForTreasure(localHidingSpotId);
-		return {localHidingSpotId};
-	},
+const CheckHidingSpotForTreasureMutation = mutationWithClientMutationId({
+  name: 'CheckHidingSpotForTreasure',
+  inputFields: {
+    id: { type: new GraphQLNonNull(GraphQLID) },
+  },
+  outputFields: {
+    hidingSpot: {
+      type: hidingSpotType,
+      resolve: ({localHidingSpotId}) => getHidingSpot(localHidingSpotId),
+    },
+    game: {
+      type: gameType,
+      resolve: () => getGame(),
+    },
+  },
+  mutateAndGetPayload: ({id}) => {
+    const localHidingSpotId = fromGlobalId(id).id;
+    checkHidingSpotForTreasure(localHidingSpotId);
+    return {localHidingSpotId};
+  },
 });
 ```
 
 讓我們來把剛建立的 mutation 連結到 root mutation type：
 
 ```
-var mutationType = new GraphQLObjectType({
-	name: 'Mutation',
-	fields: () => ({
-		checkHidingSpotForTreasure: CheckHidingSpotForTreasureMutation,
-	}),
+const mutationType = new GraphQLObjectType({
+  name: 'Mutation',
+  fields: () => ({
+    checkHidingSpotForTreasure: CheckHidingSpotForTreasureMutation,
+  }),
 });
 ```
 
 最後，建構我們的 schema (它的起始 query type 是我們先前定義過的 query type) 並 export 它。
 
 ```
-export var Schema = new GraphQLSchema({
-	query: queryType,
-	mutation: mutationType
+export const Schema = new GraphQLSchema({
+  query: queryType,
+  mutation: mutationType
 });
 ```
 
@@ -256,11 +256,10 @@ npm start
 
 ```
 export default class extends Relay.Route {
-	static path = '/';
-	static queries = {
-		game: () => Relay.QL`query { game }`,
-	};
-	static routeName = 'AppHomeRoute';
+  static queries = {
+    game: () => Relay.QL`query { game }`,
+  };
+  static routeName = 'AppHomeRoute';
 }
 ```
 
@@ -270,63 +269,63 @@ export default class extends Relay.Route {
 import Relay from 'react-relay';
 
 export default class CheckHidingSpotForTreasureMutation extends Relay.Mutation {
-	static fragments = {
-		game: () => Relay.QL`
-			fragment on Game {
-				id,
-				turnsRemaining,
-			}
-		`,
-		hidingSpot: () => Relay.QL`
-			fragment on HidingSpot {
-				id,
-			}
-		`,
-	};
-	getMutation() {
-		return Relay.QL`mutation{checkHidingSpotForTreasure}`;
-	}
-	getCollisionKey() {
-		return `check_${this.props.game.id}`;
-	}
-	getFatQuery() {
-		return Relay.QL`
-			fragment on CheckHidingSpotForTreasurePayload {
-				hidingSpot {
-					hasBeenChecked,
-					hasTreasure,
-				},
-				game {
-					turnsRemaining,
-				},
-			}
-		`;
-	}
-	getConfigs() {
-		return [{
-			type: 'FIELDS_CHANGE',
-			fieldIDs: {
-				hidingSpot: this.props.hidingSpot.id,
-				game: this.props.game.id,
-			},
-		}];
-	}
-	getVariables() {
-		return {
-			id: this.props.hidingSpot.id,
-		};
-	}
-	getOptimisticResponse() {
-		return {
-			game: {
-				turnsRemaining: this.props.game.turnsRemaining - 1,
-			},
-			hidingSpot: {
-				id: this.props.hidingSpot.id,
-				hasBeenChecked: true,
-			},
-		};
-	}
+  static fragments = {
+    game: () => Relay.QL`
+      fragment on Game {
+        id,
+        turnsRemaining,
+      }
+    `,
+    hidingSpot: () => Relay.QL`
+      fragment on HidingSpot {
+        id,
+      }
+    `,
+  };
+  getMutation() {
+    return Relay.QL`mutation{checkHidingSpotForTreasure}`;
+  }
+  getCollisionKey() {
+    return `check_${this.props.game.id}`;
+  }
+  getFatQuery() {
+    return Relay.QL`
+      fragment on CheckHidingSpotForTreasurePayload @relay(pattern: true) {
+        hidingSpot {
+          hasBeenChecked,
+          hasTreasure,
+        },
+        game {
+          turnsRemaining,
+        },
+      }
+    `;
+  }
+  getConfigs() {
+    return [{
+      type: 'FIELDS_CHANGE',
+      fieldIDs: {
+        hidingSpot: this.props.hidingSpot.id,
+        game: this.props.game.id,
+      },
+    }];
+  }
+  getVariables() {
+    return {
+      id: this.props.hidingSpot.id,
+    };
+  }
+  getOptimisticResponse() {
+    return {
+      game: {
+        turnsRemaining: this.props.game.turnsRemaining - 1,
+      },
+      hidingSpot: {
+        id: this.props.hidingSpot.id,
+        hasBeenChecked: true,
+      },
+    };
+  }
 }
 ```
 
@@ -334,10 +333,12 @@ export default class CheckHidingSpotForTreasureMutation extends Relay.Mutation {
 
 ```
 import CheckHidingSpotForTreasureMutation from '../mutations/CheckHidingSpotForTreasureMutation';
+import React from 'react';
+import Relay from 'react-relay';
 
 class App extends React.Component {
   _getHidingSpotStyle(hidingSpot) {
-    var color;
+    let color;
     if (this.props.relay.hasOptimisticUpdate(hidingSpot)) {
       color = 'lightGrey';
     } else if (hidingSpot.hasBeenChecked) {
@@ -389,7 +390,7 @@ class App extends React.Component {
     });
   }
   render() {
-    var headerText;
+    let headerText;
     if (this.props.relay.getPendingTransactions(this.props.game)) {
       headerText = '\u2026';
     } else if (this._hasFoundTreasure()) {
