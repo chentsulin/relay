@@ -13,12 +13,15 @@
 'use strict';
 
 const React = require('React');
+const RelayPropTypes = require('RelayPropTypes');
+const RelayReadyStateRenderer = require('RelayReadyStateRenderer');
+
+const getRelayQueries = require('getRelayQueries');
+
 import type {RelayEnvironmentInterface} from 'RelayEnvironment';
 import type {GarbageCollectionHold} from 'RelayGarbageCollector';
 import type {RelayQuerySet} from 'RelayInternalTypes';
-const RelayPropTypes = require('RelayPropTypes');
 import type {RelayQueryConfigInterface} from 'RelayQueryConfig';
-const RelayReadyStateRenderer = require('RelayReadyStateRenderer');
 import type {
   RelayRenderCallback,
   RelayRetryCallback,
@@ -30,10 +33,12 @@ import type {
   RelayContainer,
 } from 'RelayTypes';
 
-const getRelayQueries = require('getRelayQueries');
-
+type DefaultProps = {
+  shouldFetch?: ?boolean,
+};
 type Props = {
   Container: RelayContainer,
+  shouldFetch?: ?boolean,
   forceFetch?: ?boolean,
   onForceFetch?: ?(
     querySet: RelayQuerySet,
@@ -124,7 +129,21 @@ const INACTIVE_READY_STATE = {
  *   }
  *
  */
-class RelayRenderer extends React.Component<void, Props, State> {
+class RelayRenderer extends React.Component<DefaultProps, Props, State> {
+  static propTypes = {
+    Container: RelayPropTypes.Container,
+    forceFetch: PropTypes.bool,
+    onReadyStateChange: PropTypes.func,
+    queryConfig: RelayPropTypes.QueryConfig.isRequired,
+    environment: RelayPropTypes.Environment,
+    render: PropTypes.func,
+    shouldFetch: PropTypes.bool,
+  };
+
+  static defaultProps = {
+    shouldFetch: true,
+  };
+
   gcHold: ?GarbageCollectionHold;
   lastRequest: ?Abortable;
   mounted: boolean;
@@ -161,8 +180,13 @@ class RelayRenderer extends React.Component<void, Props, State> {
       onPrimeCache,
       queryConfig,
       environment,
+      shouldFetch,
     }: Props
   ): void {
+    if (!shouldFetch) {
+      return;
+    }
+
     const onReadyStateChange = readyState => {
       if (!this.mounted) {
         this._handleReadyStateChange({...readyState, mounted: false});
@@ -218,6 +242,7 @@ class RelayRenderer extends React.Component<void, Props, State> {
     if (nextProps.Container !== this.props.Container ||
         nextProps.environment !== this.props.environment ||
         nextProps.queryConfig !== this.props.queryConfig ||
+        nextProps.shouldFetch !== this.props.shouldFetch ||
         (nextProps.forceFetch && !this.props.forceFetch)) {
       if (nextProps.environment !== this.props.environment) {
         if (this.gcHold) {
@@ -266,7 +291,7 @@ class RelayRenderer extends React.Component<void, Props, State> {
     this.mounted = false;
   }
 
-  render(): ?React$Element<any> {
+  render(): ?React.Element<*> {
     const readyState = this.state.active ?
       this.state.readyState :
       INACTIVE_READY_STATE;
@@ -283,14 +308,5 @@ class RelayRenderer extends React.Component<void, Props, State> {
     );
   }
 }
-
-RelayRenderer.propTypes = {
-  Container: RelayPropTypes.Container,
-  forceFetch: PropTypes.bool,
-  onReadyStateChange: PropTypes.func,
-  queryConfig: RelayPropTypes.QueryConfig.isRequired,
-  environment: RelayPropTypes.Environment,
-  render: PropTypes.func,
-};
 
 module.exports = RelayRenderer;

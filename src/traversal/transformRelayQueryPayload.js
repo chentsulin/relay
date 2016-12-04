@@ -14,10 +14,11 @@
 
 const RelayQuery = require('RelayQuery');
 const RelayQueryVisitor = require('RelayQueryVisitor');
-import type {QueryPayload} from 'RelayInternalTypes';
 
 const invariant = require('invariant');
 const mapObject = require('mapObject');
+
+import type {QueryPayload} from 'RelayInternalTypes';
 
 type PayloadState = {
   client: QueryPayload,
@@ -155,7 +156,13 @@ class RelayPayloadTransformer extends RelayQueryVisitor<PayloadState> {
           serverData[index] = serverItem = {};
         }
         this.traverse(node, {
+          /* $FlowFixMe(>=0.36.0) Flow error detected
+           * during the deploy of Flow v0.36.0. To see the error, remove this
+           * comment and run Flow */
           client: clientItem,
+          /* $FlowFixMe(>=0.36.0) Flow error detected
+           * during the deploy of Flow v0.36.0. To see the error, remove this
+           * comment and run Flow */
           server: serverItem,
         });
       });

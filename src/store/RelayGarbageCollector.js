@@ -13,14 +13,15 @@
 'use strict';
 
 const GraphQLRange = require('GraphQLRange');
-import type {DataID} from 'RelayInternalTypes';
 const RelayRecord = require('RelayRecord');
-import type RelayStoreData from 'RelayStoreData';
 
 const forEachObject = require('forEachObject');
 const invariant = require('invariant');
 const resolveImmediate = require('resolveImmediate');
 const warning = require('warning');
+
+import type {DataID} from 'RelayInternalTypes';
+import type RelayStoreData from 'RelayStoreData';
 
 export type GarbageCollectionHold = {release: () => void};
 export type GarbageCollectionScheduler = (collect: () => boolean) => void;
@@ -204,6 +205,7 @@ class RelayGarbageCollector {
     return null;
   }
 
+  // $FlowFixMe(>=0.34.0)
   _traverseRecord(record: {[key: string]: mixed}): void {
     forEachObject(record, (value, storageKey) => {
       if (storageKey === RelayRecord.MetadataKey.PATH) {

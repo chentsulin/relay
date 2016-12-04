@@ -49,15 +49,15 @@ class ProfilePicture extends React.Component {
 
 ```
 Relay.QL`
-	# 這個 fragment 僅適用於 type `User` 的物件。
-	fragment on User {
-		# 把 `size` 參數設定成一個命名成 `$size` 的 GraphQL 變數，如此以來我們可以
-		# 在之後藉由 slider 改變它的值。
-		profilePhoto(size: $size) {
-			# 針對指定的 size 取得相應的 URI，例如在 CDN 上。
-			uri,
-		},
-	}
+  # 這個 fragment 僅適用於 type 'User' 的物件。
+  fragment on User {
+    # 把 'size' 參數設定成一個命名成 '$size' 的 GraphQL 變數，如此以來我們可以
+    # 在之後藉由 slider 改變它的值。
+    profilePhoto(size: $size) {
+      # 針對指定的 size 取得相應的 URI，例如在 CDN 上。
+      uri,
+    },
+  }
 `
 ```
 
@@ -184,16 +184,17 @@ Relay container 提供一個 static 的 `getFragment()` 方法，它回傳一個
 class Profile extends React.Component {/* 同上 */}
 
 module.exports = Relay.createContainer(Profile, {
+<<<<<<< HEAD
 	fragments: {
 		// 這個 `user` fragment 名稱對應到命名成 prop `user` 的 prop，
 		// 這預計會藉由 `<Profile>` component 填入伺服器的資料。
 		user: () => Relay.QL`
 			fragment on User {
-				# 指定 `<Profile>` 本身需要的任何欄位。
+				# 指定 '<Profile>' 本身需要的任何欄位。
 				name,
 
 				# 包含一個指向 child component 的 fragment 的參考。在這裡，
-				# `user` 是被指定在 child `<ProfilePicture>` 的 `fragments` 定義中
+				# 'user' 是被指定在 child '<ProfilePicture>' 的 'fragments' 定義中
 				# 的 fragment 名稱。
 				${ProfilePicture.getFragment('user')},
 			}

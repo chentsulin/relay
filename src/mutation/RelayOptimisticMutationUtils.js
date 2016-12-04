@@ -7,7 +7,6 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @providesModule RelayOptimisticMutationUtils
- * @typechecks
  * @flow
  */
 
@@ -148,6 +147,7 @@ function inferPayload(
 function buildField(
   key: string,
   children: Array<RelayQuery.Field>,
+  // $FlowFixMe(>=0.34.0)
   metadata: ?{[key: string]: mixed}
 ): RelayQuery.Field {
   let fieldName = key;

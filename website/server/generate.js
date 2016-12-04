@@ -10,10 +10,10 @@
 'use strict';
 
 const buildGraphQLSpec = require('./buildGraphQLSpec');
-const request = require('request');
-const glob = require('glob');
 const fs = require('fs-extra');
+const glob = require('glob');
 const mkdirp = require('mkdirp');
+const request = require('request');
 const server = require('./server.js');
 const exec = require('child_process').execSync;
 
@@ -38,7 +38,7 @@ const queue = (function() {
     is_executing = true;
     fn(function() {
       is_executing = false;
-      execute()
+      execute();
     });
   }
   return {push: push};
@@ -76,7 +76,7 @@ glob('src/**/*.*', function(er, files) {
 
   queue.push(function(cb) {
     server.close();
-    console.log('It is live at: http://facebook.github.io/relay/')
+    console.log('It is live at: http://facebook.github.io/relay/');
     cb();
   });
 });

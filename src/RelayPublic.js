@@ -14,10 +14,13 @@
 
 const RelayContainer = require('RelayContainer');
 const RelayEnvironment = require('RelayEnvironment');
+const RelayGraphQLMutation = require('RelayGraphQLMutation');
 const RelayInternals = require('RelayInternals');
 const RelayMutation = require('RelayMutation');
 const RelayPropTypes = require('RelayPropTypes');
 const RelayQL = require('RelayQL');
+const RelayQueryCaching = require('RelayQueryCaching');
+const RelayQueryConfig = require('RelayQueryConfig');
 const RelayReadyStateRenderer = require('RelayReadyStateRenderer');
 const RelayRenderer = require('RelayRenderer');
 const RelayRootContainer = require('RelayRootContainer');
@@ -38,9 +41,11 @@ if (typeof global.__REACT_DEVTOOLS_GLOBAL_HOOK__ !== 'undefined') {
  */
 const RelayPublic = {
   Environment: RelayEnvironment,
+  GraphQLMutation: RelayGraphQLMutation,
   Mutation: RelayMutation,
   PropTypes: RelayPropTypes,
   QL: RelayQL,
+  QueryConfig: RelayQueryConfig,
   ReadyStateRenderer: RelayReadyStateRenderer,
   Renderer: RelayRenderer,
   RootContainer: RelayRootContainer,
@@ -50,6 +55,7 @@ const RelayPublic = {
   createContainer: RelayContainer.create,
   createQuery: createRelayQuery,
   getQueries: getRelayQueries,
+  disableQueryCaching: RelayQueryCaching.disable,
   injectNetworkLayer: RelayStore.injectNetworkLayer.bind(RelayStore),
   injectTaskScheduler: RelayStore.injectTaskScheduler.bind(RelayStore),
   isContainer: isRelayContainer,

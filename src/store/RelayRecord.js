@@ -21,6 +21,9 @@ import type {
 import type {QueryPath} from 'RelayQueryPath';
 
 export type Record = {
+  /* $FlowFixMe(>=0.36.0) Flow error detected during the
+   * deploy of Flow v0.36.0. To see the error, remove this comment and run Flow
+   */
   [key: string]: mixed;
   __dataID__: string,
   __filterCalls__?: Array<Call>,
@@ -35,7 +38,6 @@ export type Record = {
   __status__?: number,
   __typename?: ?string,
 };
-
 export type RecordMap = {[key: DataID]: ?Record};
 
 const MetadataKey = {

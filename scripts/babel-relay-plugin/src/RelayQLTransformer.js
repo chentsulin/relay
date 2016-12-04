@@ -32,18 +32,13 @@ const RelayQLPrinter = require('./RelayQLPrinter');
 const invariant = require('./invariant');
 const util = require('util');
 
-import type {Document as GraphQLDocument} from 'GraphQLAST';
+import type {
+  DocumentNode,
+  GraphQLError,
+  GraphQLFormattedError,
+  GraphQLSchema,
+} from 'graphql';
 import type {Printable, Substitution} from './RelayQLPrinter';
-
-type GraphQLLocation = {
-  column: number,
-  line: number,
-};
-type GraphQLSchema = Object;
-type GraphQLValidationError = {
-  message: string,
-  locations: Array<GraphQLLocation>,
-};
 
 type TemplateLiteral = {
   type: 'TemplateElement',
@@ -62,9 +57,9 @@ type TemplateElement = {
   range: [number, number],
   loc: Object,
 };
-export type Validator<T> = (GraphQL: typeof GraphQL) => (
-  (schema: GraphQLSchema, ast: T) => Array<Error>
-);
+export type Validator<T> = (GraphQL: any) => ({
+  validate: (schema: GraphQLSchema, ast: T) => Array<GraphQLError>,
+});
 
 type TransformerOptions = {
   inputArgumentName: ?string,
@@ -74,6 +69,7 @@ type TransformerOptions = {
 };
 type TextTransformOptions = {
   documentName: string,
+  enableValidation: boolean,
   propName: ?string,
   tagName: string,
 };
@@ -106,7 +102,7 @@ class RelayQLTransformer {
 
     const Printer = RelayQLPrinter(t, this.options);
     return new Printer(options.tagName, variableNames)
-      .print(definition, substitutions);
+      .print(definition, substitutions, options.enableValidation);
   }
 
   /**
@@ -184,10 +180,12 @@ class RelayQLTransformer {
    */
   processDocumentText(
     documentText: string,
-    {documentName}: TextTransformOptions
+    {documentName, enableValidation}: TextTransformOptions
   ): RelayQLDefinition<any> {
     const document = parser.parse(new Source(documentText, documentName));
-    const validationErrors = this.validateDocument(document, documentName);
+    const validationErrors = enableValidation ?
+      this.validateDocument(document, documentName) :
+      null;
     if (validationErrors) {
       const error = new Error(util.format(
         'You supplied a GraphQL document named `%s` with validation errors.',
@@ -223,9 +221,9 @@ class RelayQLTransformer {
   }
 
   validateDocument(
-    document: GraphQLDocument,
+    document: DocumentNode,
     documentName: string,
-  ): ?Array<GraphQLValidationError> {
+  ): ?Array<GraphQLFormattedError> {
     invariant(
       document.definitions.length === 1,
       'You supplied a GraphQL document named `%s` with %d definitions, but ' +

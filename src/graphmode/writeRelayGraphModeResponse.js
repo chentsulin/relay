@@ -16,6 +16,16 @@ const Map = require('Map');
 const RelayChangeTracker = require('RelayChangeTracker');
 const RelayConnectionInterface = require('RelayConnectionInterface');
 const RelayGraphModeInterface = require('RelayGraphModeInterface');
+const RelayNodeInterface = require('RelayNodeInterface');
+const RelayRecord = require('RelayRecord');
+const RelayRecordState = require('RelayRecordState');
+
+const forEachObject = require('forEachObject');
+const generateClientEdgeID = require('generateClientEdgeID');
+const generateClientID = require('generateClientID');
+const invariant = require('invariant');
+const stableStringify = require('stableStringify');
+
 import type {
   CacheKey,
   GraphModePayload,
@@ -29,17 +39,8 @@ import type {
 import type {
   DataID,
 } from 'RelayInternalTypes';
-const RelayNodeInterface = require('RelayNodeInterface');
-const RelayRecord = require('RelayRecord');
-const RelayRecordState = require('RelayRecordState');
 import type RelayRecordStore from 'RelayRecordStore';
 import type RelayRecordWriter from 'RelayRecordWriter';
-
-const forEachObject = require('forEachObject');
-const generateClientEdgeID = require('generateClientEdgeID');
-const generateClientID = require('generateClientID');
-const invariant = require('invariant');
-const stableStringify = require('stableStringify');
 
 const {ID, NODE} = RelayConnectionInterface;
 const {
@@ -189,6 +190,7 @@ class RelayGraphModeWriter {
       const prevEdge = filteredEdges[nextIndex++];
       const prevNodeID =
         prevEdge && this._store.getLinkedRecordID(prevEdge.edgeID, NODE);
+      // $FlowFixMe(>=0.33.0)
       const nextNodeID = getID(nodeData, prevNodeID);
       const edgeID = generateClientEdgeID(rangeID, nextNodeID);
       fetchedEdgeIDs.push(edgeID);
@@ -197,6 +199,7 @@ class RelayGraphModeWriter {
         ...edgeData,
         [NODE]: {[REF_KEY]: nextNodeID},
       });
+      // $FlowFixMe(>=0.33.0)
       const clientRecord = getGraphRecord(nodeData);
       if (clientRecord) {
         this._writeRecord(nextNodeID, clientRecord);
@@ -240,6 +243,7 @@ class RelayGraphModeWriter {
     const path = record[PATH] || null;
     const typeName = record[TYPENAME] || null;
     // TODO #10481948: Construct paths lazily
+    // $FlowFixMe(>=0.33.0)
     this._writer.putRecord(dataID, typeName, (path: any));
 
     forEachObject(record, (nextValue, storageKey) => {

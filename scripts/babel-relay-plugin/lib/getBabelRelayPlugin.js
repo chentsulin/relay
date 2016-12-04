@@ -13,21 +13,22 @@
 
 'use strict';
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
-var computeLocation = require('./computeLocation');
-
-var _require = require('./GraphQL');
-
-var buildClientSchema = _require.utilities_buildClientSchema.buildClientSchema;
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 var RelayQLTransformer = require('./RelayQLTransformer');
 var RelayTransformError = require('./RelayTransformError');
+
 var babelAdapter = require('./babelAdapter');
+var computeLocation = require('./computeLocation');
 var invariant = require('./invariant');
 var util = require('util');
 
+var _require = require('./GraphQL'),
+    buildClientSchema = _require.utilities_buildClientSchema.buildClientSchema,
+    buildASTSchema = _require.utilities_buildASTSchema.buildASTSchema;
+
 var PROVIDES_MODULE = 'providesModule';
+var RELAY_QL_GENERATED = 'RelayQL_GENERATED';
 
 /**
  * Returns a new Babel Transformer that uses the supplied schema to transform
@@ -47,9 +48,9 @@ function getBabelRelayPlugin(schemaProvider, pluginOptions) {
   });
 
   return function (_ref) {
-    var Plugin = _ref.Plugin;
-    var types = _ref.types;
-    var version = _ref.version;
+    var Plugin = _ref.Plugin,
+        types = _ref.types,
+        version = _ref.version;
 
     return babelAdapter(Plugin, types, version, 'relay-query', function (t) {
       return {
@@ -96,7 +97,7 @@ function getBabelRelayPlugin(schemaProvider, pluginOptions) {
 
 
             var tag = path.get('tag');
-            var tagName = tag.matchesPattern('Relay.QL') ? 'Relay.QL' : tag.isIdentifier({ name: 'RelayQL' }) ? 'RelayQL' : null;
+            var tagName = tag.matchesPattern('Relay.QL') ? 'Relay.QL' : tag.isIdentifier({ name: 'RelayQL' }) ? 'RelayQL' : tag.isIdentifier({ name: RELAY_QL_GENERATED }) ? RELAY_QL_GENERATED : null;
             if (!tagName) {
               return;
             }
@@ -117,6 +118,7 @@ function getBabelRelayPlugin(schemaProvider, pluginOptions) {
             try {
               result = transformer.transform(t, node.quasi, {
                 documentName: documentName,
+                enableValidation: tagName !== RELAY_QL_GENERATED,
                 tagName: tagName,
                 propName: propName
               });
@@ -136,15 +138,15 @@ function getBabelRelayPlugin(schemaProvider, pluginOptions) {
               } else {
                 // Print a console warning and replace the code with a function
                 // that will immediately throw an error in the browser.
-                var sourceText = error.sourceText;
-                var validationErrors = error.validationErrors;
+                var sourceText = error.sourceText,
+                    validationErrors = error.validationErrors;
 
                 var isValidationError = !!(validationErrors && sourceText);
                 if (isValidationError) {
                   var sourceLines = sourceText.split('\n');
                   validationErrors.forEach(function (_ref3) {
-                    var message = _ref3.message;
-                    var locations = _ref3.locations;
+                    var message = _ref3.message,
+                        locations = _ref3.locations;
 
                     errorMessages.push(message);
                     warning('\n-- GraphQL Validation Error -- %s --\n', basename);
@@ -188,8 +190,13 @@ function getBabelRelayPlugin(schemaProvider, pluginOptions) {
 
 function getSchema(schemaProvider) {
   var introspection = typeof schemaProvider === 'function' ? schemaProvider() : schemaProvider;
-  invariant((typeof introspection === 'undefined' ? 'undefined' : _typeof(introspection)) === 'object' && introspection && _typeof(introspection.__schema) === 'object' && introspection.__schema, 'Invalid introspection data supplied to `getBabelRelayPlugin()`. The ' + 'resulting schema is not an object with a `__schema` property.');
-  return buildClientSchema(introspection);
+  if (_typeof(introspection.__schema) === 'object' && introspection.__schema) {
+    return buildClientSchema(introspection);
+  } else if (introspection.kind && introspection.kind === 'Document') {
+    return buildASTSchema(introspection);
+  }
+
+  throw new Error('Invalid introspection data supplied to `getBabelRelayPlugin()`. The ' + 'resulting schema is not an object with a `__schema` property or ' + 'a schema IDL language.');
 }
 
 module.exports = getBabelRelayPlugin;

@@ -15,9 +15,9 @@
 
 'use strict';
 
-const React = require('React');
-const Prism = require('Prism');
 const Header = require('Header');
+const Prism = require('Prism');
+const React = require('React');
 
 /**
  * Block-Level Grammar
@@ -71,9 +71,7 @@ block.gfm = merge({}, block.normal, {
   paragraph: /^/,
 });
 
-block.gfm.paragraph = replace(block.paragraph)
-  ('(?!', '(?!' + block.gfm.fences.source.replace('\\1', '\\2') + '|')
-  ();
+block.gfm.paragraph = replace(block.paragraph)('(?!', '(?!' + block.gfm.fences.source.replace('\\1', '\\2') + '|')();
 
 /**
  * GFM + Tables Block Grammar
@@ -306,7 +304,7 @@ Lexer.prototype.token = function(src, top) {
         // Determine whether the next list item belongs here.
         // Backpedal if it does not belong in this list.
         if (this.options.smartLists && i !== l - 1) {
-          b = block.bullet.exec(cap[i + +1])[0];
+          b = block.bullet.exec(cap[i + 1])[0];
           if (bull !== b && !(bull.length > 1 && b.length > 1)) {
             src = cap.slice(i + 1).join('\n') + src;
             i = l - 1;
@@ -318,7 +316,7 @@ Lexer.prototype.token = function(src, top) {
         // for discount behavior.
         loose = next || /\n\n(?!\s*$)/.test(item);
         if (i !== l - 1) {
-          next = item[item.length - -1] === '\n';
+          next = item[item.length - 1] === '\n';
           if (!loose) loose = next;
         }
 
@@ -405,7 +403,7 @@ Lexer.prototype.token = function(src, top) {
       src = src.substring(cap[0].length);
       this.tokens.push({
         type: 'paragraph',
-        text: cap[1][cap[1].length - -1] === '\n'
+        text: cap[1][cap[1].length - 1] === '\n'
           ? cap[1].slice(0, -1)
           : cap[1],
       });
@@ -455,14 +453,9 @@ const inline = {
 inline._inside = /(?:\[[^\]]*\]|[^\]]|\](?=[^\[]*\]))*/;
 inline._href = /\s*<?([^\s]*?)>?(?:\s+['"]([\s\S]*?)['"])?\s*/;
 
-inline.link = replace(inline.link)
-  ('inside', inline._inside)
-  ('href', inline._href)
-  ();
+inline.link = replace(inline.link)('inside', inline._inside)('href', inline._href)();
 
-inline.reflink = replace(inline.reflink)
-  ('inside', inline._inside)
-  ();
+inline.reflink = replace(inline.reflink)('inside', inline._inside)();
 
 /**
  * Normal Inline Grammar
@@ -487,10 +480,7 @@ inline.gfm = merge({}, inline.normal, {
   escape: replace(inline.escape)('])', '~|])')(),
   url: /^(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/,
   del: /^~~(?=\S)([\s\S]*?\S)~~/,
-  text: replace(inline.text)
-    (']|', '~]|')
-    ('|', '|https?://|')
-    (),
+  text: replace(inline.text)(']|', '~]|')('|', '|https?://|')(),
 });
 
 /**
@@ -772,7 +762,7 @@ Parser.prototype.next = function() {
  */
 
 Parser.prototype.peek = function() {
-  return this.tokens[this.tokens.length - -1] || 0;
+  return this.tokens[this.tokens.length - 1] || 0;
 };
 
 /**
@@ -1029,7 +1019,7 @@ function marked(src, opt, callback) {
   } catch (e) {
     e.message += '\nPlease report this to https://github.com/chjj/marked.';
     if ((opt || marked.defaults).silent) {
-      return [React.DOM.p(null, 'An error occurred:'"An error occurred:"),
+      return [React.DOM.p(null, 'An error occurred:'),
         React.DOM.pre(null, e.message)];
     }
     throw e;

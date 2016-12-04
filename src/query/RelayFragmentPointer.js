@@ -12,10 +12,8 @@
 
 'use strict';
 
-import type {Variables} from 'RelayTypes';
 const RelayQuery = require('RelayQuery');
 const RelayRecord = require('RelayRecord');
-import type RelayRecordStore from 'RelayRecordStore';
 
 const areEqual = require('areEqual');
 const forEachRootCallArg = require('forEachRootCallArg');
@@ -23,10 +21,13 @@ const invariant = require('invariant');
 
 import type {DataID} from 'RelayInternalTypes';
 import type {Record} from 'RelayRecord';
+import type RelayRecordStore from 'RelayRecordStore';
+import type {Variables} from 'RelayTypes';
 
 type FragmentVariablesMap = {
   [fragmentID: string]: Array<Variables>;
 };
+
 export type FragmentProp = {
   __dataID__: DataID,
   __fragments__: FragmentVariablesMap,
@@ -106,6 +107,24 @@ const RelayFragmentPointer = {
     return false;
   },
 
+  getVariablesForID(record: Record, fragmentID: string): ?Variables {
+    const fragmentMap = record.__fragments__;
+    if (typeof fragmentMap === 'object' && fragmentMap != null) {
+      const variables = fragmentMap[fragmentID];
+      if (variables) {
+        invariant(
+          Array.isArray(variables) &&
+          variables.length === 1,
+          'RelayFragmentPointer: Expected an array with at most one set of ' +
+          'variables per concrete fragment, got %s.',
+          variables
+        );
+        return (variables[0]: any);
+      }
+    }
+    return null;
+  },
+
   /**
    * Returns the list of variables whose results are available for the given
    * concrete fragment.
@@ -114,14 +133,12 @@ const RelayFragmentPointer = {
     record: Record,
     fragment: RelayQuery.Fragment
   ): ?Array<Variables> {
-    /* $FlowFixMe(>=0.27.0): `fragmentMap is refined to type
-     *                       `{[key: string]: mixed}` below, which means that
-     *                       return is Flowing `mixed` to `Array<Variables>`,
-     *                       which is unsafe.
-     */
     const fragmentMap = record.__fragments__;
     if (typeof fragmentMap === 'object' && fragmentMap != null) {
       const fragmentID = fragment.getConcreteFragmentID();
+      /* $FlowFixMe(>=0.36.0) Flow error detected during
+       * the deploy of Flow v0.36.0. To see the error, remove this comment and
+       * run Flow */
       return fragmentMap[fragmentID];
     }
     return null;

@@ -12,7 +12,7 @@
 
 'use strict';
 
-import type {Location} from 'GraphQLAST';
+import type {Location} from 'graphql';
 
 type RelayQLLocation = {
   line: number,

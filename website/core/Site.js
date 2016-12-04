@@ -11,8 +11,8 @@
 
 'use strict';
 
-const React = require('React');
 const HeaderLinks = require('HeaderLinks');
+const React = require('React');
 
 const Site = React.createClass({
   render: function() {
@@ -66,7 +66,7 @@ const Site = React.createClass({
         </body>
       </html>
     );
-  ,}
+  },
 });
 
 module.exports = Site;

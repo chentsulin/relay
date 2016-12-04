@@ -6,13 +6,14 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
+'use strict';
 
 /* eslint-disable no-unused-vars, no-eval */
 
-import {transform} from 'babel-core';
-
 const GraphQL = require('graphql');
 var GraphQLRelay = require('graphql-relay');
+
+import {transform} from 'babel-core';
 
 export default function(source) {
   // Make these modules available to the schema author through a require shim.

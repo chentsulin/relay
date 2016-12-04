@@ -12,12 +12,12 @@
 
 'use strict';
 
+const flattenArray = require('flattenArray');
+
 import type {
   Call,
   CallValue,
 } from 'RelayInternalTypes';
-
-const flattenArray = require('flattenArray');
 
 /**
  * @internal
@@ -28,7 +28,9 @@ function serializeRelayQueryCall(call: Call): string {
   const {value} = call;
   let valueString;
   if (Array.isArray(value)) {
-    valueString = flattenArray(value).map(serializeCallValue).join(',');
+    valueString = flattenArray(value)
+      .map(value => serializeCallValue((value: any)))
+      .join(',');
   } else {
     valueString = serializeCallValue(value);
   }

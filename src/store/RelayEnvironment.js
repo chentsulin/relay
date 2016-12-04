@@ -13,15 +13,8 @@
 'use strict';
 
 const GraphQLStoreQueryResolver = require('GraphQLStoreQueryResolver');
-import type RelayMutation from 'RelayMutation';
-import type RelayMutationTransaction from 'RelayMutationTransaction';
-import type {MutationCallback, QueryCallback} from 'RelayNetworkLayer';
-import type RelayQuery from 'RelayQuery';
-import type RelayQueryTracker from 'RelayQueryTracker';
 const RelayQueryResultObservable = require('RelayQueryResultObservable');
 const RelayStoreData = require('RelayStoreData');
-import type {TaskScheduler} from 'RelayTaskQueue';
-import type {ChangeSubscription, NetworkLayer} from 'RelayTypes';
 
 const forEachRootCallArg = require('forEachRootCallArg');
 const readRelayQueryData = require('readRelayQueryData');
@@ -29,25 +22,32 @@ const relayUnstableBatchedUpdates = require('relayUnstableBatchedUpdates');
 const warning = require('warning');
 
 import type {
+  DataID,
+  RelayQuerySet,
+} from 'RelayInternalTypes';
+import type RelayMutation from 'RelayMutation';
+import type RelayMutationTransaction from 'RelayMutationTransaction';
+import type {MutationCallback, QueryCallback} from 'RelayNetworkLayer';
+import type RelayQuery from 'RelayQuery';
+import type RelayQueryTracker from 'RelayQueryTracker';
+import type {TaskScheduler} from 'RelayTaskQueue';
+import type {ChangeSubscription, NetworkLayer} from 'RelayTypes';
+import type {
   Abortable,
   Observable,
   RelayMutationTransactionCommitCallbacks,
   ReadyStateChangeCallback,
   StoreReaderData,
   StoreReaderOptions,
+  CacheManager,
 } from 'RelayTypes';
 
-import type {
-  DataID,
-  RelayQuerySet,
-} from 'RelayInternalTypes';
-
 export type FragmentResolver = {
-  dispose: () => void,
-  resolve: (
+  dispose(): void,
+  resolve(
     fragment: RelayQuery.Fragment,
     dataIDs: DataID | Array<DataID>
-  ) => ?(StoreReaderData | Array<?StoreReaderData>),
+  ): ?(StoreReaderData | Array<?StoreReaderData>),
 };
 
 export interface RelayEnvironmentInterface {
@@ -69,6 +69,10 @@ export interface RelayEnvironmentInterface {
     dataID: DataID,
     options?: StoreReaderOptions
   ): ?StoreReaderData,
+  readQuery(
+    root: RelayQuery.Root,
+    options?: StoreReaderOptions
+  ): Array<?StoreReaderData>,
 }
 
 /**
@@ -142,6 +146,10 @@ class RelayEnvironment {
 
   injectTaskScheduler(scheduler: ?TaskScheduler): void {
     this._storeData.injectTaskScheduler(scheduler);
+  }
+
+  injectCacheManager(cacheManager: ?CacheManager): void {
+    this._storeData.injectCacheManager(cacheManager);
   }
 
   /**

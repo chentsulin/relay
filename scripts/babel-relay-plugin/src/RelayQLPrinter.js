@@ -12,6 +12,12 @@
 
 'use strict';
 
+const RelayTransformError = require('./RelayTransformError');
+
+const find = require('./find');
+const invariant = require('./invariant');
+const util = require('util');
+
 const {
   RelayQLArgument,
   RelayQLArgumentType,
@@ -26,11 +32,6 @@ const {
   RelayQLSubscription,
   RelayQLType,
 } = require('./RelayQLAST');
-
-const find = require('./find');
-const invariant = require('./invariant');
-const util = require('util');
-const RelayTransformError = require('./RelayTransformError');
 const {ID} = require('./RelayQLNodeInterface');
 
 export type Printable = Object;
@@ -85,17 +86,18 @@ module.exports = function(t: any, options: PrinterOptions): Function {
 
     print(
       definition: RelayQLDefinition<any>,
-      substitutions: Array<Substitution>
+      substitutions: Array<Substitution>,
+      enableValidation: boolean = true
     ): Printable {
       let printedDocument;
       if (definition instanceof RelayQLQuery) {
-        printedDocument = this.printQuery(definition);
+        printedDocument = this.printQuery(definition, enableValidation);
       } else if (definition instanceof RelayQLFragment) {
         printedDocument = this.printFragment(definition);
       } else if (definition instanceof RelayQLMutation) {
-        printedDocument = this.printMutation(definition);
+        printedDocument = this.printMutation(definition, enableValidation);
       } else if (definition instanceof RelayQLSubscription) {
-        printedDocument = this.printSubscription(definition);
+        printedDocument = this.printSubscription(definition, enableValidation);
       } else {
         throw new RelayTransformError(
           util.format('Unsupported definition: %s', definition),
@@ -114,9 +116,9 @@ module.exports = function(t: any, options: PrinterOptions): Function {
       );
     }
 
-    printQuery(query: RelayQLQuery): Printable {
+    printQuery(query: RelayQLQuery, enableValidation: boolean): Printable {
       const rootFields = query.getFields();
-      if (rootFields.length !== 1) {
+      if (rootFields.length !== 1 && enableValidation) {
         throw new RelayTransformError(
           util.format(
             'There are %d fields supplied to the query named `%s`, but queries ' +
@@ -251,6 +253,7 @@ module.exports = function(t: any, options: PrinterOptions): Function {
             fragmentCode,
             t.objectExpression(
               selectVariablesValue.map((item) => {
+                // $FlowFixMe
                 const value = item.getValue();
                 return property(value, this.printVariable(value));
               })
@@ -277,9 +280,9 @@ module.exports = function(t: any, options: PrinterOptions): Function {
       }
     }
 
-    printMutation(mutation: RelayQLMutation): Printable {
+    printMutation(mutation: RelayQLMutation, enableValidation: boolean): Printable {
       const rootFields = mutation.getFields();
-      if (rootFields.length !== 1) {
+      if (rootFields.length !== 1 && enableValidation) {
         throw new RelayTransformError(
           util.format(
             'There are %d fields supplied to the mutation named `%s`, but ' +
@@ -322,9 +325,9 @@ module.exports = function(t: any, options: PrinterOptions): Function {
       });
     }
 
-    printSubscription(subscription: RelayQLSubscription): Printable {
+    printSubscription(subscription: RelayQLSubscription, enableValidation: boolean): Printable {
       const rootFields = subscription.getFields();
-      if (rootFields.length !== 1) {
+      if (rootFields.length !== 1 && enableValidation) {
         throw new RelayTransformError(
           util.format(
             'There are %d fields supplied to the subscription named `%s`, but ' +
@@ -341,6 +344,9 @@ module.exports = function(t: any, options: PrinterOptions): Function {
       const requisiteFields = {};
       if (rootFieldType.hasField(FIELDS.clientSubscriptionId)) {
         requisiteFields[FIELDS.clientSubscriptionId] = true;
+      }
+      if (rootFieldType.hasField(FIELDS.clientMutationId)) {
+        requisiteFields[FIELDS.clientMutationId] = true;
       }
       const selections = this.printSelections(rootField, requisiteFields);
       const metadata = {
@@ -556,6 +562,7 @@ module.exports = function(t: any, options: PrinterOptions): Function {
         directives: this.printDirectives(field.getDirectives()),
         fieldName: t.valueToNode(field.getName()),
         kind: t.valueToNode('Field'),
+        // $FlowFixMe
         metadata: this.printRelayDirectiveMetadata(field, metadata),
         type: t.valueToNode(fieldType.getName({modifiers: false})),
       });
@@ -613,12 +620,18 @@ module.exports = function(t: any, options: PrinterOptions): Function {
     printValue(value: mixed): Printable {
       if (Array.isArray(value)) {
         return t.arrayExpression(
+          // $FlowFixMe
           value.map(element => this.printArgumentValue(element))
         );
       }
       return codify({
         kind: t.valueToNode('CallValue'),
-        callValue: printLiteralValue(value),
+        // codify() skips properties where value === NULL, but `callValue` is a
+        // required property. Create fresh null literals to force the property
+        // to be printed.
+        callValue: value == null ?
+          t.nullLiteral() :
+          printLiteralValue(value),
       });
     }
 
@@ -688,11 +701,18 @@ module.exports = function(t: any, options: PrinterOptions): Function {
      * Prints the type for arguments that are transmitted via variables.
      */
     printArgumentTypeForMetadata(argType: RelayQLArgumentType): ?string {
-      // Currently, we always send Enum and Object types as variables.
-      if (argType.isEnum() || argType.isObject()) {
+      // Print enums, input objects, and custom scalars as variables, since
+      // there are more complicated rules for printing them (for example,
+      // correctly inlining custom scalars would require access to the
+      // user-defined type definition at runtime).
+      if (
+        argType.isEnum() ||
+        argType.isObject() ||
+        argType.isCustomScalar()
+      ) {
         return argType.getName({modifiers: true});
       }
-      // Currently, we always inline scalar types.
+      // Only the built-in scalar types can be printed inline
       if (argType.isScalar()) {
         return null;
       }
@@ -741,7 +761,7 @@ module.exports = function(t: any, options: PrinterOptions): Function {
   }
 
   function validateConnectionField(field: RelayQLField): void {
-    let [first, last, before, after] = [
+    const [first, last, before, after] = [
       field.findArgument('first'),
       field.findArgument('last'),
       field.findArgument('before'),
@@ -886,10 +906,10 @@ module.exports = function(t: any, options: PrinterOptions): Function {
   }
 
   const forEachRecursiveField = function(
-    selection: RelayQLField | RelayQLFragment,
+    parentSelection: RelayQLField | RelayQLFragment,
     callback: (field: RelayQLField) => void
   ): void {
-    selection.getSelections().forEach(selection => {
+    parentSelection.getSelections().forEach(selection => {
       if (selection instanceof RelayQLField) {
         callback(selection);
       } else if (selection instanceof RelayQLInlineFragment) {

@@ -14,19 +14,13 @@
 
 const GraphQLMutatorConstants = require('GraphQLMutatorConstants');
 const RelayConnectionInterface = require('RelayConnectionInterface');
-import type {
-  DataID,
-  UpdateOptions,
-} from 'RelayInternalTypes';
 const RelayMutationTracker = require('RelayMutationTracker');
 const RelayMutationType = require('RelayMutationType');
 const RelayNodeInterface = require('RelayNodeInterface');
+const RelayProfiler = require('RelayProfiler');
 const RelayQuery = require('RelayQuery');
 const RelayQueryPath = require('RelayQueryPath');
-import type RelayQueryWriter from 'RelayQueryWriter';
-const RelayProfiler = require('RelayProfiler');
 const RelayRecordState = require('RelayRecordState');
-import type RelayRecordStore from 'RelayRecordStore';
 
 const generateClientEdgeID = require('generateClientEdgeID');
 const generateClientID = require('generateClientID');
@@ -34,13 +28,19 @@ const getRangeBehavior = require('getRangeBehavior');
 const invariant = require('invariant');
 const warning = require('warning');
 
+import type {
+  DataID,
+  UpdateOptions,
+} from 'RelayInternalTypes';
+import type RelayQueryWriter from 'RelayQueryWriter';
+import type RelayRecordStore from 'RelayRecordStore';
+
 // TODO: Replace with enumeration for possible config types.
 /* OperationConfig was originally typed such that each property had the type
  * mixed.  Mixed is safer than any, but that safety comes from Flow forcing you
  * to inspect a mixed value at runtime before using it.  However these mixeds
  * are ending up everywhere and are not being inspected */
 type OperationConfig = {[key: string]: $FlowFixMe};
-
 type Payload = mixed | PayloadObject | PayloadArray;
 type PayloadArray = Array<Payload>;
 type PayloadObject = {[key: string]: Payload};
@@ -125,9 +125,13 @@ function handleNodeDelete(
 
   if (Array.isArray(recordIDs)) {
     recordIDs.forEach(id => {
+      /* $FlowFixMe(>=0.36.0) Flow error detected during
+       * the deploy of Flow v0.36.0. To see the error, remove this comment and
+       * run Flow */
       deleteRecord(writer, id);
     });
   } else {
+    // $FlowFixMe(>=0.33.0)
     deleteRecord(writer, recordIDs);
   }
 }
@@ -191,13 +195,13 @@ function handleMerge(
     if (typeof payloadData !== 'object' || payloadData == null) {
       continue;
     }
-    // if the field is an argument-less root call, determine the corresponding
-    // root record ID
-    const rootID = store.getDataID(fieldName);
+
     // check for valid data (has an ID or is an array) and write the field
     if (
       ID in payloadData ||
-      rootID ||
+      // if the field is an argument-less root call, determine the corresponding
+      // root record ID
+      store.getDataID(fieldName) ||
       Array.isArray(payloadData)
     ) {
       mergeField(
@@ -416,12 +420,16 @@ function addRangeNode(
     null;
 
   // no range behavior specified for this combination of filter calls
-  if (!rangeBehavior || rangeBehavior === IGNORE) {
+  if (!rangeBehavior) {
     warning(
       rangeBehavior,
       'Using `null` as a rangeBehavior value is deprecated. Use `ignore` to avoid ' +
       'refetching a range.'
     );
+    return;
+  }
+
+  if (rangeBehavior === IGNORE) {
     return;
   }
 

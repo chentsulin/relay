@@ -12,16 +12,23 @@
 
 'use strict';
 
-const computeLocation = require('./computeLocation');
-const {utilities_buildClientSchema: {buildClientSchema}} = require('./GraphQL');
-import type {Validator} from './RelayQLTransformer';
 const RelayQLTransformer = require('./RelayQLTransformer');
 const RelayTransformError = require('./RelayTransformError');
+
 const babelAdapter = require('./babelAdapter');
+const computeLocation = require('./computeLocation');
 const invariant = require('./invariant');
 const util = require('util');
 
+const {
+  utilities_buildClientSchema: {buildClientSchema},
+  utilities_buildASTSchema: {buildASTSchema},
+} = require('./GraphQL');
+
+import type {Validator} from './RelayQLTransformer';
+
 const PROVIDES_MODULE = 'providesModule';
+const RELAY_QL_GENERATED = 'RelayQL_GENERATED';
 
 type GraphQLSchema = Object;
 type GraphQLSchemaProvider = (Object | () => Object);
@@ -99,6 +106,7 @@ function getBabelRelayPlugin(
           const tagName =
             tag.matchesPattern('Relay.QL') ? 'Relay.QL' :
             tag.isIdentifier({name: 'RelayQL'}) ? 'RelayQL' :
+            tag.isIdentifier({name: RELAY_QL_GENERATED}) ? RELAY_QL_GENERATED :
             null;
           if (!tagName) {
             return;
@@ -123,6 +131,7 @@ function getBabelRelayPlugin(
                 node.quasi,
                 {
                   documentName,
+                  enableValidation: tagName !== RELAY_QL_GENERATED,
                   tagName,
                   propName,
                 }
@@ -245,13 +254,17 @@ function getSchema(schemaProvider: GraphQLSchemaProvider): GraphQLSchema {
   const introspection = typeof schemaProvider === 'function' ?
     schemaProvider() :
     schemaProvider;
-  invariant(
-    typeof introspection === 'object' && introspection &&
-    typeof introspection.__schema === 'object' && introspection.__schema,
+  if (typeof introspection.__schema === 'object' && introspection.__schema) {
+    return buildClientSchema(introspection);
+  } else if (introspection.kind && introspection.kind === 'Document') {
+    return buildASTSchema(introspection);
+  }
+
+  throw new Error(
     'Invalid introspection data supplied to `getBabelRelayPlugin()`. The ' +
-    'resulting schema is not an object with a `__schema` property.'
+    'resulting schema is not an object with a `__schema` property or ' +
+    'a schema IDL language.'
   );
-  return buildClientSchema(introspection);
 }
 
 module.exports = getBabelRelayPlugin;

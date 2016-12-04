@@ -13,7 +13,7 @@
 
 'use strict';
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
@@ -23,31 +23,28 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var _require = require('./RelayQLAST');
-
-var RelayQLArgument = _require.RelayQLArgument;
-var RelayQLArgumentType = _require.RelayQLArgumentType;
-var RelayQLDefinition = _require.RelayQLDefinition;
-var RelayQLDirective = _require.RelayQLDirective;
-var RelayQLField = _require.RelayQLField;
-var RelayQLFragment = _require.RelayQLFragment;
-var RelayQLFragmentSpread = _require.RelayQLFragmentSpread;
-var RelayQLInlineFragment = _require.RelayQLInlineFragment;
-var RelayQLMutation = _require.RelayQLMutation;
-var RelayQLQuery = _require.RelayQLQuery;
-var RelayQLSubscription = _require.RelayQLSubscription;
-var RelayQLType = _require.RelayQLType;
-
+var RelayTransformError = require('./RelayTransformError');
 
 var find = require('./find');
 var invariant = require('./invariant');
 var util = require('util');
-var RelayTransformError = require('./RelayTransformError');
 
-var _require2 = require('./RelayQLNodeInterface');
+var _require = require('./RelayQLAST'),
+    RelayQLArgument = _require.RelayQLArgument,
+    RelayQLArgumentType = _require.RelayQLArgumentType,
+    RelayQLDefinition = _require.RelayQLDefinition,
+    RelayQLDirective = _require.RelayQLDirective,
+    RelayQLField = _require.RelayQLField,
+    RelayQLFragment = _require.RelayQLFragment,
+    RelayQLFragmentSpread = _require.RelayQLFragmentSpread,
+    RelayQLInlineFragment = _require.RelayQLInlineFragment,
+    RelayQLMutation = _require.RelayQLMutation,
+    RelayQLQuery = _require.RelayQLQuery,
+    RelayQLSubscription = _require.RelayQLSubscription,
+    RelayQLType = _require.RelayQLType;
 
-var ID = _require2.ID;
-
+var _require2 = require('./RelayQLNodeInterface'),
+    ID = _require2.ID;
 
 module.exports = function (t, options) {
   var formatFields = options.snakeCase ? function (fields) {
@@ -88,15 +85,17 @@ module.exports = function (t, options) {
     _createClass(RelayQLPrinter, [{
       key: 'print',
       value: function print(definition, substitutions) {
+        var enableValidation = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
+
         var printedDocument = void 0;
         if (definition instanceof RelayQLQuery) {
-          printedDocument = this.printQuery(definition);
+          printedDocument = this.printQuery(definition, enableValidation);
         } else if (definition instanceof RelayQLFragment) {
           printedDocument = this.printFragment(definition);
         } else if (definition instanceof RelayQLMutation) {
-          printedDocument = this.printMutation(definition);
+          printedDocument = this.printMutation(definition, enableValidation);
         } else if (definition instanceof RelayQLSubscription) {
-          printedDocument = this.printSubscription(definition);
+          printedDocument = this.printSubscription(definition, enableValidation);
         } else {
           throw new RelayTransformError(util.format('Unsupported definition: %s', definition), definition.getLocation());
         }
@@ -108,9 +107,9 @@ module.exports = function (t, options) {
       }
     }, {
       key: 'printQuery',
-      value: function printQuery(query) {
+      value: function printQuery(query, enableValidation) {
         var rootFields = query.getFields();
-        if (rootFields.length !== 1) {
+        if (rootFields.length !== 1 && enableValidation) {
           throw new RelayTransformError(util.format('There are %d fields supplied to the query named `%s`, but queries ' + 'must have exactly one field.', rootFields.length, query.getName()), query.getLocation());
         }
         var rootField = rootFields[0];
@@ -213,6 +212,7 @@ module.exports = function (t, options) {
             throw new RelayTransformError('The variables argument to the @relay directive should be an array ' + 'of strings.', fragment.getLocation());
           }
           return t.callExpression(t.memberExpression(identify(this.tagName), t.identifier('__createFragment')), [fragmentCode, t.objectExpression(selectVariablesValue.map(function (item) {
+            // $FlowFixMe
             var value = item.getValue();
             return property(value, _this.printVariable(value));
           }))]);
@@ -232,9 +232,9 @@ module.exports = function (t, options) {
       }
     }, {
       key: 'printMutation',
-      value: function printMutation(mutation) {
+      value: function printMutation(mutation, enableValidation) {
         var rootFields = mutation.getFields();
-        if (rootFields.length !== 1) {
+        if (rootFields.length !== 1 && enableValidation) {
           throw new RelayTransformError(util.format('There are %d fields supplied to the mutation named `%s`, but ' + 'mutations must have exactly one field.', rootFields.length, mutation.getName()), mutation.getLocation());
         }
         var rootField = rootFields[0];
@@ -266,9 +266,9 @@ module.exports = function (t, options) {
       }
     }, {
       key: 'printSubscription',
-      value: function printSubscription(subscription) {
+      value: function printSubscription(subscription, enableValidation) {
         var rootFields = subscription.getFields();
-        if (rootFields.length !== 1) {
+        if (rootFields.length !== 1 && enableValidation) {
           throw new RelayTransformError(util.format('There are %d fields supplied to the subscription named `%s`, but ' + 'subscriptions must have exactly one field.', rootFields.length, subscription.getName()), subscription.getLocation());
         }
         var rootField = rootFields[0];
@@ -277,6 +277,9 @@ module.exports = function (t, options) {
         var requisiteFields = {};
         if (rootFieldType.hasField(FIELDS.clientSubscriptionId)) {
           requisiteFields[FIELDS.clientSubscriptionId] = true;
+        }
+        if (rootFieldType.hasField(FIELDS.clientMutationId)) {
+          requisiteFields[FIELDS.clientMutationId] = true;
         }
         var selections = this.printSelections(rootField, requisiteFields);
         var metadata = {
@@ -303,7 +306,7 @@ module.exports = function (t, options) {
       value: function printSelections(parent, requisiteFields, extraFragments) {
         var _this2 = this;
 
-        var isGeneratedQuery = arguments.length <= 3 || arguments[3] === undefined ? false : arguments[3];
+        var isGeneratedQuery = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
 
         var fields = [];
         var printedFragments = [];
@@ -343,7 +346,7 @@ module.exports = function (t, options) {
       value: function printFields(fields, parent, requisiteFields) {
         var _this3 = this;
 
-        var isGeneratedQuery = arguments.length <= 3 || arguments[3] === undefined ? false : arguments[3];
+        var isGeneratedQuery = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
 
         var parentType = parent.getType();
         if (parentType.isConnection() && parentType.hasField(FIELDS.pageInfo) && fields.some(function (field) {
@@ -371,7 +374,7 @@ module.exports = function (t, options) {
       value: function printField(field, parent, requisiteSiblings, generatedSiblings) {
         var _this4 = this;
 
-        var isGeneratedQuery = arguments.length <= 4 || arguments[4] === undefined ? false : arguments[4];
+        var isGeneratedQuery = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : false;
 
         var fieldType = field.getType();
 
@@ -441,6 +444,7 @@ module.exports = function (t, options) {
           directives: this.printDirectives(field.getDirectives()),
           fieldName: t.valueToNode(field.getName()),
           kind: t.valueToNode('Field'),
+          // $FlowFixMe
           metadata: this.printRelayDirectiveMetadata(field, metadata),
           type: t.valueToNode(fieldType.getName({ modifiers: false }))
         });
@@ -492,13 +496,18 @@ module.exports = function (t, options) {
         var _this5 = this;
 
         if (Array.isArray(value)) {
-          return t.arrayExpression(value.map(function (element) {
+          return t.arrayExpression(
+          // $FlowFixMe
+          value.map(function (element) {
             return _this5.printArgumentValue(element);
           }));
         }
         return codify({
           kind: t.valueToNode('CallValue'),
-          callValue: printLiteralValue(value)
+          // codify() skips properties where value === NULL, but `callValue` is a
+          // required property. Create fresh null literals to force the property
+          // to be printed.
+          callValue: value == null ? t.nullLiteral() : printLiteralValue(value)
         });
       }
     }, {
@@ -555,11 +564,14 @@ module.exports = function (t, options) {
     }, {
       key: 'printArgumentTypeForMetadata',
       value: function printArgumentTypeForMetadata(argType) {
-        // Currently, we always send Enum and Object types as variables.
-        if (argType.isEnum() || argType.isObject()) {
+        // Print enums, input objects, and custom scalars as variables, since
+        // there are more complicated rules for printing them (for example,
+        // correctly inlining custom scalars would require access to the
+        // user-defined type definition at runtime).
+        if (argType.isEnum() || argType.isObject() || argType.isCustomScalar()) {
           return argType.getName({ modifiers: true });
         }
-        // Currently, we always inline scalar types.
+        // Only the built-in scalar types can be printed inline
         if (argType.isScalar()) {
           return null;
         }
@@ -596,10 +608,11 @@ module.exports = function (t, options) {
   }
 
   function validateConnectionField(field) {
-    var first = field.findArgument('first');
-    var last = field.findArgument('last');
-    var before = field.findArgument('before');
-    var after = field.findArgument('after');
+    var _ref = [field.findArgument('first'), field.findArgument('last'), field.findArgument('before'), field.findArgument('after')],
+        first = _ref[0],
+        last = _ref[1],
+        before = _ref[2],
+        after = _ref[3];
 
     var condition = !first || !last || first.isVariable() && last.isVariable();
     if (!condition) {
@@ -654,8 +667,8 @@ module.exports = function (t, options) {
     }
   }
 
-  var forEachRecursiveField = function forEachRecursiveField(selection, callback) {
-    selection.getSelections().forEach(function (selection) {
+  var forEachRecursiveField = function forEachRecursiveField(parentSelection, callback) {
+    parentSelection.getSelections().forEach(function (selection) {
       if (selection instanceof RelayQLField) {
         callback(selection);
       } else if (selection instanceof RelayQLInlineFragment) {

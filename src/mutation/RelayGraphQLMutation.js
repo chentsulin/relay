@@ -13,24 +13,27 @@
 'use strict';
 
 const QueryBuilder = require('QueryBuilder');
+const RelayMetaRoute = require('RelayMetaRoute');
+const RelayMutationTransactionStatus = require('RelayMutationTransactionStatus');
+const RelayQuery = require('RelayQuery');
+
+const invariant = require('invariant');
+
+const {CLIENT_MUTATION_ID} = require('RelayConnectionInterface');
+
 import type {RelayEnvironmentInterface} from 'RelayEnvironment';
 import type {ClientMutationID} from 'RelayInternalTypes';
-const RelayMetaRoute = require('RelayMetaRoute');
 import type {FileMap} from 'RelayMutation';
-import type {RelayConcreteNode} from 'RelayQL';
-const {CLIENT_MUTATION_ID} = require('RelayConnectionInterface');
 import type RelayMutationTransaction from 'RelayMutationTransaction';
-const RelayMutationTransactionStatus = require('RelayMutationTransactionStatus');
-import type {RelayMutationTransactionCommitCallbacks} from 'RelayTypes';
-const RelayQuery = require('RelayQuery');
+import type {RelayConcreteNode} from 'RelayQL';
 import type RelayStoreData from 'RelayStoreData';
+import type {RelayMutationTransactionCommitCallbacks} from 'RelayTypes';
 import type {
   RelayMutationConfig,
   RelayMutationTransactionCommitFailureCallback,
   RelayMutationTransactionCommitSuccessCallback,
   Variables,
 } from 'RelayTypes';
-const invariant = require('invariant');
 
 const COUNTER_PREFIX = 'RelayGraphQLMutation';
 let collisionIDCounter = 0;
@@ -201,6 +204,12 @@ class RelayGraphQLMutation {
     return this._transaction.commit(configs);
   }
 
+  rollback(): void {
+    if (this._transaction) {
+      return this._transaction.rollback();
+    }
+  }
+
   _createTransaction(
     optimisticQuery: ?RelayConcreteNode,
     optimisticResponse: ?Object,
@@ -360,6 +369,10 @@ class PendingGraphQLTransaction {
     return this.mutationTransaction.applyOptimistic();
   }
 
+  rollback(): void {
+    this.mutationTransaction.rollback();
+  }
+
   _getVariables(): Variables {
     const input = this._variables.input;
     if (!input) {
@@ -372,6 +385,10 @@ class PendingGraphQLTransaction {
     }
     return {
       ...this._variables,
+      /* $FlowFixMe(>=0.35.0) - This comment
+       * suppresses an error that was found when Flow v0.35.0 was deployed. To
+       * see the error, remove this comment and run flow ~/www or
+       * flow ~/www/html/js/mobile or flow ~/fbobjc/Libraries/FBReactKit/js */
       input: {
         ...input,
         [CLIENT_MUTATION_ID]: this.id,

@@ -12,10 +12,24 @@
 
 'use strict';
 
+const GraphQLRelayDirective = require('./GraphQLRelayDirective');
+const RelayTransformError = require('./RelayTransformError');
+
+const find = require('./find');
+const invariant = require('./invariant');
+const util = require('util');
+
 const {
   type: types,
   type_directives: {
-    GraphQLDirective: GraphQLDirectiveClass,
+    GraphQLDirective,
+  },
+  type_scalars: {
+    GraphQLBoolean,
+    GraphQLFloat,
+    GraphQLID,
+    GraphQLInt,
+    GraphQLString,
   },
   type_introspection: {
     SchemaMetaFieldDef,
@@ -23,29 +37,23 @@ const {
     TypeNameMetaFieldDef,
   },
 } = require('./GraphQL');
-const GraphQLRelayDirective = require('./GraphQLRelayDirective');
-
-const find = require('./find');
-const invariant = require('./invariant');
-const util = require('util');
-const RelayTransformError = require('./RelayTransformError');
 const {ID} = require('./RelayQLNodeInterface');
 
-const GraphQLRelayDirectiveInstance = new GraphQLDirectiveClass(
+const GraphQLRelayDirectiveInstance = new GraphQLDirective(
   GraphQLRelayDirective
 );
 
 import type {
-  Argument as GraphQLArgument,
-  Directive as GraphQLDirective,
-  Field as GraphQLField,
-  FragmentDefinition as GraphQLFragmentDefinition,
-  FragmentSpread as GraphQLFragmentSpread,
-  InlineFragment as GraphQLInlineFragment,
-  Location as GraphQLLocation,
-  OperationDefinition as GraphQLOperationDefinition,
-  Value as GraphQLValue,
-} from 'GraphQLAST';
+  ArgumentNode,
+  DirectiveNode,
+  FieldNode,
+  FragmentDefinitionNode,
+  FragmentSpreadNode,
+  InlineFragmentNode,
+  Location,
+  OperationDefinitionNode,
+  ValueNode,
+} from 'graphql';
 
 // TODO: Import types from `graphql`.
 type GraphQLSchema = Object;
@@ -65,7 +73,7 @@ type RelayQLSelection =
   RelayQLInlineFragment;
 
 type RelayQLNodeType = {
-  loc: ?GraphQLLocation,
+  loc?: Location,
 };
 
 class RelayQLNode<T: RelayQLNodeType> {
@@ -77,7 +85,7 @@ class RelayQLNode<T: RelayQLNodeType> {
     this.context = context;
   }
 
-  getLocation(): ?GraphQLLocation {
+  getLocation(): ?Location {
     return this.ast.loc;
   }
 
@@ -103,6 +111,7 @@ class RelayQLNode<T: RelayQLNodeType> {
     if (!this.ast.selectionSet) {
       return [];
     }
+    // $FlowFixMe
     return this.ast.selectionSet.selections.map(selection => {
       if (selection.kind === 'Field') {
         return new RelayQLField(this.context, selection, this.getType());
@@ -124,12 +133,14 @@ class RelayQLNode<T: RelayQLNodeType> {
   }
 
   getDirectives(): Array<RelayQLDirective> {
+    // $FlowFixMe
     return (this.ast.directives || []).map(
       directive => new RelayQLDirective(this.context, directive)
     );
   }
 
   hasDirective(name: string): boolean {
+    // $FlowFixMe
     return (this.ast.directives || []).some(d => d.name.value === name);
   }
 
@@ -142,14 +153,15 @@ class RelayQLDefinition<T: RelayQLNodeType> extends RelayQLNode<T> {
   getName(): ?string {
     // TODO: this.context.definitionName;
     return this.ast.name ?
+      // $FlowFixMe
       this.ast.name.value :
       this.getType().getName({modifiers: false});
   }
 }
 
 class RelayQLFragment extends RelayQLDefinition<
-  GraphQLFragmentDefinition |
-  GraphQLInlineFragment
+  FragmentDefinitionNode |
+  InlineFragmentNode
 > {
   hasStaticFragmentID: boolean;
   parentType: ?RelayQLType;
@@ -157,7 +169,7 @@ class RelayQLFragment extends RelayQLDefinition<
 
   constructor(
     context: RelayQLContext,
-    ast: GraphQLFragmentDefinition | GraphQLInlineFragment,
+    ast: FragmentDefinitionNode | InlineFragmentNode,
     parentType?: RelayQLType
   ) {
     const relayDirectiveArgs = {};
@@ -235,19 +247,19 @@ class RelayQLFragment extends RelayQLDefinition<
   }
 }
 
-class RelayQLMutation extends RelayQLDefinition<GraphQLOperationDefinition> {
+class RelayQLMutation extends RelayQLDefinition<OperationDefinitionNode> {
   getType(): RelayQLType {
     return new RelayQLType(this.context, this.context.schema.getMutationType());
   }
 }
 
-class RelayQLQuery extends RelayQLDefinition<GraphQLOperationDefinition> {
+class RelayQLQuery extends RelayQLDefinition<OperationDefinitionNode> {
   getType(): RelayQLType {
     return new RelayQLType(this.context, this.context.schema.getQueryType());
   }
 }
 
-class RelayQLSubscription extends RelayQLDefinition<GraphQLOperationDefinition> {
+class RelayQLSubscription extends RelayQLDefinition<OperationDefinitionNode> {
   getType(): RelayQLType {
     return new RelayQLType(
       this.context,
@@ -256,10 +268,10 @@ class RelayQLSubscription extends RelayQLDefinition<GraphQLOperationDefinition> 
   }
 }
 
-class RelayQLField extends RelayQLNode<GraphQLField> {
+class RelayQLField extends RelayQLNode<FieldNode> {
   fieldDef: RelayQLFieldDefinition;
 
-  constructor(context: RelayQLContext, ast: GraphQLField, parentType: RelayQLType) {
+  constructor(context: RelayQLContext, ast: FieldNode, parentType: RelayQLType) {
     super(context, ast);
     const fieldName = this.ast.name.value;
     const fieldDef = parentType.getFieldDefinition(fieldName, ast);
@@ -330,7 +342,7 @@ class RelayQLField extends RelayQLNode<GraphQLField> {
   }
 }
 
-class RelayQLFragmentSpread extends RelayQLNode<GraphQLFragmentSpread> {
+class RelayQLFragmentSpread extends RelayQLNode<FragmentSpreadNode> {
   getName(): string {
     return this.ast.name.value;
   }
@@ -343,12 +355,12 @@ class RelayQLFragmentSpread extends RelayQLNode<GraphQLFragmentSpread> {
   }
 }
 
-class RelayQLInlineFragment extends RelayQLNode<GraphQLInlineFragment> {
+class RelayQLInlineFragment extends RelayQLNode<InlineFragmentNode> {
   parentType: RelayQLType;
 
   constructor(
     context: RelayQLContext,
-    ast: GraphQLInlineFragment,
+    ast: InlineFragmentNode,
     parentType: RelayQLType
   ) {
     super(context, ast);
@@ -361,11 +373,11 @@ class RelayQLInlineFragment extends RelayQLNode<GraphQLInlineFragment> {
 }
 
 class RelayQLDirective {
-  ast: GraphQLDirective;
+  ast: DirectiveNode;
   context: RelayQLContext;
   argTypes: {[name: string]: RelayQLArgumentType};
 
-  constructor(context: RelayQLContext, ast: GraphQLDirective) {
+  constructor(context: RelayQLContext, ast: DirectiveNode) {
     this.ast = ast;
     this.context = context;
     this.argTypes = {};
@@ -389,7 +401,7 @@ class RelayQLDirective {
     });
   }
 
-  getLocation(): ?GraphQLLocation {
+  getLocation(): ?Location {
     return this.ast.loc;
   }
 
@@ -418,13 +430,13 @@ class RelayQLDirective {
 }
 
 class RelayQLArgument {
-  ast: GraphQLArgument;
+  ast: ArgumentNode;
   context: RelayQLContext;
   type: RelayQLArgumentType;
 
   constructor(
     context: RelayQLContext,
-    ast: GraphQLArgument,
+    ast: ArgumentNode,
     type: RelayQLArgumentType
   ) {
     this.ast = ast;
@@ -432,7 +444,7 @@ class RelayQLArgument {
     this.type = type;
   }
 
-  getLocation(): ?GraphQLLocation {
+  getLocation(): ?Location {
     return this.ast.loc;
   }
 
@@ -797,6 +809,16 @@ class RelayQLArgumentType {
     return new RelayQLArgumentType(this.schemaUnmodifiedArgType);
   }
 
+  isCustomScalar(): boolean {
+    return this.isScalar() && !(
+      this.schemaUnmodifiedArgType === GraphQLBoolean ||
+      this.schemaUnmodifiedArgType === GraphQLFloat ||
+      this.schemaUnmodifiedArgType === GraphQLID ||
+      this.schemaUnmodifiedArgType === GraphQLInt ||
+      this.schemaUnmodifiedArgType === GraphQLString
+    )
+  }
+
   isEnum(): boolean {
     return this.schemaUnmodifiedArgType instanceof types.GraphQLEnumType;
   }
@@ -839,7 +861,7 @@ function stripMarkerTypes(schemaModifiedType: GraphQLSchemaType): {
   return {isListType, isNonNullType, schemaUnmodifiedType};
 }
 
-function getLiteralValue(value: GraphQLValue): mixed {
+function getLiteralValue(value: ValueNode): mixed {
   switch (value.kind) {
     case 'IntValue':
       return parseInt(value.value, 10);
@@ -851,6 +873,8 @@ function getLiteralValue(value: GraphQLValue): mixed {
       return value.value;
     case 'ListValue':
       return value.values.map(getLiteralValue);
+    case 'NullValue':
+      return null;
     case 'ObjectValue':
       const object = {};
       value.fields.forEach(field => {

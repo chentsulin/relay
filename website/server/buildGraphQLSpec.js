@@ -6,6 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
+'use strict';
 
 const exec = require('child_process').execFileSync;
 const fs = require('fs-extra');
@@ -22,4 +23,4 @@ module.exports = function(targetDir) {
     );
     fs.writeFileSync(outFilename, html.toString());
   });
-}
+};

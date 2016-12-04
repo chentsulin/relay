@@ -14,29 +14,31 @@
 
 const React = require('React');
 const RelayPropTypes = require('RelayPropTypes');
-import type {RelayQueryConfigInterface} from 'RelayQueryConfig';
+const RelayRenderer = require('RelayRenderer');
 const RelayStore = require('RelayStore');
+
+import type {RelayQueryConfigInterface} from 'RelayQueryConfig';
 import type {
   ComponentFetchState,
   ReadyState,
   RelayContainer,
 } from 'RelayTypes';
-const RelayRenderer = require('RelayRenderer');
 
 type RootContainerProps = {
   Component: RelayContainer,
   forceFetch?: ?boolean,
+  shouldFetch?: ?boolean,
   onReadyStateChange?: ?(readyState: ReadyState) => void,
   /* $FlowFixMe(site=react_native_fb,www) - should renderFailure be allowed to
    * return null/undefined? */
-  renderFailure?: ?(error: Error, retry: ?() => void) => React$Element<any>,
+  renderFailure?: ?(error: Error, retry: ?() => void) => React.Element<*>,
   renderFetched?: ?(
     data: Object,
     fetchState: ComponentFetchState
-  ) => ?React$Element<any>,
+  ) => ?React.Element<*>,
   /* $FlowFixMe(site=react_native_fb,www) - should renderLoading be allowed to
    * return null/undefined? */
-  renderLoading?: ?() => React$Element<any>,
+  renderLoading?: ?() => React.Element<*>,
   route: RelayQueryConfigInterface,
 };
 
@@ -106,7 +108,8 @@ function RelayRootContainer({
   renderFetched,
   renderLoading,
   route,
-}: RootContainerProps): React$Element<any> {
+  shouldFetch,
+}: RootContainerProps): React.Element<*> {
   return (
     <RelayRenderer
       Container={Component}
@@ -114,6 +117,7 @@ function RelayRootContainer({
       onReadyStateChange={onReadyStateChange}
       queryConfig={route}
       environment={RelayStore}
+      shouldFetch={shouldFetch}
       render={({done, error, props, retry, stale}) => {
         if (error) {
           if (renderFailure) {
@@ -144,6 +148,7 @@ RelayRootContainer.propTypes = {
   renderFetched: PropTypes.func,
   renderLoading: PropTypes.func,
   route: RelayPropTypes.QueryConfig.isRequired,
+  shouldFetch: PropTypes.bool,
 };
 
 module.exports = RelayRootContainer;

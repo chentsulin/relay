@@ -12,7 +12,7 @@ next: api-reference-relay-route
 - Relay 確保 component 在被 render 之前，資料是可以取用的。
 - 每當底層資料改變時，Relay 會更新 component。
 
-Relay containers 是使用 `Relay.createContainer` 來建立的。
+Relay container 是使用 `Relay.createContainer` 來建立的。
 
 ## 概觀
 
@@ -155,10 +155,10 @@ module.exports = Relay.createContainer(ProfilePicture, {
   initialVariables: {size: 50},
   fragments: {
     user: () => Relay.QL`
-      # 在這裡可以用 `$size` 取用上面定義的變數。
+      # 在這裡可以用 '$size' 取用上面定義的變數。
       # 在這裡參考的任何變數都需要被定義在上面的 initalVariables。
-      # 一個 `undefined` 的變數值會拋出一個 `Invariant Violation` 的例外。
-      # 使用 `null` 來初始化未知的值。
+      # 一個 'undefined' 的變數值會拋出一個 'Invariant Violation' 的例外。
+      # 使用 'null' 來初始化未知的值。
       fragment on User { profilePicture(size: $size) { ... } }
     `,
   },

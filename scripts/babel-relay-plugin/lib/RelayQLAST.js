@@ -13,7 +13,7 @@
 
 'use strict';
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
@@ -25,28 +25,31 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var _require = require('./GraphQL');
-
-var types = _require.type;
-var GraphQLDirectiveClass = _require.type_directives.GraphQLDirective;
-var _require$type_introsp = _require.type_introspection;
-var SchemaMetaFieldDef = _require$type_introsp.SchemaMetaFieldDef;
-var TypeMetaFieldDef = _require$type_introsp.TypeMetaFieldDef;
-var TypeNameMetaFieldDef = _require$type_introsp.TypeNameMetaFieldDef;
-
 var GraphQLRelayDirective = require('./GraphQLRelayDirective');
+var RelayTransformError = require('./RelayTransformError');
 
 var find = require('./find');
 var invariant = require('./invariant');
 var util = require('util');
-var RelayTransformError = require('./RelayTransformError');
 
-var _require2 = require('./RelayQLNodeInterface');
+var _require = require('./GraphQL'),
+    types = _require.type,
+    GraphQLDirective = _require.type_directives.GraphQLDirective,
+    _require$type_scalars = _require.type_scalars,
+    GraphQLBoolean = _require$type_scalars.GraphQLBoolean,
+    GraphQLFloat = _require$type_scalars.GraphQLFloat,
+    GraphQLID = _require$type_scalars.GraphQLID,
+    GraphQLInt = _require$type_scalars.GraphQLInt,
+    GraphQLString = _require$type_scalars.GraphQLString,
+    _require$type_introsp = _require.type_introspection,
+    SchemaMetaFieldDef = _require$type_introsp.SchemaMetaFieldDef,
+    TypeMetaFieldDef = _require$type_introsp.TypeMetaFieldDef,
+    TypeNameMetaFieldDef = _require$type_introsp.TypeNameMetaFieldDef;
 
-var ID = _require2.ID;
+var _require2 = require('./RelayQLNodeInterface'),
+    ID = _require2.ID;
 
-
-var GraphQLRelayDirectiveInstance = new GraphQLDirectiveClass(GraphQLRelayDirective);
+var GraphQLRelayDirectiveInstance = new GraphQLDirective(GraphQLRelayDirective);
 
 // TODO: Import types from `graphql`.
 
@@ -94,6 +97,7 @@ var RelayQLNode = function () {
       if (!this.ast.selectionSet) {
         return [];
       }
+      // $FlowFixMe
       return this.ast.selectionSet.selections.map(function (selection) {
         if (selection.kind === 'Field') {
           return new RelayQLField(_this.context, selection, _this.getType());
@@ -111,6 +115,7 @@ var RelayQLNode = function () {
     value: function getDirectives() {
       var _this2 = this;
 
+      // $FlowFixMe
       return (this.ast.directives || []).map(function (directive) {
         return new RelayQLDirective(_this2.context, directive);
       });
@@ -118,6 +123,7 @@ var RelayQLNode = function () {
   }, {
     key: 'hasDirective',
     value: function hasDirective(name) {
+      // $FlowFixMe
       return (this.ast.directives || []).some(function (d) {
         return d.name.value === name;
       });
@@ -138,14 +144,16 @@ var RelayQLDefinition = function (_RelayQLNode) {
   function RelayQLDefinition() {
     _classCallCheck(this, RelayQLDefinition);
 
-    return _possibleConstructorReturn(this, Object.getPrototypeOf(RelayQLDefinition).apply(this, arguments));
+    return _possibleConstructorReturn(this, (RelayQLDefinition.__proto__ || Object.getPrototypeOf(RelayQLDefinition)).apply(this, arguments));
   }
 
   _createClass(RelayQLDefinition, [{
     key: 'getName',
     value: function getName() {
       // TODO: this.context.definitionName;
-      return this.ast.name ? this.ast.name.value : this.getType().getName({ modifiers: false });
+      return this.ast.name ?
+      // $FlowFixMe
+      this.ast.name.value : this.getType().getName({ modifiers: false });
     }
   }]);
 
@@ -174,7 +182,7 @@ var RelayQLFragment = function (_RelayQLDefinition) {
     // @relay(isStaticFragment: true)
     var isStaticFragment = relayDirectiveArgs.isStaticFragment && relayDirectiveArgs.isStaticFragment.kind === 'BooleanValue' && relayDirectiveArgs.isStaticFragment.value;
 
-    var _this4 = _possibleConstructorReturn(this, Object.getPrototypeOf(RelayQLFragment).call(this, _extends({}, context, { isPattern: isPattern }), ast));
+    var _this4 = _possibleConstructorReturn(this, (RelayQLFragment.__proto__ || Object.getPrototypeOf(RelayQLFragment)).call(this, _extends({}, context, { isPattern: isPattern }), ast));
 
     _this4.hasStaticFragmentID = isStaticFragment;
     _this4.parentType = parentType;
@@ -226,7 +234,7 @@ var RelayQLMutation = function (_RelayQLDefinition2) {
   function RelayQLMutation() {
     _classCallCheck(this, RelayQLMutation);
 
-    return _possibleConstructorReturn(this, Object.getPrototypeOf(RelayQLMutation).apply(this, arguments));
+    return _possibleConstructorReturn(this, (RelayQLMutation.__proto__ || Object.getPrototypeOf(RelayQLMutation)).apply(this, arguments));
   }
 
   _createClass(RelayQLMutation, [{
@@ -245,7 +253,7 @@ var RelayQLQuery = function (_RelayQLDefinition3) {
   function RelayQLQuery() {
     _classCallCheck(this, RelayQLQuery);
 
-    return _possibleConstructorReturn(this, Object.getPrototypeOf(RelayQLQuery).apply(this, arguments));
+    return _possibleConstructorReturn(this, (RelayQLQuery.__proto__ || Object.getPrototypeOf(RelayQLQuery)).apply(this, arguments));
   }
 
   _createClass(RelayQLQuery, [{
@@ -264,7 +272,7 @@ var RelayQLSubscription = function (_RelayQLDefinition4) {
   function RelayQLSubscription() {
     _classCallCheck(this, RelayQLSubscription);
 
-    return _possibleConstructorReturn(this, Object.getPrototypeOf(RelayQLSubscription).apply(this, arguments));
+    return _possibleConstructorReturn(this, (RelayQLSubscription.__proto__ || Object.getPrototypeOf(RelayQLSubscription)).apply(this, arguments));
   }
 
   _createClass(RelayQLSubscription, [{
@@ -283,7 +291,7 @@ var RelayQLField = function (_RelayQLNode2) {
   function RelayQLField(context, ast, parentType) {
     _classCallCheck(this, RelayQLField);
 
-    var _this8 = _possibleConstructorReturn(this, Object.getPrototypeOf(RelayQLField).call(this, context, ast));
+    var _this8 = _possibleConstructorReturn(this, (RelayQLField.__proto__ || Object.getPrototypeOf(RelayQLField)).call(this, context, ast));
 
     var fieldName = _this8.ast.name.value;
     var fieldDef = parentType.getFieldDefinition(fieldName, ast);
@@ -364,7 +372,7 @@ var RelayQLFragmentSpread = function (_RelayQLNode3) {
   function RelayQLFragmentSpread() {
     _classCallCheck(this, RelayQLFragmentSpread);
 
-    return _possibleConstructorReturn(this, Object.getPrototypeOf(RelayQLFragmentSpread).apply(this, arguments));
+    return _possibleConstructorReturn(this, (RelayQLFragmentSpread.__proto__ || Object.getPrototypeOf(RelayQLFragmentSpread)).apply(this, arguments));
   }
 
   _createClass(RelayQLFragmentSpread, [{
@@ -388,7 +396,7 @@ var RelayQLInlineFragment = function (_RelayQLNode4) {
   function RelayQLInlineFragment(context, ast, parentType) {
     _classCallCheck(this, RelayQLInlineFragment);
 
-    var _this11 = _possibleConstructorReturn(this, Object.getPrototypeOf(RelayQLInlineFragment).call(this, context, ast));
+    var _this11 = _possibleConstructorReturn(this, (RelayQLInlineFragment.__proto__ || Object.getPrototypeOf(RelayQLInlineFragment)).call(this, context, ast));
 
     _this11.parentType = parentType;
     return _this11;
@@ -519,11 +527,10 @@ var RelayQLType = function () {
 
     this.context = context;
 
-    var _stripMarkerTypes = stripMarkerTypes(schemaModifiedType);
-
-    var isListType = _stripMarkerTypes.isListType;
-    var isNonNullType = _stripMarkerTypes.isNonNullType;
-    var schemaUnmodifiedType = _stripMarkerTypes.schemaUnmodifiedType;
+    var _stripMarkerTypes = stripMarkerTypes(schemaModifiedType),
+        isListType = _stripMarkerTypes.isListType,
+        isNonNullType = _stripMarkerTypes.isNonNullType,
+        schemaUnmodifiedType = _stripMarkerTypes.schemaUnmodifiedType;
 
     this.isListType = isListType;
     this.isNonNullType = isNonNullType;
@@ -793,11 +800,10 @@ var RelayQLArgumentType = function () {
   function RelayQLArgumentType(schemaModifiedArgType) {
     _classCallCheck(this, RelayQLArgumentType);
 
-    var _stripMarkerTypes2 = stripMarkerTypes(schemaModifiedArgType);
-
-    var isListType = _stripMarkerTypes2.isListType;
-    var isNonNullType = _stripMarkerTypes2.isNonNullType;
-    var schemaUnmodifiedType = _stripMarkerTypes2.schemaUnmodifiedType;
+    var _stripMarkerTypes2 = stripMarkerTypes(schemaModifiedArgType),
+        isListType = _stripMarkerTypes2.isListType,
+        isNonNullType = _stripMarkerTypes2.isNonNullType,
+        schemaUnmodifiedType = _stripMarkerTypes2.schemaUnmodifiedType;
 
     this.isListType = isListType;
     this.isNonNullType = isNonNullType;
@@ -817,6 +823,11 @@ var RelayQLArgumentType = function () {
     value: function ofType() {
       invariant(this.isList() || this.isNonNull(), 'Can only get type of list or non-null type.');
       return new RelayQLArgumentType(this.schemaUnmodifiedArgType);
+    }
+  }, {
+    key: 'isCustomScalar',
+    value: function isCustomScalar() {
+      return this.isScalar() && !(this.schemaUnmodifiedArgType === GraphQLBoolean || this.schemaUnmodifiedArgType === GraphQLFloat || this.schemaUnmodifiedArgType === GraphQLID || this.schemaUnmodifiedArgType === GraphQLInt || this.schemaUnmodifiedArgType === GraphQLString);
     }
   }, {
     key: 'isEnum',
@@ -885,6 +896,10 @@ function getLiteralValue(value) {
       case 'ListValue':
         return {
           v: value.values.map(getLiteralValue)
+        };
+      case 'NullValue':
+        return {
+          v: null
         };
       case 'ObjectValue':
         var object = {};

@@ -12,18 +12,13 @@
 
 'use strict';
 
-const RelayQuery = require('RelayQuery');
-import type RelayChangeTracker from 'RelayChangeTracker';
 const RelayConnectionInterface = require('RelayConnectionInterface');
 const RelayNodeInterface = require('RelayNodeInterface');
-import type {QueryPath} from 'RelayQueryPath';
+const RelayQuery = require('RelayQuery');
 const RelayQueryPath = require('RelayQueryPath');
-import type RelayQueryTracker from 'RelayQueryTracker';
 const RelayQueryVisitor = require('RelayQueryVisitor');
 const RelayRecord = require('RelayRecord');
 const RelayRecordState = require('RelayRecordState');
-import type RelayRecordStore from 'RelayRecordStore';
-import type RelayRecordWriter from 'RelayRecordWriter';
 
 const generateClientEdgeID = require('generateClientEdgeID');
 const generateClientID = require('generateClientID');
@@ -31,7 +26,12 @@ const invariant = require('invariant');
 const isCompatibleRelayFragmentType = require('isCompatibleRelayFragmentType');
 const warning = require('warning');
 
+import type RelayChangeTracker from 'RelayChangeTracker';
 import type {DataID} from 'RelayInternalTypes';
+import type {QueryPath} from 'RelayQueryPath';
+import type RelayQueryTracker from 'RelayQueryTracker';
+import type RelayRecordStore from 'RelayRecordStore';
+import type RelayRecordWriter from 'RelayRecordWriter';
 
 type WriterOptions = {
   forceIndex?: ?number,
@@ -392,17 +392,20 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
       this.recordCreate(connectionID);
     }
 
-    // Only create a range if `edges` field is present
-    // Overwrite an existing range only if the new force index is greater
-    if (hasEdges &&
-        (!this._writer.hasRange(connectionID) ||
-         (this._forceIndex &&
-          this._forceIndex > this._store.getRangeForceIndex(connectionID)))) {
-      this._writer.putRange(
-        connectionID,
-        field.getCallsWithValues(),
-        this._forceIndex
-      );
+    if (hasEdges) {
+      // Only create a range if `edges` field is present
+      // Overwrite an existing range only if the new force index is greater
+      if (!this._writer.hasRange(connectionID) ||
+          (this._forceIndex &&
+           this._forceIndex > this._store.getRangeForceIndex(connectionID))) {
+        this._writer.putRange(
+          connectionID,
+          field.getCallsWithValues(),
+          this._forceIndex
+        );
+      }
+      // Update the connection record regardless of whether a range was written
+      // to also handle cases like an empty edge range or updated page_info.
       this.recordUpdate(connectionID);
     }
 
@@ -540,6 +543,7 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
         generateClientID()
       );
       // TODO: Flow: `nodeID` is `string`
+      // $FlowFixMe(>=0.33.0)
       const edgeID = generateClientEdgeID(connectionID, nodeID);
       const path = RelayQueryPath.getPath(state.path, edges, edgeID);
       this.createRecordIfMissing(edges, edgeID, path, null);
@@ -550,6 +554,7 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
       // which would cause the generated ID here to not match the ID generated
       // in `_writeLink`.
       this.traverse(edges, {
+        // $FlowFixMe(>=0.33.0)
         nodeID,
         path,
         recordID: edgeID,
@@ -595,6 +600,7 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
 
     const prevLinkedIDs = this._store.getLinkedRecordIDs(recordID, storageKey);
     const nextLinkedIDs = [];
+    const nextRecords = {};
     let isUpdate = false;
     let nextIndex = 0;
     fieldData.forEach(nextRecord => {
@@ -616,23 +622,33 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
         prevLinkedID ||
         generateClientID()
       );
+      // $FlowFixMe(>=0.33.0)
       nextLinkedIDs.push(nextLinkedID);
 
+      // $FlowFixMe(>=0.33.0)
       const path = RelayQueryPath.getPath(state.path, field, nextLinkedID);
+      // $FlowFixMe(>=0.33.0)
       this.createRecordIfMissing(field, nextLinkedID, path, nextRecord);
+      // $FlowFixMe(>=0.33.0)
+      nextRecords[nextLinkedID] = {record: nextRecord, path};
       isUpdate = isUpdate || nextLinkedID !== prevLinkedID;
-
-      this.traverse(field, {
-        nodeID: null, // never propagate `nodeID` past the first linked field
-        path,
-        recordID: nextLinkedID,
-        responseData: nextRecord,
-      });
       nextIndex++;
     });
-
+    // Write the linked records before traverse to prevent generating extraneous
+    // client ids.
     this._writer.putLinkedRecordIDs(recordID, storageKey, nextLinkedIDs);
-
+    nextLinkedIDs.forEach(nextLinkedID => {
+      // $FlowFixMe(>=0.33.0)
+      const itemData = nextRecords[nextLinkedID];
+      if (itemData) {
+        this.traverse(field, {
+          nodeID: null, // never propagate `nodeID` past the first linked field
+          path: itemData.path,
+          recordID: nextLinkedID,
+          responseData: itemData.record,
+        });
+      }
+    });
     // Only broadcast a list-level change if a record was changed/added/removed
     if (
       isUpdate ||
@@ -676,11 +692,14 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
       generateClientID()
     );
 
+    // $FlowFixMe(>=0.33.0)
     const path = RelayQueryPath.getPath(state.path, field, nextLinkedID);
+    // $FlowFixMe(>=0.33.0)
     this.createRecordIfMissing(field, nextLinkedID, path, fieldData);
     // always update the store to ensure the value is present in the appropriate
     // data sink (record/queuedRecords), but only record an update if the value
     // changed.
+    // $FlowFixMe(>=0.33.0)
     this._writer.putLinkedRecordID(recordID, storageKey, nextLinkedID);
     if (prevLinkedID !== nextLinkedID) {
       this.recordUpdate(recordID);
@@ -689,6 +708,7 @@ class RelayQueryWriter extends RelayQueryVisitor<WriterState> {
     this.traverse(field, {
       nodeID: null,
       path,
+      // $FlowFixMe(>=0.33.0)
       recordID: nextLinkedID,
       responseData: fieldData,
     });

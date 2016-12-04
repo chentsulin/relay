@@ -7,12 +7,13 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
+'use strict';
 
 import fs from 'fs';
-import path from 'path';
+import { graphql } from 'graphql';
 import { parse } from 'graphql/language';
 import { buildASTSchema, introspectionQuery } from 'graphql/utilities';
-import { graphql } from 'graphql';
+import path from 'path';
 
 try {
   const inFile = path.resolve(__dirname, 'testschema.graphql');
