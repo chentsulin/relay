@@ -134,11 +134,11 @@ Relay.createContainer(Story, {
 
 如果反面的語法可以讓你感覺更好，那你可以使用 `@skip(if: ...)` 來取代 `@include(if: ...)`。
 
-### Array fields
+### 陣列欄位
 
-In order to resolve a fragment into an array of objects you have to use the `@relay(plural: true)` directive.
+為了把 fragment 解析成物件的陣列，你必須使用 `@relay(plural: true)` directive。
 
-This will inform `Relay.QL` that this particular field is an array. This will also allow you to use a plural name for the fragment (i.e. `bars` instead of `bar`).
+這將會告知 `Relay.QL`，這個欄位是一個陣列。這也會讓你能對 fragment 使用複數的命名 (例如：`bars` 而不是 `bar`)。
 
 ```{4,9}
 Relay.createContainer(Story, {
@@ -153,4 +153,4 @@ Relay.createContainer(Story, {
 });
 ```
 
-On the Relay Container the prop `bars` will be an array instead of an object.
+在 Relay Container 中 prop `bars` 會是一個陣列而不是物件。
