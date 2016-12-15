@@ -23,7 +23,7 @@ Relay 對 GraphQL 伺服器作出三個核心假設，就是它必須提供：
 
 我們假設讀者已經熟悉 GraphQL 了；如果沒有的話，[GraphQL.js](https://github.com/graphql/graphql-js) 的 README 是一個好的起點。
 
-我們也假設讀者已經熟悉 Star Wars；如果沒有的話，Star Wars 的 1977 版本是一個好的起點，雖然 1997 的特別版將成為這份文件的目的。
+我們也假設讀者已經熟悉 [Star Wars](https://en.wikipedia.org/wiki/Star_Wars)；如果沒有的話，Star Wars 的 1977 版本是一個好的起點，雖然 1997 的特別版將成為這份文件的目的。
 
 ## Schema
 

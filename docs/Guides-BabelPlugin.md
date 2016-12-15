@@ -40,8 +40,10 @@ Relay.QL`
 ```javascript
 {
   "passPerPreset": true,
+  "plugins": [
+    "./plugins/babelRelayPlugin"
+  ],
   "presets": [
-    {"plugins": ["./plugins/babelRelayPlugin"]},
     "react-native"
   ]
 }
@@ -125,7 +127,7 @@ const schemaPath = path.join(__dirname, 'schema');
 const SERVER = 'http://example.com/graphql';
 
 // 把完整的 schema introspection 存成 JSON 給 Babel Relay Plugin 使用
-fetch(`${SERVER}`, {
+fetch(SERVER, {
   method: 'POST',
   headers: {
     'Accept': 'application/json',

@@ -4,7 +4,7 @@ title: Relay.Mutation
 layout: docs
 category: API Reference
 permalink: docs/api-reference-relay-mutation.html
-next: api-reference-relay-proptypes
+next: api-reference-relay-graphql-mutation
 ---
 
 Relay 利用 GraphQL 的 mutations；它是讓我們去 mutate 在客戶端與伺服器上的資料的操作。要建立一個 mutation 在我們的應用程式中使用，我們必須繼承 `Relay.Mutation` 並至少實作列在下方的四個 abstract 方法。
