@@ -7,32 +7,32 @@ permalink: docs/api-reference-relay-graphql-mutation.html
 next: api-reference-relay-proptypes
 ---
 
-`Relay.GraphQLMutation` is a low-level API for modeling a GraphQL mutation.
+`Relay.GraphQLMutation` 是一個用來塑造 GraphQL mutation 的低階 API。
 
-This is the lowest level of abstraction at which product code may deal with mutations in Relay, and it corresponds to the mutation operation ("a write followed by a fetch") described in [the GraphQL Specification](../graphql/mutations.htm). You specify the mutation, the inputs, and the query.
+這是在 Relay 中，產品程式碼可以用來處理 mutation 的最低階抽象概念，它對應到描述在 [GraphQL Specification](../graphql/mutations.htm) 的 mutation 操作 (「一個寫入並伴隨著一個查詢」)。你需要指定 mutation、input 以及 query。
 
-`Relay.GraphQLMutation` doesn't provide any bells and whistles such as fat queries or tracked queries (that is, automatic synthesis at runtime of the mutation query to be sent to the server), instead having the user define a static and explicit query. Restricting yourself to the low-level API is a useful preparatory step that will help you ready your codebase for migration to the new static Relay core. In the meantime, if you want those dynamic features, you can opt in to the higher-level `Relay.Mutation` API.
+`Relay.GraphQLMutation` 沒有提供特殊的功能，例如 fat queries 或是 tracked queries (就是要被送到伺服器的 mutation query 的執行期自動合成)，而是讓使用者定義一個靜態且明確的 query。限制你自己使用這個低階 API 是個有用的前置步驟，將可以幫你的程式碼庫準備好遷移到新的靜態 Relay 核心。同時，如果你想要這些動態的功能，可以採用高階的 `Relay.Mutation` API。
 
-## Overview
+## 概觀
 
-*Properties*
+*屬性*
 
 <ul class="apiIndex">
   <li>
     <a href="#create-static-method">
       <pre>static create(mutation, variables, environment)</pre>
-      Create a static mutation
+      建立一個 static mutation
     </a>
   </li>
   <li>
     <a href="#createwithfiles-static-method">
       <pre>static createWithFiles(mutation, variables, files, environment)</pre>
-      Create a static mutation that accepts a "files" object
+      建立一個接受「files」物件的 static mutation
     </a>
   </li>
 </ul>
 
-*Methods*
+*方法*
 
 <ul class="apiIndex">
   <li>
@@ -57,9 +57,9 @@ This is the lowest level of abstraction at which product code may deal with muta
   </li>
 </ul>
 
-## Properties
+## 屬性
 
-### create (static method)
+### create (static 方法)
 
 ```
 static create(
@@ -69,9 +69,9 @@ static create(
 ): RelayGraphQLMutation;
 ```
 
-Convenience method that wraps the constructor, passing some default parameters and returning an instance.
+包裝了 constructor 的便利方法，傳遞一些預設的參數並回傳一個實體。
 
-#### Example
+#### 範例
 
 ```{16-20}
 const environment = new Relay.Environment();
@@ -96,11 +96,11 @@ const mutation = RelayGraphQLMutation.create(
 );
 ```
 
-See also: [GraphQLMutation > Constructor](#constructor)
+參閱：[GraphQLMutation > Constructor](#constructor)
 
-### createWithFiles (static method)
+### createWithFiles (static 方法)
 
-Convenience method that wraps the constructor, passing some default parameters and returning an instance.
+包裝了 constructor 的便利方法，傳遞一些預設的參數並回傳一個實體。
 
 ```
 static createWithFiles(
@@ -111,15 +111,15 @@ static createWithFiles(
 ): RelayGraphQLMutation;
 ```
 
-#### Example
+#### 範例
 
 ```{7-11}
-// Given a `files` object of:
+// 給定一個這樣的 `files` 物件：
 //
 //   type FileMap = {[key: string]: File};
 //
-// and `query`, `variables` and `environment` arguments
-// as in the previous example:
+// 還有在前面範例中的
+// `query`, `variables` 以及 `environment` 參數：
 const mutation = RelayGraphQLMutation.createWithFiles(
   query,
   variables,
@@ -128,9 +128,9 @@ const mutation = RelayGraphQLMutation.createWithFiles(
 );
 ```
 
-See also: [GraphQLMutation > Constructor](#constructor)
+參閱：[GraphQLMutation > Constructor](#constructor)
 
-## Methods
+## 方法
 
 ### constructor
 
@@ -145,24 +145,24 @@ constructor(
 );
 ```
 
-This is the general constructor for creating `Relay.GraphQLMutation` instances with optional `files`, `callbacks` and `collisionKey` arguments.
+這是用可選擇的 `files`、`callbacks` 和 `collisionKey` 參數來建立 `Relay.GraphQLMutation` 實體的一般 constructor。
 
-Callers must provide an appropriate `query` and `variables`. As per the GraphQL Relay Specification:
+呼叫者必須提供一個適當的 `query` 以及 `variables`。參照 GraphQL Relay Specification：
 
-- The mutation should take a single argument named "input".
-- That input argument should contain a (string) "clientMutationId" property for the purposes of reconciling requests and responses (automatically added by the `Relay.GraphQLMutation` API).
-- The query should request "clientMutationId" as a subselection.
+- mutation 應該接收命名叫做「input」的單一參數。
+- 該 input 參數應該包含一個「clientMutationId」(字串) 屬性用於協調請求和回應的用途 (會自動被 `Relay.GraphQLMutation` API 添加)。
+- query 應該請求「clientMutationId」當作一個選擇的屬性。
 
-If not supplied, a unique collision key is derived (meaning that the created mutation will be independent and not collide with any other).
+如果沒有提供，會產生一個唯一的 collision key (意味著建立的 mutation 會是獨立的而且不會與其他的碰撞)。
 
-#### Example
+#### 範例
 
 ```
 const collisionKey = 'feedback-like: ' + variables.input.feedbackId;
 const mutation = new RelayGraphQLMutation(
   query,
   variables,
-  null, // No files.
+  null, // 沒有檔案。
   environment,
   {
     onFailure: err => console.warn(err),
@@ -172,7 +172,7 @@ const mutation = new RelayGraphQLMutation(
 );
 ```
 
-See also: [Relay.Mutation::getCollisionKey()](api-reference-relay-mutation.html#getcollisionkey)
+參閱：[Relay.Mutation::getCollisionKey()](api-reference-relay-mutation.html#getcollisionkey)
 
 ### applyOptimistic
 
@@ -184,15 +184,15 @@ applyOptimistic(
 ): RelayMutationTransaction;
 ```
 
-Call this to optimistically apply an update to the store.
+呼叫這個來樂觀地套用一個更新到 store。
 
-The optional `config` parameter can be used to configure a `RANGE_ADD` or other type of mutation, as per the `Relay.Mutation` API. This tells Relay how to process the response.
+選擇性傳遞的 `config` 參數可以用來設定一個 `RANGE_ADD` 或其他類型的 mutation，可參照 `Relay.Mutation` API。這會告訴 Relay 要如何處理回應。
 
-Optionally, follow up with a call to `commit()` to send the mutation to the server.
+可選擇性地，在後面呼叫 `commit()` 來送 mutation 到伺服器。
 
-**Note:** An optimistic update may only be applied once.
+**附註：**一個 optimistic update 只可以套用一次。
 
-#### Example
+#### 範例
 
 ```{18-21}
 const optimisticQuery = Relay.QL`mutation FeedbackLikeOptimisticUpdate {
@@ -218,7 +218,7 @@ const transaction = mutation.applyOptimistic(
 );
 ```
 
-See also: [Relay.Mutation::getConfigs()](api-reference-relay-mutation.html#getconfigs-abstract-method)
+參閱：[Relay.Mutation::getConfigs()](api-reference-relay-mutation.html#getconfigs-abstract-method)
 
 ### commit
 
@@ -226,15 +226,15 @@ See also: [Relay.Mutation::getConfigs()](api-reference-relay-mutation.html#getco
 commit(configs: ?Array<RelayMutationConfig>): RelayMutationTransaction;
 ```
 
-Call this to send the mutation to the server.
+呼叫這個來送 mutation 到伺服器。
 
-The optional `config` parameter can be used to configure a `RANGE_ADD` or other type of mutation, similar to the `Relay.Mutation` API.
+選擇性傳遞的 `config` 參數可以用來設定一個 `RANGE_ADD` 或其他類型的 mutation，類似於 `Relay.Mutation` API。
 
-Optionally, precede with a call to `applyOptimistic()` to apply an update optimistically to the store.
+可選擇性地，在前面呼叫 `applyOptimistic()` 來樂觀地套用更新到 store。
 
-Note: This method may only be called once per instance.
+附註：這個方法每個實體只可以呼叫一次。
 
-#### Example
+#### 範例
 
 ```{11}
 const configs = [{
@@ -250,7 +250,7 @@ const configs = [{
 const transaction = mutation.commit(configs);
 ```
 
-See also: [Relay.Mutation::getConfigs()](api-reference-relay-mutation.html#getconfigs-abstract-method)
+參閱：[Relay.Mutation::getConfigs()](api-reference-relay-mutation.html#getconfigs-abstract-method)
 
 ### rollback
 
@@ -258,8 +258,8 @@ See also: [Relay.Mutation::getConfigs()](api-reference-relay-mutation.html#getco
 rollback(): void;
 ```
 
-Rolls back an optimistic mutation.
+復原一個 optimistic mutation。
 
-## See also
+## 參閱
 
-A number of more detailed usage examples can be found [in the test suite](https://github.com/facebook/relay/blob/master/src/mutation/__tests__/RelayGraphQLMutation-test.js).
+可以[在測試組中](https://github.com/facebook/relay/blob/master/src/mutation/__tests__/RelayGraphQLMutation-test.js)找到更多詳細的用法範例。
