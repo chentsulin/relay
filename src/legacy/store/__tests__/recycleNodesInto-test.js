@@ -22,7 +22,7 @@ const recycleNodesInto = require('recycleNodesInto');
 
 describe('recycleNodesInto', () => {
   beforeEach(() => {
-    jest.resetModuleRegistry();
+    jest.resetModules();
   });
 
   describe('scalars', () => {
@@ -101,6 +101,15 @@ describe('recycleNodesInto', () => {
       Object.freeze(prevData);
       Object.freeze(prevData.foo);
       const recycled = recycleNodesInto(prevData, prevData);
+      expect(recycled).toBe(prevData);
+    });
+
+    it('recycles identical leaves', () => {
+      const prevData = {foo: 1};
+      const nextData = {foo: 1};
+      // "next" data should not be modified if it is === to previous data
+      Object.freeze(nextData);
+      const recycled = recycleNodesInto(prevData, nextData);
       expect(recycled).toBe(prevData);
     });
 

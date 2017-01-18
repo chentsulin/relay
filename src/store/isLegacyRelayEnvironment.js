@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @providesModule isRelayEnvironment
+ * @providesModule isLegacyRelayEnvironment
  * @flow
  */
 
@@ -16,10 +16,12 @@
  * Determine if a given value is an object that implements the `RelayEnvironment`
  * interface.
  */
-function isRelayEnvironment(environment: mixed): boolean {
+function isLegacyRelayEnvironment(environment: mixed): boolean {
   return (
     typeof environment === 'object' &&
     environment !== null &&
+    typeof environment.applyMutation === 'function' &&
+    typeof environment.sendMutation === 'function' &&
     typeof environment.forceFetch === 'function' &&
     typeof environment.getFragmentResolver === 'function' &&
     typeof environment.getStoreData === 'function' &&
@@ -27,4 +29,4 @@ function isRelayEnvironment(environment: mixed): boolean {
   );
 }
 
-module.exports = isRelayEnvironment;
+module.exports = isLegacyRelayEnvironment;

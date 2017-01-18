@@ -6,7 +6,7 @@ Relay 是一個 JavaScript 框架，用來建置資料驅動的 React 應用程�
 * **Colocation：**Queries 就在依賴它們的 views 的旁邊，因此你可以更容易的思考你的應用程式。Relay 把 queries 聚合成高效率的網路請求來只抓取你需要的東西。
 * **Mutations：**Relay 讓你使用 GraphQL mutation 在客戶端和伺服器上 mutate 資料，並提供自動化的資料一致性、樂觀更新和錯誤處理。
 
-[學習如何在你自己的專案中使用 Relay。](https://facebook.github.io/relay/docs/getting-started.html)
+[學習如何在你自己的專案中使用 Relay。](https://facebook.github.io/relay/docs/getting-started.html) 或是在 [Learn Relay](https://www.learnrelay.org) 查看社群驅動的教學。
 
 ## 範例
 

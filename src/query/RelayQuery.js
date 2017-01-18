@@ -35,12 +35,15 @@ const serializeRelayQueryCall = require('serializeRelayQueryCall');
 const shallowEqual = require('shallowEqual');
 const stableStringify = require('stableStringify');
 
+const {getFragmentSpreadArguments} = require('RelayVariables');
+
 import type {
   ConcreteField,
   ConcreteFieldMetadata,
   ConcreteFragment,
   ConcreteMutation,
   ConcreteNode,
+  ConcreteOperationDefinition,
   ConcreteOperationMetadata,
   ConcreteQuery,
   ConcreteQueryMetadata,
@@ -623,6 +626,96 @@ class RelayQueryRoot extends RelayQueryNode {
 /**
  * @internal
  *
+ * Wraps access to OSS GraphQL query nodes created with
+ *
+ *    graphql`query ...`
+ *
+ * Unlike RelayQueryRoot (which represents the semantics of legacy GraphQL
+ * queries), this class supports multiple, arbitrary root fields within a single
+ * query. Fields may have arbitrary numbers of arguments, return connections,
+ * have aliases, etc.
+ */
+class RelayOSSQuery extends RelayQueryNode {
+  __id__: ?string;
+
+  static create(
+    concreteNode: mixed,
+    metaRoute: RelayMetaRoute,
+    variables: Variables
+  ): RelayOSSQuery {
+    const operation = QueryBuilder.getOperationDefinition(concreteNode);
+    invariant(
+      operation,
+      'RelayQueryRoot.create(): Expected a value created with graphql`query { ... }` ' +
+      '(using the `graphql` tag), got: %s',
+      concreteNode,
+    );
+    const rootContext = createRootContext(metaRoute, variables);
+    return new RelayOSSQuery(
+      operation,
+      rootContext,
+      variables
+    );
+  }
+
+  constructor(
+    concreteNode: ConcreteOperationDefinition,
+    rootContext: RootContext,
+    variables: Variables
+  ) {
+    invariant(
+      concreteNode && concreteNode.operation === 'query',
+      'RelayQueryRoot.create(): Expected a value created with graphql`query { ... }` ' +
+      '(using the `graphql` tag), got: %s',
+      concreteNode,
+    );
+    super(concreteNode.node, rootContext, variables);
+    this.__id__ = undefined;
+
+    // Ensure IDs are generated in the order that queries are created
+    this.getID();
+  }
+
+  canHaveSubselections(): boolean {
+    return true;
+  }
+
+  isDeferred(): boolean {
+    return false;
+  }
+
+  getName(): string {
+    let name = (this.__concreteNode__: ConcreteQuery).name;
+    if (!name) {
+      name = this.getID();
+      (this.__concreteNode__: ConcreteQuery).name = name;
+    }
+    return name;
+  }
+
+  getID(): string {
+    let id = this.__id__;
+    if (id == null) {
+      id = 'q' + _nextQueryID++;
+      this.__id__ = id;
+    }
+    return id;
+  }
+
+  equals(that: RelayQueryNode): boolean {
+    if (this === that) {
+      return true;
+    }
+    if (!(that instanceof RelayOSSQuery)) {
+      return false;
+    }
+    return super.equals(that);
+  }
+}
+
+/**
+ * @internal
+ *
  * Abstract base class for mutations and subscriptions.
  */
 class RelayQueryOperation extends RelayQueryNode {
@@ -830,19 +923,16 @@ class RelayQueryFragment extends RelayQueryNode {
   static build(
     name: string,
     type: string,
-    /* $FlowIssue: #11220887
-       `Array<Subclass-of-RelayQueryNode>` should be compatible here. */
     children?: ?Array<RelayQueryNode>,
     metadata?: ?{[key: string]: mixed},
     routeName?: string
   ): RelayQueryFragment {
     const nextChildren = children ? children.filter(child => !!child) : [];
-    // $FlowFixMe(>=0.34.0)
-    const concreteFragment = QueryBuilder.createFragment({
+    const concreteFragment = QueryBuilder.createFragment(({
       name,
       type,
       metadata,
-    });
+    }: any));
     const variables = {};
     const metaRoute = RelayMetaRoute.get(routeName || '$RelayQuery');
     const rootContext = createRootContext(metaRoute, variables);
@@ -922,7 +1012,6 @@ class RelayQueryFragment extends RelayQueryNode {
   getCompositeHash(): string {
     let compositeHash = this.__compositeHash__;
     if (!compositeHash) {
-      // TODO: Simplify this hash function, #9599170.
       compositeHash = generateRQLFieldAlias(
         this.getConcreteFragmentID() +
         '.' + this.__root__.routeName +
@@ -953,7 +1042,7 @@ class RelayQueryFragment extends RelayQueryNode {
     const metadata = (this.__concreteNode__: ConcreteFragment).metadata;
     return !!(
       (// FB Printer
-      metadata.isPlural || metadata.plural)       // OSS Printer from `@relay`
+      (metadata.isPlural || metadata.plural))       // OSS Printer from `@relay`
     );
   }
 
@@ -1421,8 +1510,13 @@ function createNode(
     return null;
   } else if (kind === 'FragmentSpread') {
     const spread = nullthrows(QueryBuilder.getFragmentSpread(concreteNode));
-    const argumentVariables = spread.args;
     const rootVariables = rootContext.variables;
+    const argumentVariables = getFragmentSpreadArguments(
+      spread.fragment.node.name,
+      spread.args,
+      variables,
+      rootVariables,
+    );
     const fragmentVariables = RelayVariables.getFragmentVariables(
       spread.fragment,
       rootVariables,
@@ -1438,6 +1532,8 @@ function createNode(
         isTypeConditional: false,
       }
     );
+  } else if (kind === 'OperationDefinition') {
+    type = RelayOSSQuery;
   } else if (kind === 'Query') {
     type = RelayQueryRoot;
   } else if (kind === 'Mutation') {
@@ -1495,7 +1591,9 @@ function createMemoizedFragment(
   variables: Variables,
   metadata: FragmentMetadata
 ): RelayQueryFragment {
-  const cacheKey = rootContext.routeName + ':' + stableStringify(variables) +
+  const cacheKey = rootContext.routeName +
+    ':' + stableStringify(rootContext.variables) +
+    ':' + stableStringify(variables) +
     ':' + stableStringify(metadata);
   let fragment = (concreteFragment: any).__cachedFragment__;
   const fragmentCacheKey = (concreteFragment: any).__cacheKey__;
@@ -1609,6 +1707,7 @@ module.exports = {
   Mutation: RelayQueryMutation,
   Node: RelayQueryNode,
   Operation: RelayQueryOperation,
+  OSSQuery: RelayOSSQuery,
   Root: RelayQueryRoot,
   Subscription: RelayQuerySubscription,
 };

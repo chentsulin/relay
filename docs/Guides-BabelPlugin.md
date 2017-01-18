@@ -172,10 +172,9 @@ babel.transform(source, {
           return [];
         },
       },
-    }), {
-    // 當它在建置期間驗證 queries 時會拋出錯誤。
-    enforceSchema: true,
-    }],
+      // 當它在建置期間驗證 queries 時會拋出錯誤。
+      enforceSchema: true,
+    })],
   ],
 });
 ```

@@ -89,7 +89,7 @@ const variables = {
   },
 };
 
-const mutation = RelayGraphQLMutation.create(
+const mutation = Relay.GraphQLMutation.create(
   query,
   variables,
   environment
@@ -120,7 +120,7 @@ static createWithFiles(
 //
 // 還有在前面範例中的
 // `query`, `variables` 以及 `environment` 參數：
-const mutation = RelayGraphQLMutation.createWithFiles(
+const mutation = Relay.GraphQLMutation.createWithFiles(
   query,
   variables,
   files,
@@ -159,7 +159,7 @@ constructor(
 
 ```
 const collisionKey = 'feedback-like: ' + variables.input.feedbackId;
-const mutation = new RelayGraphQLMutation(
+const mutation = new Relay.GraphQLMutation(
   query,
   variables,
   null, // 沒有檔案。

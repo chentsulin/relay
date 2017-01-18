@@ -13,9 +13,8 @@
 'use strict';
 
 const React = require('React');
+const RelayEnvironment = require('RelayEnvironment');
 const RelayPropTypes = require('RelayPropTypes');
-
-const emptyFunction = require('emptyFunction');
 
 /**
  * A helper for rendering RelayContainers with mock data, outside of a
@@ -37,7 +36,7 @@ class RelayMockRenderer extends React.Component {
   mockContext: any;
 
   static childContextTypes = {
-    relay: RelayPropTypes.Environment,
+    relay: RelayPropTypes.LegacyRelay,
     route: RelayPropTypes.QueryConfig.isRequired,
     useFakeData: React.PropTypes.bool,
   };
@@ -46,10 +45,8 @@ class RelayMockRenderer extends React.Component {
     super();
     this.mockContext = {
       relay: {
-        forceFetch: emptyFunction,
-        getFragmentResolver: emptyFunction,
-        getStoreData: emptyFunction,
-        primeCache: emptyFunction,
+        environment: new RelayEnvironment(),
+        variables: {},
       },
       route: {
         name: '$RelayMockRenderer',

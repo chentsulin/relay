@@ -18,6 +18,9 @@ const RelayQuery = require('RelayQuery');
 
 const base62 = require('base62');
 const invariant = require('invariant');
+const nullthrows = require('nullthrows');
+
+const {TYPENAME} = require('RelayNodeInterface');
 
 import type {PrintedQuery} from 'RelayInternalTypes';
 
@@ -41,6 +44,8 @@ if (__DEV__) {
   oneIndent = '  ';
   newLine = '\n';
 }
+
+const EMPTY_CHILDREN = ' {' + newLine + oneIndent + TYPENAME + newLine + '}';
 
 /**
  * @internal
@@ -66,10 +71,13 @@ function printRelayOSSQuery(node: RelayQuery.Node): PrintedQuery {
     queryText = printOperation(node, printerState);
   } else if (node instanceof RelayQuery.Fragment) {
     queryText = printFragment(node, printerState);
+  } else if (node instanceof RelayQuery.OSSQuery) {
+    queryText = printOSSQuery(node, printerState);
   }
   invariant(
     queryText,
-    'printRelayOSSQuery(): Unsupported node type.'
+    'printRelayOSSQuery(): Unsupported node type, got `%s`.',
+    JSON.stringify(node),
   );
   const variables = {};
   variableMap.forEach(variablesForType => {
@@ -84,6 +92,24 @@ function printRelayOSSQuery(node: RelayQuery.Node): PrintedQuery {
   };
 }
 
+/**
+ * Prints a query with (potentially) multiple root fields.
+ */
+function printOSSQuery(
+  query: RelayQuery.OSSQuery,
+  printerState: PrinterState,
+): string {
+  const children = printChildren(query, printerState, oneIndent) || EMPTY_CHILDREN;
+  const directives = printDirectives(query);
+  // Note: variable definitions must be processed *after* traversing children
+  const variableDefinitions = printVariableDefinitions(printerState);
+  return 'query ' + query.getName() + variableDefinitions +
+    directives + children;
+}
+
+/**
+ * Prints the output of a legacy Relay.QL query.
+ */
 function printRoot(
   node: RelayQuery.Root,
   printerState: PrinterState
@@ -118,6 +144,10 @@ function printRoot(
   const queryString = node.getName() + printVariableDefinitions(printerState);
   fieldName += printDirectives(node);
 
+  if (children == null) {
+    return 'query ' + queryString + EMPTY_CHILDREN;
+  }
+
   return 'query ' + queryString + ' {' + newLine +
     oneIndent + fieldName + children + newLine + '}';
 }
@@ -144,7 +174,7 @@ function printOperation(
     node.getCallVariableName()
   );
   // Note: children must be traversed before printing variable definitions
-  const children = printChildren(node, printerState, oneIndent);
+  const children = printChildren(node, printerState, oneIndent) || EMPTY_CHILDREN;
   const operationString =
     node.getName() + printVariableDefinitions(printerState);
   const fieldName = call.name + '(' + inputString + ')';
@@ -181,14 +211,14 @@ function printFragment(
 ): string {
   const directives = printDirectives(node);
   return 'fragment ' + node.getDebugName() + ' on ' +
-    node.getType() + directives + printChildren(node, printerState, '');
+    node.getType() + directives + nullthrows(printChildren(node, printerState, ''));
 }
 
 function printChildren(
   node: RelayQuery.Node,
   printerState: PrinterState,
   indent: string
-): string {
+): ?string {
   const childrenText = [];
   const children = node.getChildren();
   let fragments;
@@ -217,10 +247,15 @@ function printChildren(
         }
       }
       fieldText += printDirectives(child);
-      if (child.getChildren().length) {
-        fieldText += printChildren(child, printerState, indent + oneIndent);
+      if (child.canHaveSubselections()) {
+        const childText = printChildren(child, printerState, indent + oneIndent);
+        if (childText != null) {
+          fieldText += childText;
+          childrenText.push(fieldText);
+        }
+      } else {
+        childrenText.push(fieldText);
       }
-      childrenText.push(fieldText);
     } else if (child instanceof RelayQuery.Fragment) {
       if (child.getChildren().length) {
         const {
@@ -237,10 +272,11 @@ function printChildren(
           fragmentName = fragmentNameByHash[fragmentHash];
         } else {
           // Avoid reprinting a fragment that is identical to another fragment.
+          const fragmentChildren = nullthrows(printChildren(child, printerState, ''));
           const fragmentText =
             child.getType() +
             printDirectives(child) +
-            printChildren(child, printerState, '');
+            fragmentChildren;
           if (fragmentNameByText.hasOwnProperty(fragmentText)) {
             fragmentName = fragmentNameByText[fragmentText];
           } else {
@@ -266,12 +302,12 @@ function printChildren(
       );
     }
   }
-  if (!childrenText) {
-    return '';
+  if (!childrenText.length) {
+    return null;
   }
-  return childrenText.length ? ' {' + newLine + indent + oneIndent +
+  return ' {' + newLine + indent + oneIndent +
     childrenText.join(',' + newLine + indent + oneIndent) + newLine +
-    indent + '}' : '';
+    indent + '}';
 }
 
 function printDirectives(node) {

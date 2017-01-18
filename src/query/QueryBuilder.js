@@ -28,10 +28,12 @@ import type {
   ConcreteField,
   ConcreteFieldMetadata,
   ConcreteFragment,
+  ConcreteFragmentDefinition,
   ConcreteFragmentMetadata,
   ConcreteFragmentReference,
   ConcreteFragmentSpread,
   ConcreteMutation,
+  ConcreteOperationDefinition,
   ConcreteOperationMetadata,
   ConcreteQuery,
   ConcreteQueryMetadata,
@@ -307,6 +309,12 @@ const QueryBuilder = {
     }
   },
 
+  getFragmentDefinition(node: mixed): ?ConcreteFragmentDefinition {
+    if (isConcreteKind(node, 'FragmentDefinition')) {
+      return (node: any);
+    }
+  },
+
   getFragmentReference(node: mixed): ?ConcreteFragmentReference {
     if (isConcreteKind(node, 'FragmentReference')) {
       return (node: any);
@@ -315,6 +323,12 @@ const QueryBuilder = {
 
   getFragmentSpread(node: mixed): ?ConcreteFragmentSpread {
     if (isConcreteKind(node, 'FragmentSpread')) {
+      return (node: any);
+    }
+  },
+
+  getOperationDefinition(node: mixed): ?ConcreteOperationDefinition {
+    if (isConcreteKind(node, 'OperationDefinition')) {
       return (node: any);
     }
   },
