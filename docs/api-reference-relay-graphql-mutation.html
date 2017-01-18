@@ -57,7 +57,7 @@
   <span class="token punctuation">}</span><span class="token punctuation">,</span>
 <span class="token punctuation">}</span><span class="token punctuation">;</span>
 
-<span class="token keyword">const</span> mutation <span class="token operator">=</span> RelayGraphQLMutation<span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span>
+<span class="token keyword">const</span> mutation <span class="token operator">=</span> Relay<span class="token punctuation">.</span>GraphQLMutation<span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span>
   query<span class="token punctuation">,</span>
   variables<span class="token punctuation">,</span>
   environment
@@ -74,7 +74,7 @@
 <span spellcheck="true" class="token comment">//</span>
 <span spellcheck="true" class="token comment">// 還有在前面範例中的</span>
 <span spellcheck="true" class="token comment">// `query`, `variables` 以及 `environment` 參數：</span>
-<span class="token keyword">const</span> mutation <span class="token operator">=</span> RelayGraphQLMutation<span class="token punctuation">.</span><span class="token function">createWithFiles</span><span class="token punctuation">(</span>
+<span class="token keyword">const</span> mutation <span class="token operator">=</span> Relay<span class="token punctuation">.</span>GraphQLMutation<span class="token punctuation">.</span><span class="token function">createWithFiles</span><span class="token punctuation">(</span>
   query<span class="token punctuation">,</span>
   variables<span class="token punctuation">,</span>
   files<span class="token punctuation">,</span>
@@ -89,7 +89,7 @@
   collisionKey<span class="token punctuation">:</span> <span class="token operator">?</span>string
 <span class="token punctuation">)</span><span class="token punctuation">;</span></pre><p>這是用可選擇的 <code>files</code>、<code>callbacks</code> 和 <code>collisionKey</code> 參數來建立 <code>Relay.GraphQLMutation</code> 實體的一般 constructor。</p><p>呼叫者必須提供一個適當的 <code>query</code> 以及 <code>variables</code>。參照 GraphQL Relay Specification：</p><ul><li>mutation 應該接收命名叫做「input」的單一參數。</li><li>該 input 參數應該包含一個「clientMutationId」(字串) 屬性用於協調請求和回應的用途 (會自動被 <code>Relay.GraphQLMutation</code> API 添加)。</li><li>query 應該請求「clientMutationId」當作一個選擇的屬性。</li></ul><p>如果沒有提供，會產生一個唯一的 collision key (意味著建立的 mutation 會是獨立的而且不會與其他的碰撞)。</p><h4><a class="anchor" name="constructor"></a>範例 <a class="hash-link" href="#constructor">#</a></h4><pre class="prism language-javascript">
 <span class="token keyword">const</span> collisionKey <span class="token operator">=</span> <span class="token string">&#x27;feedback-like: &#x27;</span> <span class="token operator">+</span> variables<span class="token punctuation">.</span>input<span class="token punctuation">.</span>feedbackId<span class="token punctuation">;</span>
-<span class="token keyword">const</span> mutation <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">RelayGraphQLMutation</span><span class="token punctuation">(</span>
+<span class="token keyword">const</span> mutation <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Relay<span class="token punctuation">.</span>GraphQLMutation</span><span class="token punctuation">(</span>
   query<span class="token punctuation">,</span>
   variables<span class="token punctuation">,</span>
   <span class="token keyword">null</span><span class="token punctuation">,</span> <span spellcheck="true" class="token comment">// 沒有檔案。</span>
