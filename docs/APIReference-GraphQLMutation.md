@@ -190,7 +190,7 @@ applyOptimistic(
 
 可選擇性地，在後面呼叫 `commit()` 來送 mutation 到伺服器。
 
-**附註：**一個 optimistic update 只可以套用一次。
+**附註：**一個 optimistic 更新只可以套用一次。
 
 #### 範例
 
