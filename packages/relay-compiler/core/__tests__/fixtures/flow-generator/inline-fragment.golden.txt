@@ -1,0 +1,23 @@
+export type InlineFragment = {
+  id: string;
+  name?: ?string;
+  message?: ?{
+    text: ?string;
+  };
+};
+
+export type InlineFragmentWithOverlappingFields = {
+  hometown?: ?{
+    id: string;
+    name: ?string;
+    message?: ?{
+      text: ?string;
+    };
+  };
+  name?: ?string;
+};
+
+export type InlineFragmentConditionalID = {
+  id?: string;
+  name?: ?string;
+};

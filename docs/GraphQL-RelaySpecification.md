@@ -17,7 +17,7 @@ Relay 對 GraphQL 伺服器作出三個核心假設，就是它必須提供：
 
 這個範例示範了這三個假設。
 
-這個範例不是那麼的全面，不過它被設計用來快速地介紹這些核心假設，以在深入更細節的 specification 或是 library 之前提供一些 context。
+這個範例不是那麼的全面，不過它被設計用來快速地介紹這些核心假設，以在深入更細節的 library specification 之前提供一些 context。
 
 這個範例的前提是，我們想要使用 GraphQL 來在原始的 Star Wars 三部曲中 query ship 和 faction 的資訊。
 

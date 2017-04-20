@@ -2,7 +2,7 @@
 id: api-reference-relay-graphql-mutation
 title: Relay.GraphQLMutation
 layout: docs
-category: API Reference
+category: Relay Classic API
 permalink: docs/api-reference-relay-graphql-mutation.html
 next: api-reference-relay-proptypes
 ---
@@ -95,6 +95,8 @@ const mutation = Relay.GraphQLMutation.create(
   environment
 );
 ```
+
+Note: In most cases, it is possible to rely on the default singleton instance of the environment, which is exposed as `Relay.Store`.
 
 參閱：[GraphQLMutation > Constructor](#constructor)
 

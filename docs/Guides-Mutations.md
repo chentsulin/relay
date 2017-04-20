@@ -2,7 +2,7 @@
 id: guides-mutations
 title: Mutations
 layout: docs
-category: Guides
+category: Relay Classic Guides
 permalink: docs/guides-mutations.html
 next: guides-network-layer
 ---
@@ -267,9 +267,9 @@ class RenameDocumentMutation extends Relay.Mutation {
 
   在回應中代表這個 connection 的 parent 的欄位名稱
 
-- `parentID: string`
+- `parentID?: string`
 
-  包含這個 connection 的 parent node 的 DataID
+  包含這個 connection 的 parent node 的 DataID。這個參數可選擇性的提供。
 
 - `connectionName: string`
 
@@ -321,9 +321,9 @@ class DestroyShipMutation extends Relay.Mutation {
 
   在回應中代表這個 connection 的 parent 的欄位名稱
 
-- `parentID: string`
+- `parentID?: string`
 
-  包含這個 connection 的 parent node 的 DataID
+  包含這個 connection 的 parent node 的 DataID。這個參數可選擇性的提供。
 
 - `connectionName: string`
 

@@ -2,7 +2,7 @@
 id: api-reference-relay-container
 title: RelayContainer
 layout: docs
-category: API Reference
+category: Relay Classic API
 permalink: docs/api-reference-relay-container.html
 next: api-reference-relay-route
 ---
@@ -539,7 +539,7 @@ getFragment(
 
 #### 範例
 
-Fragment 合成可以透過 ES6 template string interpolation 和 `getFragment` 來達成：
+Fragment 合成可以透過 ES6 template string interpolation 以及 `getFragment` 來達成：
 
 ```{6}
 // Parent.js
