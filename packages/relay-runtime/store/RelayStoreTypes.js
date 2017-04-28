@@ -25,13 +25,13 @@ import type {
 } from 'RelayCombinedEnvironmentTypes';
 import type {ConcreteBatch, ConcreteFragment, ConcreteSelectableNode} from 'RelayConcreteNode';
 import type {DataID} from 'RelayInternalTypes';
+import type {GraphQLTaggedNode} from 'RelayModernGraphQLTag';
 import type {
   PayloadError,
   RelayResponsePayload,
   UploadableMap,
 } from 'RelayNetworkTypes';
 import type {RecordState} from 'RelayRecordState';
-import type {GraphQLTaggedNode} from 'RelayStaticGraphQLTag';
 import type {Variables} from 'RelayTypes';
 
 type TEnvironment = Environment;
@@ -90,6 +90,12 @@ export interface Store {
   getSource(): RecordSource,
 
   /**
+   * Determine if the selector can be resolved with data in the store (i.e. no
+   * fields are missing).
+   */
+  check(selector: Selector): boolean,
+
+  /**
    * Read the results of a selector from in-memory records in the store.
    */
   lookup(selector: Selector): Snapshot,
@@ -109,7 +115,7 @@ export interface Store {
 
   /**
    * Attempts to load all the records necessary to fulfill the selector into the
-   * in-memory record source.
+   * target record source.
    */
   resolve(
     target: MutableRecordSource,
@@ -161,7 +167,6 @@ export interface RecordProxy {
  * the modifications.
  */
 export interface RecordSourceProxy {
-  commitPayload(selector: Selector, response: Object): void,
   create(dataID: DataID, typeName: string): RecordProxy,
   delete(dataID: DataID): void,
   get(dataID: DataID): ?RecordProxy,
@@ -200,6 +205,16 @@ export interface Environment extends CEnvironment<
   applyUpdate(updater: StoreUpdater): Disposable,
 
   /**
+   * Determine if the selector can be resolved with data in the store (i.e. no
+   * fields are missing).
+   *
+   * Note that this operation effectively "executes" the selector against the
+   * cache and therefore takes time proportional to the size/complexity of the
+   * selector.
+   */
+  check(selector: Selector): boolean,
+
+  /**
    * Commit an updater to the environment. This mutation cannot be reverted and
    * should therefore not be used for optimistic updates. This is mainly
    * intended for updating fields from client schema extensions.
@@ -220,7 +235,8 @@ export interface Environment extends CEnvironment<
     onCompleted?: ?(errors: ?Array<PayloadError>) => void,
     onError?: ?(error: Error) => void,
     operation: OperationSelector,
-    optimisticUpdater?: ?StoreUpdater,
+    optimisticResponse?: ?() => Object,
+    optimisticUpdater?: ?SelectorStoreUpdater,
     updater?: ?SelectorStoreUpdater,
     uploadables?: UploadableMap,
   |}): Disposable,

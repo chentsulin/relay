@@ -15,7 +15,6 @@
 const RelayIRVisitor = require('RelayIRVisitor');
 
 const babelGenerator = require('babel-generator').default;
-const invariant = require('invariant');
 const t = require('babel-types');
 
 const {
@@ -30,10 +29,7 @@ const {
 } = require('graphql');
 const {isAbstractType} = require('RelaySchemaUtils');
 
-import type {
-  Fragment,
-  Root,
-} from 'RelayIR';
+import type {Fragment, Root} from 'RelayIR';
 
 const printBabel = ast => babelGenerator(ast).code;
 
@@ -42,9 +38,15 @@ function generate(node: Root | Fragment): string {
   return printBabel(babelAST);
 }
 
-function makeProp({key, schemaName, value, conditional, nodeType, nodeSelections}, concreteType) {
+function makeProp(
+  {key, schemaName, value, conditional, nodeType, nodeSelections},
+  concreteType,
+) {
   if (nodeType) {
-    value = transformScalarField(nodeType, selectionsToBabel([nodeSelections.values()]));
+    value = transformScalarField(
+      nodeType,
+      selectionsToBabel([Array.from(nodeSelections.values())]),
+    );
   }
   if (schemaName === '__typename' && concreteType) {
     value = stringLiteralTypeAnnotation(concreteType);
@@ -57,11 +59,12 @@ function makeProp({key, schemaName, value, conditional, nodeType, nodeSelections
 }
 
 const isTypenameSelection = selection => selection.schemaName === '__typename';
-const hasTypenameSelection = (selections: $FlowIssue) => selections.some(isTypenameSelection);
+const hasTypenameSelection = (selections: $FlowIssue) =>
+  selections.some(isTypenameSelection);
 const onlySelectsTypename = selections => selections.every(isTypenameSelection);
 
 function selectionsToBabel(selections) {
-  const baseFields = [];
+  const baseFields = new Map();
   const byConcreteType = {};
 
   flattenArray(selections).forEach(selection => {
@@ -70,7 +73,12 @@ function selectionsToBabel(selections) {
       byConcreteType[concreteType] = byConcreteType[concreteType] || [];
       byConcreteType[concreteType].push(selection);
     } else {
-      baseFields.push(selection);
+      const previousSel = baseFields.get(selection.key);
+
+      baseFields.set(
+        selection.key,
+        previousSel ? mergeSelection(selection, previousSel) : selection,
+      );
     }
   });
 
@@ -78,20 +86,19 @@ function selectionsToBabel(selections) {
 
   if (
     Object.keys(byConcreteType).length &&
-    onlySelectsTypename(baseFields) &&
-    (
-      hasTypenameSelection(baseFields) ||
-      Object.values(byConcreteType).every(hasTypenameSelection)
-    )
+    onlySelectsTypename(Array.from(baseFields.values())) &&
+    (hasTypenameSelection(Array.from(baseFields.values())) ||
+      Object.keys(byConcreteType).every(type =>
+        hasTypenameSelection(byConcreteType[type])))
   ) {
     for (const concreteType in byConcreteType) {
       types.push(
         t.objectTypeAnnotation([
-          ...baseFields.map(selection => makeProp(selection, concreteType)),
-          ...byConcreteType[concreteType].map(
-            selection => makeProp(selection, concreteType)
-          ),
-        ])
+          ...Array.from(baseFields.values()).map(selection =>
+            makeProp(selection, concreteType)),
+          ...byConcreteType[concreteType].map(selection =>
+            makeProp(selection, concreteType)),
+        ]),
       );
     }
     // It might be some other type then the listed concrete types. Ideally, we
@@ -102,25 +109,28 @@ function selectionsToBabel(selections) {
       stringLiteralTypeAnnotation('%other'),
     );
     otherProp.leadingComments = lineComments(
-      'This will never be \'%other\', but we need some',
-      'value in case none of the concrete values match.'
+      "This will never be '%other', but we need some",
+      'value in case none of the concrete values match.',
     );
     types.push(t.objectTypeAnnotation([otherProp]));
   } else {
-    const props = {};
-    baseFields.forEach(selection => {
-      props[selection.key] = makeProp(selection);
-    });
-    let selectionMap = selectionsToMap(baseFields);
+    let selectionMap = selectionsToMap(Array.from(baseFields.values()));
     for (const concreteType in byConcreteType) {
       selectionMap = mergeSelections(
         selectionMap,
-        selectionsToMap(byConcreteType[concreteType])
+        selectionsToMap(
+          byConcreteType[concreteType].map(sel => ({
+            ...sel,
+            conditional: true,
+          })),
+        ),
       );
     }
-    types.push(t.objectTypeAnnotation(
-      [...selectionMap.values()].map(sel => makeProp(sel))
-    ));
+    types.push(
+      t.objectTypeAnnotation(
+        Array.from(selectionMap.values()).map(sel => makeProp(sel)),
+      ),
+    );
   }
 
   if (!types.length) {
@@ -131,9 +141,7 @@ function selectionsToBabel(selections) {
 }
 
 function lineComments(...lines: Array<string>) {
-  return lines.map(line => (
-    {type: 'CommentLine', value: ' ' + line}
-  ));
+  return lines.map(line => ({type: 'CommentLine', value: ' ' + line}));
 }
 
 function stringLiteralTypeAnnotation(value) {
@@ -149,15 +157,13 @@ function mergeSelection(a, b) {
       conditional: true,
     };
   }
-  if (a.nodeSelections) {
-    invariant(b.nodeSelections, 'xx');
-    return {
-      ...a,
-      nodeSelections: mergeSelections(a.nodeSelections, b.nodeSelections),
-      conditional: a.conditional || b.conditional,
-    };
-  }
-  return a;
+  return {
+    ...a,
+    nodeSelections: a.nodeSelections
+      ? mergeSelections(a.nodeSelections, b.nodeSelections)
+      : null,
+    conditional: a.conditional && b.conditional,
+  };
 }
 
 function mergeSelections(a, b) {
@@ -178,10 +184,10 @@ const RelayCodeGenVisitor = {
         t.typeAlias(
           t.identifier(node.name),
           null,
-          selectionsToBabel(node.selections)
+          selectionsToBabel(node.selections),
         ),
         [],
-        null
+        null,
       );
     },
 
@@ -190,23 +196,25 @@ const RelayCodeGenVisitor = {
         t.typeAlias(
           t.identifier(node.name),
           null,
-          selectionsToBabel(node.selections)
+          selectionsToBabel(node.selections),
         ),
         [],
-        null
+        null,
       );
     },
 
     InlineFragment(node) {
       const typeCondition = node.typeCondition;
       return flattenArray(node.selections).map(typeSelection => {
-        return isAbstractType(typeCondition) ? {
-          ...typeSelection,
-          conditional: true,
-        } : {
-          ...typeSelection,
-          concreteType: typeCondition.toString(),
-        };
+        return isAbstractType(typeCondition)
+          ? {
+              ...typeSelection,
+              conditional: true,
+            }
+          : {
+              ...typeSelection,
+              concreteType: typeCondition.toString(),
+            };
       });
     },
     Condition(node) {
@@ -245,12 +253,11 @@ const RelayCodeGenVisitor = {
 function selectionsToMap(selections) {
   const map = new Map();
   selections.forEach(selection => {
-    invariant(
-      !map.has(selection.key),
-      'RelayFlowGenerator: Duplicate key: `%s`.',
-      selection.key
+    const previousSel = map.get(selection.key);
+    map.set(
+      selection.key,
+      previousSel ? mergeSelection(previousSel, selection) : selection,
     );
-    map.set(selection.key, selection);
   });
   return map;
 }
@@ -266,7 +273,7 @@ function transformScalarField(type, objectProps) {
     return transformNonNullableScalarField(type.ofType, objectProps);
   } else {
     return t.nullableTypeAnnotation(
-      transformNonNullableScalarField(type, objectProps)
+      transformNonNullableScalarField(type, objectProps),
     );
   }
 }
@@ -274,7 +281,7 @@ function transformScalarField(type, objectProps) {
 function arrayOfType(thing) {
   return t.genericTypeAnnotation(
     t.identifier('Array'),
-    t.typeParameterInstantiation([thing])
+    t.typeParameterInstantiation([thing]),
   );
 }
 
@@ -304,7 +311,7 @@ function transformNonNullableScalarField(type: GraphQLType, objectProps) {
   } else if (type instanceof GraphQLEnumType) {
     // TODO create a flow type for enums
     return t.unionTypeAnnotation(
-      type.getValues().map(({value}) => stringLiteralTypeAnnotation(value))
+      type.getValues().map(({value}) => stringLiteralTypeAnnotation(value)),
     );
   } else {
     throw new Error(`Could not convert from GraphQL type ${type.toString()}`);

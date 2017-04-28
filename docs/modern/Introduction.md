@@ -86,7 +86,7 @@ Relay Modern container 結合一般的 React component 以及它們資料需求�
 
 ### Relay Environment
 
-[Relay Environment](./environment.html) 的實例封裝了一份 GraphQL 資料的記憶體內快取，以及一個提供存取 GraphQL 伺服器 的 network layer。這個 Environment 物件通常不會直接被開發者使用，而它會被傳遞到每一個 [`QueryRenderer`](./query-renderer.html) 去，用來存取、調整，並抓取資料。在 container 裡面，可以藉由 `this.props.relay.environment` 存取當下的 environment。這最常被用來[執行 mutation](./mutations.html)。
+[Relay Environment](./relay-environment.html) 的實例封裝了一份 GraphQL 資料的記憶體內快取，以及一個提供存取 GraphQL 伺服器 的 network layer。這個 Environment 物件通常不會直接被開發者使用，而它會被傳遞到每一個 [`QueryRenderer`](./query-renderer.html) 去，用來存取、調整，並抓取資料。在 container 裡面，可以藉由 `this.props.relay.environment` 存取當下的 environment。這最常被用來[執行 mutation](./mutations.html)。
 
 ### Network layer
 

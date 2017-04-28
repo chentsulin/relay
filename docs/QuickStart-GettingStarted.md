@@ -31,6 +31,6 @@ GraphQL 被設計用來支援廣泛的資料存取模式。為了了解應用程
 
 ### Relay
 
-Relay 透過一個 network layer 來跟 GraphQL 伺服器溝通。Relay 附帶的 [network layer](https://github.com/facebook/relay/tree/master/src/network-layer/default) 直接與 express-graphql 相容，並將會持續在我們添加新功能到 transport 之後進化。
+Relay 透過一個 network layer 來跟 GraphQL 伺服器溝通。Relay 附帶的 [network layer](https://github.com/facebook/relay/tree/master/packages/react-relay/classic/network-layer/default) 直接與 express-graphql 相容，並將會持續在我們添加新功能到 transport 之後進化。
 
 要現在馬上入門的最好方式輔助就是看一下這三個部分如何結合在一起來行成一個可運作的範例。下一頁的教學將會使用 [Relay Starter Kit](https://github.com/facebook/relay-starter-kit)，引導你走過一個範例應用程式，給你關於你可以如何開始使用 Relay 在自己的應用程式上的想法。

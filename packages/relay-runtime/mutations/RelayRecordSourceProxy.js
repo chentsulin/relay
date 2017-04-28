@@ -12,8 +12,9 @@
 
 'use strict';
 
+const RelayModernRecord = require('RelayModernRecord');
 const RelayRecordProxy = require('RelayRecordProxy');
-const RelayStaticRecord = require('RelayStaticRecord');
+const RelayRecordSourceSelectorProxy = require('RelayRecordSourceSelectorProxy');
 
 const invariant = require('invariant');
 const normalizeRelayPayload = require('normalizeRelayPayload');
@@ -30,6 +31,7 @@ import type RelayRecordSourceMutator from 'RelayRecordSourceMutator';
 import type {
   RecordProxy,
   RecordSourceProxy,
+  RecordSourceSelectorProxy,
   Selector,
 } from 'RelayStoreTypes';
 
@@ -52,7 +54,10 @@ class RelayRecordSourceProxy implements RecordSourceProxy {
     this._proxies = {};
   }
 
-  commitPayload(selector: Selector, response: Object): void {
+  commitPayload(selector: Selector, response: ?Object): RecordSourceSelectorProxy {
+    if (!response) {
+      return new RelayRecordSourceSelectorProxy(this, selector);
+    }
     const {source, fieldPayloads} = normalizeRelayPayload(selector, response);
     const dataIDs = source.getRecordIDs();
     dataIDs.forEach((dataID) => {
@@ -61,7 +66,7 @@ class RelayRecordSourceProxy implements RecordSourceProxy {
         const sourceRecord = source.get(dataID);
         if (sourceRecord) {
           if (this._mutator.getStatus(dataID) !== EXISTENT) {
-            this.create(dataID, RelayStaticRecord.getType(sourceRecord));
+            this.create(dataID, RelayModernRecord.getType(sourceRecord));
           }
           this._mutator.copyFieldsFromRecord(sourceRecord, dataID);
           delete this._proxies[dataID];
@@ -77,12 +82,13 @@ class RelayRecordSourceProxy implements RecordSourceProxy {
           this._handlerProvider && this._handlerProvider(fieldPayload.handle);
         invariant(
           handler,
-          'RelayStaticEnvironment: Expected a handler to be provided for handle `%s`.',
+          'RelayModernEnvironment: Expected a handler to be provided for handle `%s`.',
           fieldPayload.handle
         );
         handler.update(this, fieldPayload);
       });
     }
+    return new RelayRecordSourceSelectorProxy(this, selector);
   }
 
   create(dataID: DataID, typeName: string): RecordProxy {

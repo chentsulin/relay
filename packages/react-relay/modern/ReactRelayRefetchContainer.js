@@ -17,12 +17,12 @@ const RelayProfiler = require('RelayProfiler');
 const RelayPropTypes = require('RelayPropTypes');
 
 const areEqual = require('areEqual');
+const buildReactRelayContainer = require('buildReactRelayContainer');
 const invariant = require('invariant');
 const isRelayContext = require('isRelayContext');
 const isScalarAndEqual = require('isScalarAndEqual');
 const nullthrows = require('nullthrows');
 
-const {buildCompatContainer} = require('ReactRelayCompatContainerBuilder');
 const {profileContainer} = require('ReactRelayContainerProfiler');
 const {getComponentName, getReactComponent} = require('RelayContainerUtils');
 
@@ -35,14 +35,9 @@ import type {
   Disposable,
   FragmentSpecResolver,
 } from 'RelayCombinedEnvironmentTypes';
-import type {GraphQLTaggedNode} from 'RelayStaticGraphQLTag';
-import type {
-  FragmentMap,
-  RelayContext,
-} from 'RelayStoreTypes';
-import type {
-  Variables,
-} from 'RelayTypes';
+import type {GraphQLTaggedNode} from 'RelayModernGraphQLTag';
+import type {FragmentMap, RelayContext} from 'RelayStoreTypes';
+import type {Variables} from 'RelayTypes';
 
 type ContainerState = {
   data: {[key: string]: mixed},
@@ -57,11 +52,11 @@ const containerContextTypes = {
  * props, resolving them with the provided fragments and subscribing for
  * updates.
  */
-function createContainerWithFragments<TDefaultProps, TProps>(
-  Component: Class<React.Component<TDefaultProps, TProps, *>> | ReactClass<TProps>,
+function createContainerWithFragments<TBase: ReactClass<*>>(
+  Component: TBase,
   fragments: FragmentMap,
   taggedNode: GraphQLTaggedNode,
-): Class<React.Component<TDefaultProps, TProps, *>> {
+): TBase {
   const ComponentClass = getReactComponent(Component);
   const componentName = getComponentName(Component);
   const containerName = `Relay(${componentName})`;
@@ -314,16 +309,15 @@ function createContainer<TBase: ReactClass<*>>(
   fragmentSpec: GraphQLTaggedNode | GeneratedNodeMap,
   taggedNode: GraphQLTaggedNode,
 ): TBase {
-  return buildCompatContainer(
+  return buildReactRelayContainer(
     Component,
-    (fragmentSpec: any),
-    (ComponentClass, fragments) => {
-      return createContainerWithFragments(ComponentClass, fragments, taggedNode);
-    },
+    fragmentSpec,
+    (ComponentClass, fragments) => createContainerWithFragments(
+      ComponentClass,
+      fragments,
+      taggedNode,
+    ),
   );
 }
 
-module.exports = {
-  createContainer,
-  createContainerWithFragments,
-};
+module.exports = {createContainer, createContainerWithFragments};

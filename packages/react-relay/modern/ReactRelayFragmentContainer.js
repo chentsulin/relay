@@ -16,24 +16,19 @@ const React = require('React');
 const RelayProfiler = require('RelayProfiler');
 const RelayPropTypes = require('RelayPropTypes');
 
+const buildReactRelayContainer = require('buildReactRelayContainer');
 const invariant = require('invariant');
 const isRelayContext = require('isRelayContext');
 const isScalarAndEqual = require('isScalarAndEqual');
 const nullthrows = require('nullthrows');
 
-const {buildCompatContainer} = require('ReactRelayCompatContainerBuilder');
 const {profileContainer} = require('ReactRelayContainerProfiler');
 const {getComponentName, getReactComponent} = require('RelayContainerUtils');
 
 import type {GeneratedNodeMap, RelayProp} from 'ReactRelayTypes';
-import type {
-  FragmentSpecResolver,
-} from 'RelayCombinedEnvironmentTypes';
-import type {GraphQLTaggedNode} from 'RelayStaticGraphQLTag';
-import type {
-  FragmentMap,
-  RelayContext,
-} from 'RelayStoreTypes';
+import type {FragmentSpecResolver} from 'RelayCombinedEnvironmentTypes';
+import type {GraphQLTaggedNode} from 'RelayModernGraphQLTag';
+import type {FragmentMap, RelayContext} from 'RelayStoreTypes';
 
 type ContainerState = {
   data: {[key: string]: mixed},
@@ -49,10 +44,10 @@ const containerContextTypes = {
  * props, resolving them with the provided fragments and subscribing for
  * updates.
  */
-function createContainerWithFragments<TDefaultProps, TProps>(
-  Component: Class<React.Component<TDefaultProps, TProps, *>> | ReactClass<TProps>,
+function createContainerWithFragments<TBase: ReactClass<*>>(
+  Component: TBase,
   fragments: FragmentMap,
-): Class<React.Component<TDefaultProps, TProps, *>> {
+): TBase {
   const ComponentClass = getReactComponent(Component);
   const componentName = getComponentName(Component);
   const containerName = `Relay(${componentName})`;
@@ -195,14 +190,11 @@ function createContainer<TBase: ReactClass<*>>(
   Component: TBase,
   fragmentSpec: GraphQLTaggedNode | GeneratedNodeMap,
 ): TBase {
-  return buildCompatContainer(
+  return buildReactRelayContainer(
     Component,
-    (fragmentSpec: any),
+    fragmentSpec,
     createContainerWithFragments,
   );
 }
 
-module.exports = {
-  createContainer,
-  createContainerWithFragments,
-};
+module.exports = {createContainer, createContainerWithFragments};

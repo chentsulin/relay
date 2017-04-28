@@ -12,10 +12,10 @@
 const Deferred = require('Deferred');
 const RelayInMemoryRecordSource = require('RelayInMemoryRecordSource');
 const RelayMarkSweepStore = require('RelayMarkSweepStore');
+const RelayModernEnvironment = require('RelayModernEnvironment');
+const RelayModernTestUtils = require('RelayModernTestUtils');
 const RelayNetwork = require('RelayNetwork');
 const RelayRecordSourceInspector = require('RelayRecordSourceInspector');
-const RelayStaticEnvironment = require('RelayStaticEnvironment');
-const RelayStaticTestUtils = require('RelayStaticTestUtils');
 const RelayTestSchema = require('RelayTestSchema');
 
 const areEqual = require('areEqual');
@@ -47,7 +47,7 @@ function mockDisposableMethod(object, key) {
  * Usage:
  *
  * ```
- * const environment = RelayStaticMockEnvironment.createMockEnvironment();
+ * const environment = RelayModernMockEnvironment.createMockEnvironment();
  * ```
  *
  * Mock API:
@@ -84,7 +84,7 @@ function createMockEnvironment(options: {
   // Helper to compile a query with the given schema (or the test schema by
   // default).
   const compile = (text) => {
-    return RelayStaticTestUtils.generateAndCompile(text, schema || RelayTestSchema);
+    return RelayModernTestUtils.generateAndCompile(text, schema || RelayTestSchema);
   };
 
   // Helper to determine if a given query/variables pair is pending
@@ -131,7 +131,7 @@ function createMockEnvironment(options: {
   const storeInspector = new RelayRecordSourceInspector(source);
 
   // Mock instance
-  const environment = new RelayStaticEnvironment({
+  const environment = new RelayModernEnvironment({
     handlerProvider,
     network: RelayNetwork.create(fetch),
     store,

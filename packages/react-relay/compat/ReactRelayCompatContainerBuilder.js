@@ -16,11 +16,11 @@ const RelayContainerProxy = require('RelayContainerProxy');
 const RelayGraphQLTag = require('RelayGraphQLTag');
 const RelayPropTypes = require('RelayPropTypes');
 
-const forEachObject = require('forEachObject');
+const assertFragmentMap = require('assertFragmentMap');
 const invariant = require('invariant');
 const mapObject = require('mapObject');
 
-const {getComponentName} = require('RelayContainerUtils');
+const {getComponentName, getContainerName} = require('RelayContainerUtils');
 
 import type {ConcreteFragmentSpread} from 'ConcreteQuery';
 import type {GeneratedNodeMap} from 'ReactRelayTypes';
@@ -148,29 +148,6 @@ function buildCompatContainer<TBase: ReactClass<*>>(
   ComponentClass.__container__ = ContainerConstructor;
 
   return (ContainerConstructor: any);
-}
-
-/**
- * Fail fast if the user supplies invalid fragments as input.
- */
-function assertFragmentMap(
-  componentName: string,
-  fragments: GeneratedNodeMap,
-): void {
-  forEachObject(fragments, (fragment, key) => {
-    invariant(
-      typeof fragment === 'object' && fragment !== null,
-      'ReactRelayCompatContainerBuilder: Could not create container for `%s`. The ' +
-      'value of fragment `%s` was expected to be a fragment, got `%s` instead.',
-      componentName,
-      key,
-      fragment,
-    );
-  });
-}
-
-function getContainerName(Component: ReactClass<any>): string {
-  return 'Relay(' + getComponentName(Component) + ')';
 }
 
 module.exports = {injectDefaultVariablesProvider, buildCompatContainer};

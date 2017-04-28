@@ -16,8 +16,8 @@ jest
 const RelayAsyncLoader = require('RelayAsyncLoader');
 const RelayInMemoryRecordSource = require('RelayInMemoryRecordSource');
 const RelayStoreUtils = require('RelayStoreUtils');
-const RelayStaticTestUtils = require('RelayStaticTestUtils');
-const getRelayStaticHandleKey = require('getRelayStaticHandleKey');
+const RelayModernTestUtils = require('RelayModernTestUtils');
+const getRelayHandleKey = require('getRelayHandleKey');
 
 const {
   check,
@@ -26,7 +26,7 @@ const {
 const {ROOT_ID} = RelayStoreUtils;
 
 describe('RelayAsyncLoader', () => {
-  const {generateWithTransforms} = RelayStaticTestUtils;
+  const {generateWithTransforms} = RelayModernTestUtils;
 
   beforeEach(() => {
     jest.resetModules();
@@ -399,7 +399,7 @@ describe('RelayAsyncLoader', () => {
     });
 
     it('reads handle fields', () => {
-      const handleKey = getRelayStaticHandleKey('test', null, 'profilePicture');
+      const handleKey = getRelayHandleKey('test', null, 'profilePicture');
       const data = {
         '1': {
           __id: '1',

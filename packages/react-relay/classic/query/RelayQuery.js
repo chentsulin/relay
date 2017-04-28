@@ -120,11 +120,8 @@ type RootContext = {
  * replace the current mutable GraphQL nodes with an immutable query
  * representation. This class *must not* mutate the underlying `concreteNode`.
  * Instead, use an instance variable (see `clone()`).
- *
- * TODO (#6937314): RelayQueryNode support for toJSON/fromJSON
  */
 class RelayQueryNode {
-  constructor: Function; // for flow
   __calls__: ?Array<Call>;
   __children__: ?Array<RelayQueryNode>;
   __concreteNode__: any;

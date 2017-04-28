@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @providesModule RelayStaticGraphQLTag
+ * @providesModule RelayModernGraphQLTag
  * @flow
  */
 
@@ -35,7 +35,7 @@ export type GraphQLTaggedNode =
  * Runtime function to correspond to the `graphql` tagged template function.
  * All calls to this function should be transformed by the plugin.
  */
-function graphql(): GraphQLTaggedNode {
+function graphql(strings: Array<string>): GraphQLTaggedNode {
   invariant(
     false,
     'graphql: Unexpected invocation at runtime. Either the Babel transform ' +
@@ -47,7 +47,7 @@ function graphql(): GraphQLTaggedNode {
 /**
  * Variant of the `graphql` tag that enables experimental features.
  */
-graphql.experimental = function(): GraphQLTaggedNode {
+graphql.experimental = function(strings: Array<string>): GraphQLTaggedNode {
   invariant(
     false,
     'graphql.experimental: Unexpected invocation at runtime. Either the ' +
@@ -57,11 +57,7 @@ graphql.experimental = function(): GraphQLTaggedNode {
 };
 
 function getNode(taggedNode) {
-  const fn = typeof taggedNode === 'function'
-    ? taggedNode
-    // Note: this is a temporary "push safe" fix so existing built files
-    // referencing "node.relayExperimental" continue to work.
-    : (taggedNode.modern || (taggedNode: any).relayExperimental);
+  const fn = typeof taggedNode === 'function' ? taggedNode : taggedNode.modern;
   // Support for classic raw nodes (used in test mock)
   if (typeof fn !== 'function') {
     return (taggedNode: any);
@@ -75,7 +71,7 @@ function getFragment(
   const fragment = getNode(taggedNode);
   invariant(
     typeof fragment === 'object' && fragment !== null && fragment.kind === 'Fragment',
-    'RelayStaticGraphQLTag: Expected a fragment, got `%s`.',
+    'RelayModernGraphQLTag: Expected a fragment, got `%s`.',
     JSON.stringify(fragment),
   );
   return (fragment: any);
@@ -87,7 +83,7 @@ function getOperation(
   const operation = getNode(taggedNode);
   invariant(
     typeof operation === 'object' && operation !== null && operation.kind === 'Batch',
-    'RelayStaticGraphQLTag: Expected an operation, got `%s`.',
+    'RelayModernGraphQLTag: Expected an operation, got `%s`.',
     JSON.stringify(operation),
   );
   return (operation: any);

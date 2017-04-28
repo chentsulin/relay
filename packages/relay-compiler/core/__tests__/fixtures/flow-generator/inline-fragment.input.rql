@@ -1,6 +1,7 @@
 fragment InlineFragment on Node {
   id
   ... on Actor {
+    id
     name
   }
   ... on User {
@@ -32,5 +33,28 @@ fragment InlineFragmentConditionalID on Node {
   ... on Actor {
     id # nullable since it's conditional
     name
+  }
+}
+
+fragment InlineFragmentKitchenSink on Story {
+  actor {
+    id
+    profilePicture {
+      uri
+    }
+    ... on User {
+      id
+      name
+      ...SomeFragment
+      profilePicture {
+        width
+      }
+    }
+    ... on Page {
+      profilePicture {
+        uri
+        height
+      }
+    }
   }
 }

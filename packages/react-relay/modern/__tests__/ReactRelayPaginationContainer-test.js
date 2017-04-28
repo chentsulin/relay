@@ -21,9 +21,9 @@ const ReactRelayPaginationContainer = require('ReactRelayPaginationContainer');
 const ReactRelayPropTypes = require('ReactRelayPropTypes');
 const ReactTestRenderer = require('ReactTestRenderer');
 const RelayConnectionHandler = require('RelayConnectionHandler');
-const RelayStaticTestUtils = require('RelayStaticTestUtils');
+const RelayModernTestUtils = require('RelayModernTestUtils');
 const {ROOT_ID} = require('RelayStoreUtils');
-const {createMockEnvironment} = require('RelayStaticMockEnvironment');
+const {createMockEnvironment} = require('RelayModernMockEnvironment');
 const {END_CURSOR, HAS_NEXT_PAGE, PAGE_INFO} = require('RelayConnectionInterface');
 
 describe('ReactRelayPaginationContainer', () => {
@@ -80,7 +80,7 @@ describe('ReactRelayPaginationContainer', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    jest.addMatchers(RelayStaticTestUtils.matchers);
+    jest.addMatchers(RelayModernTestUtils.matchers);
 
     environment = createMockEnvironment({
       handlerProvider: () => RelayConnectionHandler,
@@ -138,7 +138,9 @@ describe('ReactRelayPaginationContainer', () => {
     TestComponent.displayName = 'TestComponent';
     TestContainer = ReactRelayPaginationContainer.createContainer(
       TestComponent,
-      {user: UserFragment},
+      {
+        user: () => UserFragment,
+      },
       {
         direction: 'forward',
         getConnectionFromProps,
@@ -217,9 +219,9 @@ describe('ReactRelayPaginationContainer', () => {
         foo: null,
       });
     }).toFailInvariant(
-      'ReactRelayCompatContainerBuilder: Could not create container for ' +
-      '`TestComponent`. The value of fragment `foo` was expected to be a ' +
-      'fragment, got `null` instead.'
+      'Could not create Relay Container for `TestComponent`. ' +
+      'The value of fragment `foo` was expected to be a fragment, ' +
+      'got `null` instead.'
     );
   });
 

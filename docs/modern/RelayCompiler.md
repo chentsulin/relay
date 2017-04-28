@@ -29,7 +29,13 @@ The Relay Compiler is responsible for generating code as part of a build step wh
 
 ## Setting up Relay Compiler
 
-First, install the compiler (typically as a `devDependency`):
+First, you need [watchman][https://facebook.github.io/watchman] installed:
+
+```sh
+brew install watchman
+```
+
+Next, install the compiler (typically as a `devDependency`):
 
 ```sh
 yarn add --dev relay-compiler@dev
@@ -63,7 +69,7 @@ Then after making edits to your application files, run `relay-compiler --src ./s
 
 ## GraphQL Schema
 
-To use the Relay Compiler, you need a GraphQL schema file, describing your GraphQL server's API. Typically these files are local representations of a server source of truth and are not edited directly. For example, we might have a `schema.graphql` like:
+To use the Relay Compiler, you need either a .graphql or .json GraphQL schema file, describing your GraphQL server's API. Typically these files are local representations of a server source of truth and are not edited directly. For example, we might have a `schema.graphql` like:
 
 ```graphql
 schema {
@@ -81,7 +87,7 @@ type Word {
 
 type WordDefinition {
   text: String
-  image: Url
+  image: String
 }
 ```
 
@@ -121,7 +127,7 @@ For example, given the two files:
   const DictionaryQuery = graphql`
     query DictionaryQuery {
       dictionary {
-        ...Dictionary_word
+        ...DictionaryComponent_word
       }
     }
   `

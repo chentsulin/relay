@@ -31,7 +31,7 @@ Relay.QL`
 
 ## 用法
 
-現在要上手最簡單的方式是使用 [Relay Starter Kit](https://github.com/relayjs/relay-starter-kit) - 這裡面包含一個範例 schema 檔並設定好了 [`babel-relay-plugin`](https://www.npmjs.com/package/babel-relay-plugin) npm 模組來 transpile queries。
+現在要上手最簡單的方式是使用 [Relay Starter Kit](https://github.com/relayjs/relay-starter-kit) - 這裡面包含一個範例 schema 檔並設定好了 [`babel-relay-plugin`](https://www.npmjs.com/package/babel-relay-plugin) npm 模組來編譯 query。
 
 ### 設定 React Native
 
@@ -39,7 +39,6 @@ Relay.QL`
 
 ```javascript
 {
-  "passPerPreset": true,
   "plugins": [
     "./plugins/babelRelayPlugin"
   ],

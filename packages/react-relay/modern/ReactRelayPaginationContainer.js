@@ -17,13 +17,13 @@ const RelayProfiler = require('RelayProfiler');
 const RelayPropTypes = require('RelayPropTypes');
 
 const areEqual = require('areEqual');
+const buildReactRelayContainer = require('buildReactRelayContainer');
 const invariant = require('invariant');
 const isRelayContext = require('isRelayContext');
 const isScalarAndEqual = require('isScalarAndEqual');
 const nullthrows = require('nullthrows');
 const warning = require('warning');
 
-const {buildCompatContainer} = require('ReactRelayCompatContainerBuilder');
 const {profileContainer} = require('ReactRelayContainerProfiler');
 const {
   EDGES,
@@ -46,11 +46,8 @@ import type {
 } from 'RelayCombinedEnvironmentTypes';
 import type {ConnectionMetadata} from 'RelayConnectionHandler';
 import type {PageInfo} from 'RelayConnectionInterface';
-import type {GraphQLTaggedNode} from 'RelayStaticGraphQLTag';
-import type {
-  FragmentMap,
-  RelayContext,
-} from 'RelayStoreTypes';
+import type {GraphQLTaggedNode} from 'RelayModernGraphQLTag';
+import type {FragmentMap, RelayContext} from 'RelayStoreTypes';
 import type {Variables} from 'RelayTypes';
 
 type ContainerState = {
@@ -86,12 +83,12 @@ export type ConnectionData = {
 };
 
 /**
- * Extends the functionality of RelayCompatContainer by providing a mechanism
+ * Extends the functionality of RelayFragmentContainer by providing a mechanism
  * to load more data from a connection.
  *
  * # Configuring a PaginationContainer
  *
- * PaginationContainer accepts the standard CompatContainer arguments and an
+ * PaginationContainer accepts the standard FragmentContainer arguments and an
  * additional `connectionConfig` argument:
  *
  * - `Component`: the component to be wrapped/rendered.
@@ -286,11 +283,11 @@ function findConnectionMetadata(fragments): ReactConnectionMetadata {
   return foundConnectionMetadata || ({}: any);
 }
 
-function createContainerWithFragments<TDefaultProps, TProps>(
-  Component: Class<React.Component<TDefaultProps, TProps, *>> | ReactClass<TProps>,
+function createContainerWithFragments<TBase: ReactClass<*>>(
+  Component: TBase,
   fragments: FragmentMap,
   connectionConfig: ConnectionConfig,
-): Class<React.Component<TDefaultProps, TProps, *>> {
+): TBase {
   const ComponentClass = getReactComponent(Component);
   const componentName = getComponentName(Component);
   const containerName = `Relay(${componentName})`;
@@ -707,16 +704,15 @@ function createContainer<TBase: ReactClass<*>>(
   fragmentSpec: GraphQLTaggedNode | GeneratedNodeMap,
   connectionConfig: ConnectionConfig,
 ): TBase {
-  return buildCompatContainer(
+  return buildReactRelayContainer(
     Component,
-    (fragmentSpec: any),
-    (ComponentClass, fragments) => {
-      return createContainerWithFragments(ComponentClass, fragments, connectionConfig);
-    },
+    fragmentSpec,
+    (ComponentClass, fragments) => createContainerWithFragments(
+      ComponentClass,
+      fragments,
+      connectionConfig,
+    ),
   );
 }
 
-module.exports = {
-  createContainer,
-  createContainerWithFragments,
-};
+module.exports = {createContainer, createContainerWithFragments};

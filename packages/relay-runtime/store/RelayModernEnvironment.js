@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @providesModule RelayStaticEnvironment
+ * @providesModule RelayModernEnvironment
  * @flow
  */
 
@@ -44,7 +44,7 @@ export type EnvironmentConfig = {
   store: Store,
 };
 
-class RelayStaticEnvironment implements Environment {
+class RelayModernEnvironment implements Environment {
   _network: Network;
   _publishQueue: RelayPublishQueue;
   _store: Store;
@@ -65,13 +65,18 @@ class RelayStaticEnvironment implements Environment {
   }
 
   applyUpdate(updater: StoreUpdater): Disposable {
+    const optimisticUpdate = {storeUpdater: updater};
     const dispose = () => {
-      this._publishQueue.revertUpdate(updater);
+      this._publishQueue.revertUpdate(optimisticUpdate);
       this._publishQueue.run();
     };
-    this._publishQueue.applyUpdate(updater);
+    this._publishQueue.applyUpdate(optimisticUpdate);
     this._publishQueue.run();
     return {dispose};
+  }
+
+  check(selector: Selector): boolean {
+    return this._store.check(selector);
   }
 
   commitPayload(
@@ -171,6 +176,7 @@ class RelayStaticEnvironment implements Environment {
     onCompleted,
     onError,
     operation,
+    optimisticResponse,
     optimisticUpdater,
     updater,
     uploadables,
@@ -178,20 +184,27 @@ class RelayStaticEnvironment implements Environment {
     onCompleted?: ?(errors: ?Array<PayloadError>) => void,
     onError?: ?(error: Error) => void,
     operation: OperationSelector,
-    optimisticUpdater?: ?StoreUpdater,
+    optimisticUpdater?: ?SelectorStoreUpdater,
+    optimisticResponse?: ?() => Object,
     updater?: ?SelectorStoreUpdater,
     uploadables?: UploadableMap,
   }): Disposable {
-    if (optimisticUpdater) {
-      this._publishQueue.applyUpdate(optimisticUpdater);
+    let hasOptimisticUpdate = optimisticResponse || optimisticUpdater;
+    const optimisticUpdate = {
+      selector: operation.fragment,
+      selectorStoreUpdater: optimisticUpdater,
+      response: optimisticResponse ? optimisticResponse() : null,
+    };
+    if (hasOptimisticUpdate) {
+      this._publishQueue.applyUpdate(optimisticUpdate);
       this._publishQueue.run();
     }
     let isDisposed = false;
     const dispose = () => {
-      if (optimisticUpdater) {
-        this._publishQueue.revertUpdate(optimisticUpdater);
+      if (hasOptimisticUpdate) {
+        this._publishQueue.revertUpdate(optimisticUpdate);
         this._publishQueue.run();
-        optimisticUpdater = null;
+        hasOptimisticUpdate = false;
       }
       isDisposed = true;
     };
@@ -204,8 +217,8 @@ class RelayStaticEnvironment implements Environment {
       if (isDisposed) {
         return;
       }
-      if (optimisticUpdater) {
-        this._publishQueue.revertUpdate(optimisticUpdater);
+      if (hasOptimisticUpdate) {
+        this._publishQueue.revertUpdate(optimisticUpdate);
       }
       this._publishQueue.commitPayload(operation.fragment, payload, updater);
       this._publishQueue.run();
@@ -214,8 +227,8 @@ class RelayStaticEnvironment implements Environment {
       if (isDisposed) {
         return;
       }
-      if (optimisticUpdater) {
-        this._publishQueue.revertUpdate(optimisticUpdater);
+      if (hasOptimisticUpdate) {
+        this._publishQueue.revertUpdate(optimisticUpdate);
       }
       this._publishQueue.run();
       onError && onError(error);
@@ -253,4 +266,9 @@ class RelayStaticEnvironment implements Environment {
   }
 }
 
-module.exports = RelayStaticEnvironment;
+// Add a sigil for detection by `isRelayModernEnvironment()` to avoid a
+// realm-specific instanceof check, and to aid in module tree-shaking to
+// avoid requiring all of RelayRuntime just to detect its environment.
+(RelayModernEnvironment: any).prototype['@@RelayModernEnvironment'] = true;
+
+module.exports = RelayModernEnvironment;

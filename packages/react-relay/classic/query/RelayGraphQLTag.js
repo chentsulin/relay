@@ -20,7 +20,7 @@ import type {
   ConcreteFragmentDefinition,
   ConcreteOperationDefinition,
 } from 'ConcreteQuery';
-import type {GraphQLTaggedNode} from 'RelayStaticGraphQLTag';
+import type {GraphQLTaggedNode} from 'RelayModernGraphQLTag';
 
 /**
  * Runtime function to correspond to the `graphql` tagged template function.
@@ -58,9 +58,7 @@ const CLASSIC_NODE = '__classic_node__';
 function getClassicNode(taggedNode) {
   let concreteNode = (taggedNode: any)[CLASSIC_NODE];
   if (concreteNode == null) {
-    // Note: this is a temporary "push safe" fix so existing built files
-    // referencing "node.relay" continue to work.
-    const fn = (taggedNode.classic || (taggedNode: any).relay);
+    const fn = taggedNode.classic;
     invariant(
       typeof fn === 'function',
       'RelayGraphQLTag: Expected a graphql literal (in compat mode), got `%s`.',
@@ -79,7 +77,10 @@ function getClassicFragment(
   const fragment = QueryBuilder.getFragmentDefinition(concreteNode);
   invariant(
     fragment,
-    'RelayGraphQLTag: Expected a fragment, got `%s`.',
+    'RelayGraphQLTag: Expected a fragment, got `%s`.\n' +
+    'The "relay" Babel plugin must enable "compat" mode to be used with ' +
+    '"react-relay/compat" or "react-relay/classic".\n' +
+    'See: https://facebook.github.io/relay/docs/babel-plugin-relay.html',
     concreteNode,
   );
   return fragment;
@@ -92,7 +93,10 @@ function getClassicOperation(
   const operation = QueryBuilder.getOperationDefinition(concreteNode);
   invariant(
     operation,
-    'RelayGraphQLTag: Expected an operation, got `%s`.',
+    'RelayGraphQLTag: Expected an operation, got `%s`.\n' +
+    'The "relay" Babel plugin must enable "compat" mode to be used with ' +
+    '"react-relay/compat" or "react-relay/classic".\n' +
+    'See: https://facebook.github.io/relay/docs/babel-plugin-relay.html',
     concreteNode,
   );
   return operation;

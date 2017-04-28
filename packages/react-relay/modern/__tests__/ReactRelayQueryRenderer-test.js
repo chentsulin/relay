@@ -16,7 +16,7 @@ const React = require('React');
 const ReactRelayPropTypes = require('ReactRelayPropTypes');
 const ReactRelayQueryRenderer = require('ReactRelayQueryRenderer');
 const ReactTestRenderer = require('ReactTestRenderer');
-const {createMockEnvironment} = require('RelayStaticMockEnvironment');
+const {createMockEnvironment} = require('RelayModernMockEnvironment');
 
 const simpleClone = require('simpleClone');
 
@@ -637,7 +637,7 @@ describe('ReactRelayQueryRenderer', () => {
             __id: '4',
           },
         },
-        retry: null,
+        retry: jasmine.any(Function),
       }).toBeRendered();
     });
 

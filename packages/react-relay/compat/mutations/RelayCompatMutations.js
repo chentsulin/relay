@@ -16,21 +16,21 @@ const invariant = require('invariant');
 
 const {
   getRelayClassicEnvironment,
-  getRelayStaticEnvironment,
+  getRelayModernEnvironment,
 } = require('RelayCompatEnvironment');
 const {commitMutation} = require('RelayRuntime');
 
 import type {Disposable} from 'RelayCombinedEnvironmentTypes';
 import type {CompatEnvironment} from 'RelayCompatTypes';
 import type {Environment as ClassicEnvironment} from 'RelayEnvironmentTypes';
-import type {MutationConfig} from 'commitRelayStaticMutation';
+import type {MutationConfig} from 'commitRelayModernMutation';
 
 const RelayCompatMutations = {
   commitUpdate(
     environment: CompatEnvironment,
     config: MutationConfig
   ): Disposable {
-    const relayStaticEnvironment = getRelayStaticEnvironment(environment);
+    const relayStaticEnvironment = getRelayModernEnvironment(environment);
     if (relayStaticEnvironment) {
       return commitMutation(relayStaticEnvironment, config);
     } else {

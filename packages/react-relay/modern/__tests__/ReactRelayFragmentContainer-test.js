@@ -18,9 +18,9 @@ const React = require('React');
 const ReactRelayFragmentContainer = require('ReactRelayFragmentContainer');
 const ReactRelayPropTypes = require('ReactRelayPropTypes');
 const ReactTestRenderer = require('ReactTestRenderer');
-const RelayStaticTestUtils = require('RelayStaticTestUtils');
+const RelayModernTestUtils = require('RelayModernTestUtils');
 const {ROOT_ID} = require('RelayStoreUtils');
-const {createMockEnvironment} = require('RelayStaticMockEnvironment');
+const {createMockEnvironment} = require('RelayModernMockEnvironment');
 
 describe('ReactRelayFragmentContainer', () => {
   let TestComponent;
@@ -71,7 +71,7 @@ describe('ReactRelayFragmentContainer', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    jasmine.addMatchers(RelayStaticTestUtils.matchers);
+    jasmine.addMatchers(RelayModernTestUtils.matchers);
 
     environment = createMockEnvironment();
     ({UserFragment, UserQuery} = environment.mock.compile(`
@@ -91,7 +91,7 @@ describe('ReactRelayFragmentContainer', () => {
 
     render = jest.fn(() => <div />);
     spec = {
-      user: UserFragment,
+      user: () => UserFragment,
     };
     variables = {rootVariable: 'root'};
     TestComponent = render;
@@ -133,16 +133,33 @@ describe('ReactRelayFragmentContainer', () => {
     expect(TestContainer.displayName).toBe('Relay(TestComponent)');
   });
 
+  it('throws for invalid fragment set', () => {
+    expect(() => {
+      ReactRelayFragmentContainer.createContainer(TestComponent, 'a string');
+    }).toFailInvariant(
+      'Could not create Relay Container for `TestComponent`. ' +
+      'Expected a set of GraphQL fragments, got `a string` instead.'
+    );
+  });
+
   it('throws for invalid fragments', () => {
     expect(() => {
       ReactRelayFragmentContainer.createContainer(TestComponent, {
         foo: null,
       });
     }).toFailInvariant(
-      'ReactRelayCompatContainerBuilder: Could not create container for ' +
-      '`TestComponent`. The value of fragment `foo` was expected to be a ' +
-      'fragment, got `null` instead.'
+      'Could not create Relay Container for `TestComponent`. ' +
+      'The value of fragment `foo` was expected to be a fragment, ' +
+      'got `null` instead.'
     );
+  });
+
+  it('does not throw when fragments are in modern mode', () => {
+    expect(() => {
+      ReactRelayFragmentContainer.createContainer(TestComponent, {
+        foo: () => ({ kind: 'Fragment' }),
+      });
+    }).not.toThrow();
   });
 
   it('passes non-fragment props to the component', () => {

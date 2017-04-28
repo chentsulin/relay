@@ -18,8 +18,8 @@ const React = require('React');
 const ReactRelayRefetchContainer = require('ReactRelayRefetchContainer');
 const ReactRelayPropTypes = require('ReactRelayPropTypes');
 const ReactTestRenderer = require('ReactTestRenderer');
-const {createMockEnvironment} = require('RelayStaticMockEnvironment');
-const RelayStaticTestUtils = require('RelayStaticTestUtils');
+const {createMockEnvironment} = require('RelayModernMockEnvironment');
+const RelayModernTestUtils = require('RelayModernTestUtils');
 
 const {ROOT_ID} = require('RelayStoreUtils');
 
@@ -72,7 +72,7 @@ describe('ReactRelayRefetchContainer', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    jest.addMatchers(RelayStaticTestUtils.matchers);
+    jest.addMatchers(RelayModernTestUtils.matchers);
 
     environment = createMockEnvironment();
     ({UserFragment, UserQuery} = environment.mock.compile(`
@@ -101,7 +101,9 @@ describe('ReactRelayRefetchContainer', () => {
     TestComponent.displayName = 'TestComponent';
     TestContainer = ReactRelayRefetchContainer.createContainer(
       TestComponent,
-      {user: UserFragment},
+      {
+        user: () => UserFragment,
+      },
       UserQuery,
     );
 
@@ -146,9 +148,9 @@ describe('ReactRelayRefetchContainer', () => {
         foo: null,
       });
     }).toFailInvariant(
-      'ReactRelayCompatContainerBuilder: Could not create container for ' +
-      '`TestComponent`. The value of fragment `foo` was expected to be a ' +
-      'fragment, got `null` instead.'
+      'Could not create Relay Container for `TestComponent`. ' +
+      'The value of fragment `foo` was expected to be a fragment, ' +
+      'got `null` instead.'
     );
   });
 
