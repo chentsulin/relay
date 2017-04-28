@@ -7,95 +7,95 @@ permalink: docs/relay-modern.html
 next: new-in-relay-modern
 ---
 
-Relay Modern is a new version of Relay designed from the ground up to be easier to use, more extensible and, most of all, able to improve performance on mobile devices. Relay Modern accomplishes this with static queries and ahead-of-time code generation.
+Relay Modern 是新版的 Relay，重從頭開始設計讓他更容易使用、更容易擴展，而最重要的是，能夠提高在行動裝置上的效能。Relay Modern 透過靜態查詢以及提前的程式碼生成來實現這一點。
 
-## Getting Started
+## 入門
 
-### Upgrade to react-relay v1.0.0
+### 升級到 react-relay v1.0.0
 
-Relay v1.0 introduces the Relay Modern API. To get the release-candidate for Relay v1.0, install the `@dev` build:
+Relay v1.0 導入了 Relay Modern API。要取得 Relay v1.0 的 release-candidate，必須安裝 `@dev` 的 build：
 
 ```sh
 yarn add react-relay@dev
 ```
 
-When upgrading an existing Relay app, replace all `require('react-relay')` with `require('react-relay/classic')` to continue to import the Relay Classic API.
+在升級既有的 Relay 應用程式時，把全部的 `require('react-relay')` 改成 `require('react-relay/classic')` 就能繼續的載入 Relay Classic API。
 
-### Set up babel-plugin-relay
+### 設定 babel-plugin-relay
 
-Relay Modern requires a Babel plugin to convert GraphQL to runtime artifacts:
+Relay Modern 需要一個 Babel plugin 來把 GraphQL 轉換執行期產物：
 
 ```sh
 yarn add --dev babel-plugin-relay@dev
 ```
 
-Add `"relay"` to the list of plugins your .babelrc file. See [the docs](./babel-plugin-relay.html) if upgrading an existing Relay app.
+把 `"relay"` 加到 .babelrc 檔案的 plugins 清單。如果你是在升級既有的 Relay 應用程式，請看[這份文件](./babel-plugin-relay.html)。
 
-### Set up relay-compiler
+### 設定 relay-compiler
 
-Relay Modern's ahead-of-time compilation requires the new Relay Compiler:
+Relay Modern 的預編譯需要新的 Relay Compiler：
 
 ```sh
 yarn add --dev relay-compiler@dev
 ```
 
-Run the Relay Compiler after making changes to any GraphQL in your Relay application. It may be helpful to add it as a `yarn script`. Add an entry to `"scripts"` in your package.json file.
+在變更任何在你的 Relay 應用程式的 GraphQL 之後執行 Relay Compiler。把它寫成 `yarn script` 可能會有點幫助。在你的 package.json 檔案加一個進入點到 `"scripts"`。
 
 ```js
 "relay": "relay-compiler --src ./src --schema path/schema.graphql"
 ```
 
-Then after making edits to your application files, just run `yarn run relay` to generate new files, or `yarn run relay -- --watch` to run the compiler as a long-lived process which automatically generates new files whenever you save.
+在編輯應用程式的檔案後，接著執行 `yarn run relay` 來產生新的檔案，或是執行 `yarn run relay -- --watch` 來在持續運行的 process 上跑 compiler，可以在存檔時自動地產生新檔案。
 
 
-## Migrating to Relay Modern
+## 轉換到 Relay Modern
 
-Migrating a Relay Classic app to Relay Modern doesn't require rewriting from
-scratch. Instead, you can convert one component at a time to the Relay Modern API while
-continuing to have a working app. Once all components have been converted, the
-smaller and faster Relay Modern runtime can be used.
+從 Relay Classic 應用程式轉換到 Relay Modern 不需要從頭開始重寫。
+你可以一次轉換一個 component 到 Relay Modern API 而持續的擁有一個可以運作的應用程式。
+一但所有的 component 都被轉換完畢，就可以使用更小更快的
+Relay Modern 執行期。
 
-During this migration, use the [Relay Compat](./relay-compat.html) tools and APIs to work with both Relay Classic and Relay Modern.
+在這個轉換的期間，可以使用 [Relay Compat](./relay-compat.html) 工具和 API 來同時支援 Relay Classic 和 Relay Modern。
 
 
 ## Idea
 
-[React](https://facebook.github.io/react/) allows views to be defined as components where every component is responsible for rendering a part of the UI. Composing other components is how to build complex UIs. Each React component doesn't need to know the inner workings of the composed components.
+[React](https://facebook.github.io/react/) 讓 view 可以被定義成 component，每一個 component 負責 render 一部分的 UI。組合其他的 component 是建構複雜 UI 的方法。每一個 React component 不需要知道被組裝的 component 的內部運作。
 
-Relay couples React with GraphQL and develops the idea of encapsulation further. It allows components to specify what data they need and the Relay framework provides the data. This makes the data needs of inner components opaque and allows composition of those needs. Thinking about what data an app needs becomes localized to the component making it easier to reason about what fields are needed or no longer needed.
+Relay 結合了 React 以及 GraphQL，並更近一步的發展了封裝的概念。它讓 component 去指定它們需要什麼資料而交給 Relay framework 來提供資料。這讓內部 component 的資料需求不會暴露並允許合成這些需求。試想應用程式需要的資料被放到 component 的旁邊，應該讓它更容易搞清楚什麼欄位是需要的而什麼欄位已經不再需要。
 
-## Terminology
+## 術語
 
 ### Container
 
-Relay Modern containers combine standard React components with a description of their data requirements, expressed as one or more GraphQL fragments. Each container is itself a standard React component that can be rendered using the standard React API (e.g. `<YourComponent prop={...} />`). When rendered, a container will read the data for its fragment from the Relay cache. As the fragment data changes - for example due to a mutation, subscription, or updated query response - the container will automatically re-render the component.
+Relay Modern container 結合一般的 React component 以及它們資料需求的描述，這被描述成一個以上的 GraphQL fragment。每個 container 自身都是一般 React component 所以可以用標準的 React API (例如：`<YourComponent prop={...} />`) 來 render。在 render 之後，container 會從 Relay 快取中讀取資料給它的 fragment。每當 fragment 的資料改變 - 例如因為 mutation、subscription、或更新過後的 query 回應 - container 會自動地重新 render 這個 component。
 
-[`createFragmentContainer`](./fragment-container.html) returns a basic container that cannot fetch additional data beyond what is declared in its fragment(s). Relay Modern also provides more advanced containers for dynamic use cases (which were previously handled in Relay Classic via `setVariables`):
+[`createFragmentContainer`](./fragment-container.html) 回傳一個基本的 container，它不能抓取沒有宣告在它的  fragment 的資料。不過 Relay Modern 也有提供更進階的 container 來滿足動態的使用案例 (先前在 Relay Classic 是藉由 `setVariables` 處理)：
 
-#### Refetching Data (aka "See More")
+#### Refetching Data (又稱作「See More」)
 
-[`createRefetchContainer`](./refetch-container.html) is a variation of `createFragmentContainer` that addresses the "see more" use case, where a subset of data is rendered initially and then additional data is fetched on demand. Refetch containers initially fetch data for their fragments just like fragment containers, but also offer a `refetch()` method by which additional data can be fetched, or the container can be re-rendered to read data using different variables.
+[`createRefetchContainer`](./refetch-container.html) 是一個 `createFragmentContainer` 的變種，它解決了「see more」的使用案例，一開始的時候只 render 一部分的資料，然後其餘的資料會依需求去抓取。Refetch container 一開始會像 fragment container 一樣抓資料給它們的 fragment，不過它也提供一個 `refetch()` 方法，藉由它可以抓取額外的資料，或是使用不同的變數讓 container 可以被重新 render 以讀取資料。
 
 ### Pagination Container
 
-This is a specialization of the general-purpose refetch container that is tailored for the common scenario of paginating through a collection of items by fetching successively more pages of data. See [`createPaginationContainer`](./pagination-container.html) for details.
+它是泛用的 refetch container 的一種特化，為了藉由接續地抓取更多頁的資料來分頁瀏覽一堆東西而專門設計，這是個常見的情境。查看 [`createPaginationContainer`](./pagination-container.html) 以了解細節。
 
 ### Query Renderer
 
-[`QueryRenderer`](./query-renderer.html) manages the execution of the GraphQL query. It sends the query with given variables, parses the response, saves the data to the internal cache, and finally renders the view.
+[`QueryRenderer`](./query-renderer.html) 管理 GraphQL query 的執行。它傳送 query 以及給定的變數，解析回應，把資料儲存到內部快取，並在最後 renders view。
 
 ### Relay Environment
 
-An instance of a [Relay Environment](./environment.html) encapsulates an in-memory cache of GraphQL data and a network layer that provides access to your GraphQL server. The Environment object is typically not used by developers directly, instead it is passed to each [`QueryRenderer`](./query-renderer.html), which uses the environment to access, modify, and fetch data. Within a container, the current environment can be accessed via `this.props.relay.environment`. This is most commonly used to [execute a mutation](./mutations.html).
+[Relay Environment](./environment.html) 的實例封裝了一份 GraphQL 資料的記憶體內快取，以及一個提供存取 GraphQL 伺服器 的 network layer。這個 Environment 物件通常不會直接被開發者使用，而它會被傳遞到每一個 [`QueryRenderer`](./query-renderer.html) 去，用來存取、調整，並抓取資料。在 container 裡面，可以藉由 `this.props.relay.environment` 存取當下的 environment。這最常被用來[執行 mutation](./mutations.html)。
 
 ### Network layer
 
-Applications must supply a [Network Layer](./network-layer.html) when creating an instance of a Relay Environment. The network layer is an object confirming to a simple interface through which Relay can execute queries, mutations, and subscriptions. Essentially, this object teaches Relay how to talk to your GraphQL server.
+在建立 Relay Environment 的實例時，應用程式必須提供一個 [Network Layer](./network-layer.html)。這個 network layer 是一個符合簡單介面的物件，透過它 Relay 就可以執行 query、mutation、以及 subscription。基本上，這個物件告訴 Relay 要如何跟 GraphQL 伺服器溝通。
 
 ## Workflow
 
-One of the big ideas behind the new API is that execution can be made a lot more efficient by moving work ahead-of-time: from the runtime of the app to the build-time. As such, changes to GraphQL fragments require a build step to regenerate a set of artifacts. More on [the Relay Compiler](./relay-compiler.html).
+新 API 背後的重要概念之一是，可以藉由預先處理讓執行變得更有效率得多：把工作從應用程式的執行期移到編譯期。因此，改變 GraphQL fragment 之後需要一個建制步驟來重新產生一組的產物。更多資訊請參考 [Relay Compiler](./relay-compiler.html)。
 
-## Comparing Relay Classic and Relay Modern
+## 比較 Relay Classic 與 Relay Modern
 
-Relay Modern enables a variety of new features. Some are available via the Compat API, while others require upgrading fully to the Modern runtime. See [what's new in Relay Modern](./new-in-relay-modern.html) for more details.
+Relay Modern 實現了許多的新功能。有一些可以藉由 Compat API 取用，而其他則需要升級到完整的 Modern 執行期。查看 [Relay Modern 有什麼新東西](./new-in-relay-modern.html) 來了解細節。
