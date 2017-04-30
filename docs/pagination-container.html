@@ -102,6 +102,10 @@ module<span class="token punctuation">.</span>exports <span class="token operato
     `<span class="token punctuation">,</span>
   <span class="token punctuation">}</span><span class="token punctuation">,</span>
   <span class="token punctuation">{</span>
+    direction<span class="token punctuation">:</span> <span class="token string">&#x27;forward&#x27;</span><span class="token punctuation">,</span>
+    <span class="token function">getConnectionFromProps</span><span class="token punctuation">(</span>props<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">return</span> props<span class="token punctuation">.</span>user <span class="token operator">&amp;&amp;</span> props<span class="token punctuation">.</span>user<span class="token punctuation">.</span>feed<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
     <span class="token function">getFragmentVariables</span><span class="token punctuation">(</span>prevVars<span class="token punctuation">,</span> totalCount<span class="token punctuation">)</span> <span class="token punctuation">{</span>
       <span class="token keyword">return</span> <span class="token punctuation">{</span>
         <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>prevVars<span class="token punctuation">,</span>
