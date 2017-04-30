@@ -7,13 +7,13 @@ permalink: docs/relay-environment.html
 next: network-layer
 ---
 
-The Relay "Environment" bundles together the configuration, cache storage, and network-handling that Relay needs in order to operate.
+Relay 「Environment」把 Relay 運作所需要的設定、快取儲存庫、還有網路處理結合在一起。
 
-Most applications will create a single Environment instance and use it throughout. In specific situations, however, you may want to create multiple environments for different purposes. For example, you may create a new environment instance whenever the user logs in or out in order to prevent data for different users being cached together. Similarly, a server rendered application may create a new environment instance per request, so that each request gets its own cache and user data does not overlap. Alternatively, you might have multiple products or features within a larger application, and you want each one to have product-specific network-handling or caching.
+大部分應用程式會建立一個 Environment 實例並從頭到尾使用它。不過在一些特定的狀況下，你可以會想要為了不同的目的建立多個 environment。例如，你可以在任何時候使用者登入登出時建立一個新的 environment 實例，來防止不同使用者的資料被快取在一起。同樣地，一個被伺服器 render 的應用程式可以針對每個請求建立新的 environment 實例，這樣的話每個請求都能有自己的快取，使用者的資料就不會互相覆蓋。或者，你可能有許多的產品或功能在一個大型應用程式中，而你希望每一個可以有針對特定產品的網路處理或是快取。
 
-## A simple example
+## 簡單範例
 
-To create an environment instance in Relay Modern, use the `RelayModernEnvironment` class:
+要在 Relay Modern 中建立一個 environment 實例，只要使用 `RelayModernEnvironment` 類別：
 
 ```javascript
 const {
@@ -25,25 +25,25 @@ const {
 
 const source = new RecordSource();
 const store = new Store(source);
-const network = Network.create(/*...*/); // see note below
+const network = Network.create(/*...*/); // 看下面的註記
 const handlerProvider = null;
 
 const environment = new Environment({
-  handlerProvider, // Can omit.
+  handlerProvider, // 可以忽略。
   network,
   store,
 });
 ```
 
-For more details on creating a Network, see the [NetworkLayer guide](./network-layer.html).
+關於建立 Network 的細節，請查看 [NetworkLayer 指南](./network-layer.html)。
 
-Once you have an environment, you can pass it in to your [`QueryRenderer`](./query-renderer.html) instance, or into mutations via the `commitUpdate` function (see "[Mutations](./mutations.html)").
+一旦你有了一個 environment 了，你就可以把它傳進你的 [`QueryRenderer`](./query-renderer.html) 實例，或是藉由 `commitUpdate` 函數 (查看「[Mutations](./mutations.html)」) 傳進 mutation。
 
-## Adding a `handlerProvider`
+## 添加 `handlerProvider`
 
-The example above did not configure a `handlerProvider`, which means that a default one will be provided. Relay Modern comes with a couple of built-in handlers that augment the core with special functionality for handling connections (which is not a standard GraphQL feature, but a set of pagination conventions used at Facebook, specified in detail in the [Relay Cursor Connections Specification](./graphql-connections.html), and well-supported by Relay itself) and the `viewer` field (again, not a standard GraphQL schema feature, but one which has been conventionally used extensively within Facebook).
+上面的範例沒有設定 `handlerProvider`，這代表會使用預設所提供的。Relay Modern 配備了幾個內建的處理程序，它們透過特殊的功能還增強核心，例如：處理 connection (它不是標準的 GraphQL 功能，不過是 Facebook 使用的一組 pagination 慣例，被詳細的規範在 [Relay Cursor Connections Specification](./graphql-connections.html) 之中，並完善的被 Relay 支援) 以及 `viewer` 欄位 (它也不是標準的 GraphQL schema 功能，不過在 Facebook 中被廣泛地使用)。
 
-If you wish to provide your own `handlerProvider`, you can do so:
+如果你想要提供自己的 `handlerProvider`，你可以這樣做：
 
 ```javascript
 const {
@@ -53,7 +53,7 @@ const {
 
 function handlerProvider(handle) {
   switch (handle) {
-    // Augment (or remove from) this list:
+    // 增強 (或者移除) 這份清單：
     case 'connection': return ConnectionHandler;
     case 'viewer': return ViewerHandler;
   }

@@ -7,54 +7,54 @@ permalink: docs/api-cheatsheet.html
 next: guides-containers
 ---
 
-A reference for translating between the Relay Classic and Relay Modern APIs.
+這是 Relay Classic 跟 Relay Modern API 之間的轉換參考。
 
-### To add a new root for relay components
+### 添加一個新的 root relay component
 
-Classic: `<RelayRootContainer>`
+Classic：`<RelayRootContainer>`
 
-Modern: `<QueryRenderer>`
+Modern：`<QueryRenderer>`
 
-### To add a new relay container
+### 添加一個新的 relay container
 
-Classic: `Relay.createContainer`
+Classic：`Relay.createContainer`
 
-Modern: `createFragmentContainer`
+Modern：`createFragmentContainer`
 
-### To add a new relay container that has changing data requirements
+### 添加一個有變動資料需求的新 relay container
 
-Classic: `Relay.createContainer`
+Classic：`Relay.createContainer`
 
-Modern `createRefetchContainer`
+Modern：`createRefetchContainer`
 
-### To add a new paginating relay container
+### 添加一個新的 paginating relay container
 
-Classic: `Relay.createContainer`
+Classic：`Relay.createContainer`
 
-Modern: `createPaginationContainer`
+Modern：`createPaginationContainer`
 
-### To update a variable for my component
+### 為 component 更新一個變數
 
-Classic: `this.props.relay.setVariable({foo: bar}...)`
+Classic：`this.props.relay.setVariable({foo: bar}...)`
 
-Modern: `this.props.relay.refetch({foo: bar}...` in a Refetch Container
+Modern：在 Refetch Container 理 `this.props.relay.refetch({foo: bar}...`
 
-### To paginate through a connection
+### 透過 connection 來 paginate
 
-Classic: `this.props.relay.setVariable({count: prevCount + pageSize}...)`
+Classic：`this.props.relay.setVariable({count: prevCount + pageSize}...)`
 
-Modern `this.props.relay.loadMore(pageSize...)` in a Pagination Container
+Modern：在 Pagination Container 裡 `this.props.relay.loadMore(pageSize...)`
 
-### To force fetch a component
+### 強制 fetch component
 
-Classic: `this.props.relay.forceFetch()`
+Classic：`this.props.relay.forceFetch()`
 
-Modern: `this.props.relay.refetchConnection(...)` in a Pagination Container
+Modern：在 Pagination Container 裡 `this.props.relay.refetchConnection(...)`
 
-or: `this.props.relay.refetch({}, callback, {force: true})` in a Refetch Container
+或是：在 Refetch Container 裡 `this.props.relay.refetch({}, callback, {force: true})`
 
-### To commit a mutation
+### 提交一個 mutation
 
-Classic: `this.props.relay.commitUpdate(mutation...)`
+Classic：`this.props.relay.commitUpdate(mutation...)`
 
-Modern: `commitMutation(this.props.relay.environment, {mutation...})`
+Modern：`commitMutation(this.props.relay.environment, {mutation...})`
