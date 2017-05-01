@@ -83,7 +83,7 @@ return babel.transform(source, {
 import fs from 'fs';
 import path from 'path';
 import {graphql}  from 'graphql';
-import {introspectionQuery, printSchema} from 'graphql/utilities';
+import {introspectionQuery, printSchema} from 'graphql';
 
 // 假設你的 schema 放在 ../data/schema
 import {schema} from '../data/schema';
