@@ -9,15 +9,15 @@ next: query-renderer
 
 # Network Layer
 
-In order to know how to access your GraphQL server, Relay Modern requires developers to provide an object implementing the `NetworkLayer` interface when creating an instance of a [Relay Environment](relay-environment.html). The environment uses this network layer to execute queries, mutations, and (if your server supports them) subscriptions. This allows developers to use whatever transport (HTTP, WebSockets, etc) and authentication is most appropriate for their application, decoupling the environment from the particulars of each application's network configuration.
+為了要知道如何訪問你的 GraphQL 伺服器，Relay Modern 需要開發者在建立 [Relay Environment](relay-environment.html) 的實例時，提供一個實作 `NetworkLayer` 介面的物件。environment 使用這個  network layer 來執行 query、mutation、以及 subscription (如果你的伺服器支援它們)。這讓開發者可以使用任何的 transport (HTTP、WebSocket、等等) 以及最適合應用程式的身份認證，將 environment 與每個應用程式網路設定的細節分離。
 
-Currently the easiest way to create a network layer is via a helper from the `relay-runtime` package:
+現在建立 network layer 最簡單的方法是藉由 `relay-runtime` 套件裡的 helper：
 
 ```javascript
 const {Environment, Network} = require('relay-runtime');
 
-// Define a function that fetches the results of an operation (query/mutation/etc)
-// and returns its results as a Promise:
+// 定義一個函數來抓取一個操作 query/mutation/etc) 的結果
+// 並回傳它的結果作為一個 Promise：
 function fetchQuery(
   operation,
   variables,
@@ -27,11 +27,11 @@ function fetchQuery(
   return fetch('/graphql', {
     method: 'POST',
     headers: {
-      // Add authentication and other headers here
+      // 添加身份認證和其他的標頭
       'content-type': 'application/json'
     },
     body: JSON.stringify({
-      query: operation.text, // GraphQL text from input
+      query: operation.text, // 從輸入來的 GraphQL text
       variables,
     }),
   }).then(response => {
@@ -39,14 +39,14 @@ function fetchQuery(
   });
 }
 
-// Create a network layer from the fetch function
+// 從 fetch 函數建立 network layer
 const network = Network.create(fetchQuery);
 
-// Create an environment using this network:
+// 使用這個 network 建立 environment：
 const environment = new Environment({
-  ..., // other options
+  ..., // 其他選項
   network,
 });
 ```
 
-Note that this is a basic example to help you get started. This example could be extended with additional features such as request/response caching (enabled e.g. when `cacheConfig.force` is false) and uploading form data for mutations (the `uploadables` parameter).
+記得這是一個幫助你入門的基礎範例。這個範例可以透過額外的功能來擴充，例如：請求／回應快取 (例如，當 `cacheConfig.force` 是 false 的時候啟用它) 以及上傳 form data 給 mutation (`uploadables` 參數)。
