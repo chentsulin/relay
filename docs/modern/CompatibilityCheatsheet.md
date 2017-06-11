@@ -7,44 +7,44 @@ permalink: docs/compatibility-cheatsheet.html
 next: api-cheatsheet
 ---
 
-What works with what? Relay Compat (`'react-relay/compat'`) is the most flexible.
-Compat components and mutations can be used by everything. Compat components can also have any kind of children.
+什麼能跟什麼搭配一起運作？Relay Compat (`'react-relay/compat'`) 是最彈性的。
+Compat components 和 mutations 可以被任何人使用。Compat components 可以有任何一種的 children。
 
-However components using the Relay Modern API (`'react-relay'`) and the Relay Classic API (`'react-relay/classic'`) cannot be used with each other.
+不過使用 Relay Modern API (`'react-relay'`) 的 components 和使用 Relay Classic API (`'react-relay/classic'`) 的 components 不能互相使用。
 
-### Can RelayRootContainer use:
-
-|Classic Component|Compat Component|Modern Component|Classic Mutation|Compat Mutation|Modern Mutation
-|----|----|----|----|----|----|
-|Yes |Yes | No |Yes |Yes | No |
-
-### Can QueryRenderer using Classic Environment (`Store` in `react-relay/classic`) use:
+### RelayRootContainer 可以使用：
 
 |Classic Component|Compat Component|Modern Component|Classic Mutation|Compat Mutation|Modern Mutation
 |----|----|----|----|----|----|
 |Yes |Yes | No |Yes |Yes | No |
 
-### Can QueryRenderer using Modern Environment use:
+### 採用 Classic Environment (在 `react-relay/classic` 裡的 `Store`) 的 QueryRenderer 可以使用：
+
+|Classic Component|Compat Component|Modern Component|Classic Mutation|Compat Mutation|Modern Mutation
+|----|----|----|----|----|----|
+|Yes |Yes | No |Yes |Yes | No |
+
+### 採用 Modern Environment 的 QueryRenderer 可以使用：
 
 |Classic Component|Compat Component|Modern Component|Classic Mutation|Compat Mutation|Modern Mutation
 |----|----|----|----|----|----|
 | No |Yes |Yes | No |Yes |Yes |
 
-### Can React Modern Component use:
+### React Modern Component 可以使用：
 
 |Classic Component|Compat Component|Modern Component|Classic Mutation|Compat Mutation|Modern Mutation
 |----|----|----|----|----|----|
 | No |Yes |Yes | No |Yes |Yes |
 
-### Can React Compat Component use:
+### React Compat Component 可以使用：
 
 |Classic Component|Compat Component|Modern Component|Classic Mutation|Compat Mutation|Modern Mutation
 |----|----|----|-----|----|----|
 |Yes |Yes |Yes |Yes\*|Yes |Yes |
 
-\* Modern API doesn't support mutation fragments. You might have to inline the mutation fragments from your legacy mutation in the fragment of the component.
+\* Modern API 不支援 mutation fragment。你必須把舊有 mutation 的 fragments 寫到 component 的 fragment 裡。
 
-### Can React Classic Component use:
+### React Classic Component 可以使用：
 
 |Classic Component|Compat Component|Modern Component|Classic Mutation|Compat Mutation|Modern Mutation
 |----|----|----|----|----|----|
