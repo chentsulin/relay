@@ -7,9 +7,12 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
+
+jest.enableAutomock();
 
 require('configureForRelayOSS');
 
@@ -24,7 +27,8 @@ describe('transformClientPayload()', () => {
   const {getNode} = RelayTestUtils;
 
   it('transforms singular root payloads', () => {
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         node(id: "123") {
           friends(first: 1) {
@@ -42,7 +46,8 @@ describe('transformClientPayload()', () => {
           }
         }
       }
-    `);
+    `,
+    );
     const payload = {
       node: {
         id: '123',
@@ -84,7 +89,8 @@ describe('transformClientPayload()', () => {
   });
 
   it('transforms plural root payloads of arrays', () => {
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         nodes(ids: ["123", "456"]) {
           ... on User {
@@ -94,7 +100,8 @@ describe('transformClientPayload()', () => {
           }
         }
       }
-    `);
+    `,
+    );
     const payload = {
       123: {
         id: '123',
@@ -126,7 +133,8 @@ describe('transformClientPayload()', () => {
   });
 
   it('transforms plural root payloads of objects (OSS)', () => {
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         nodes(ids: ["123", "456"]) {
           ... on User {
@@ -136,7 +144,8 @@ describe('transformClientPayload()', () => {
           }
         }
       }
-    `);
+    `,
+    );
     const payload = {
       nodes: [
         {
@@ -172,7 +181,8 @@ describe('transformClientPayload()', () => {
   });
 
   it('transforms plural root payloads of objects (FB)', () => {
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         nodes(ids: ["123", "456"]) {
           ... on User {
@@ -182,7 +192,8 @@ describe('transformClientPayload()', () => {
           }
         }
       }
-    `);
+    `,
+    );
     const payload = {
       nodes: [
         {
@@ -219,16 +230,18 @@ describe('transformClientPayload()', () => {
 
   it('uses the query interface to construct keys', () => {
     const queryInterface = {
-      getKeyForClientData: jest.fn(
-        field => Array.from(field.getApplicationName()).reverse().join('')
+      getKeyForClientData: jest.fn(field =>
+        Array.from(field.getApplicationName()).reverse().join(''),
       ),
-      traverseChildren: jest.fn(
-        (node, callback, context) => node.getChildren().reverse().forEach(
-          (...args) => callback.apply(context, args)
-        )
+      traverseChildren: jest.fn((node, callback, context) =>
+        node
+          .getChildren()
+          .reverse()
+          .forEach((...args) => callback.apply(context, args)),
       ),
     };
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         me {
           id
@@ -238,7 +251,8 @@ describe('transformClientPayload()', () => {
           }
         }
       }
-    `);
+    `,
+    );
     const payload = {
       me: {
         erutciPeliforp: {
@@ -248,9 +262,7 @@ describe('transformClientPayload()', () => {
         di: '123',
       },
     };
-    expect(
-      transformRelayQueryPayload(query, payload, queryInterface)
-    ).toEqual({
+    expect(transformRelayQueryPayload(query, payload, queryInterface)).toEqual({
       me: {
         id: '123',
         name: 'ABC',
@@ -262,18 +274,19 @@ describe('transformClientPayload()', () => {
 
     // `getKeyForClientData` should be called on every field.
     expect(
-      queryInterface.getKeyForClientData.mock.calls.map(
-        ([field]) => field.getApplicationName()
-      )
+      queryInterface.getKeyForClientData.mock.calls.map(([field]) =>
+        field.getApplicationName(),
+      ),
     ).toEqual(['profilePicture', 'uri', 'name', 'id']);
 
     // `traverseChildren` should be called on every field with children.
     expect(
       queryInterface.traverseChildren.mock.calls.map(
-        ([node]) => node instanceof RelayQuery.Root ?
-          node.getFieldName() :
-          node.getApplicationName()
-      )
+        ([node]) =>
+          node instanceof RelayQuery.Root
+            ? node.getFieldName()
+            : node.getApplicationName(),
+      ),
     ).toEqual(['me', 'profilePicture']);
   });
 });

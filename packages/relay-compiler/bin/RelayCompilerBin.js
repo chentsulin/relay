@@ -8,15 +8,19 @@
  *
  * @flow
  * @providesModule RelayCompilerBin
+ * @format
  */
 
 'use strict';
+
+require('babel-polyfill');
 
 const RelayCodegenRunner = require('RelayCodegenRunner');
 const RelayFileIRParser = require('RelayFileIRParser');
 const RelayFileWriter = require('RelayFileWriter');
 const RelayIRTransforms = require('RelayIRTransforms');
 
+const formatGeneratedModule = require('formatGeneratedModule');
 const fs = require('fs');
 const path = require('path');
 const yargs = require('yargs');
@@ -33,16 +37,12 @@ const {
   fragmentTransforms,
   printTransforms,
   queryTransforms,
-  schemaTransforms,
+  schemaExtensions,
 } = RelayIRTransforms;
 
 import type {GraphQLSchema} from 'graphql';
 
-const SCRIPT_NAME = 'relay-compiler';
-
-function buildWatchExpression(options: {
-  extensions: Array<string>
-}) {
+function buildWatchExpression(options: {extensions: Array<string>}) {
   return [
     'allof',
     ['type', 'f'],
@@ -71,7 +71,8 @@ async function run(options: {
     throw new Error(`--source path does not exist: ${srcDir}.`);
   }
   if (options.watch && !hasWatchmanRootFile(srcDir)) {
-    throw new Error(`
+    throw new Error(
+      `
 --watch requires that the src directory have a valid watchman "root" file.
 
 Root files can include:
@@ -80,7 +81,8 @@ Root files can include:
 - A .watchmanconfig file
 
 Ensure that one such file exists in ${srcDir} or its parents.
-    `.trim());
+    `.trim(),
+    );
   }
 
   const parserConfigs = {
@@ -113,23 +115,24 @@ Ensure that one such file exists in ${srcDir} or its parents.
 }
 
 function getRelayFileWriter(baseDir: string) {
-  return (onlyValidate, schema, documents, baseDocuments) => new RelayFileWriter({
-    config: {
-      buildCommand: SCRIPT_NAME,
-      compilerTransforms: {
-        codegenTransforms,
-        fragmentTransforms,
-        printTransforms,
-        queryTransforms,
+  return (onlyValidate, schema, documents, baseDocuments) =>
+    new RelayFileWriter({
+      config: {
+        formatModule: formatGeneratedModule,
+        compilerTransforms: {
+          codegenTransforms,
+          fragmentTransforms,
+          printTransforms,
+          queryTransforms,
+        },
+        baseDir,
+        schemaExtensions,
       },
-      baseDir,
-      schemaTransforms,
-    },
-    onlyValidate,
-    schema,
-    baseDocuments,
-    documents,
-  });
+      onlyValidate,
+      schema,
+      baseDocuments,
+      documents,
+    });
 }
 
 function getSchema(schemaPath: string): GraphQLSchema {
@@ -141,18 +144,19 @@ function getSchema(schemaPath: string): GraphQLSchema {
     source = `
   directive @include(if: Boolean) on FRAGMENT | FIELD
   directive @skip(if: Boolean) on FRAGMENT | FIELD
-  directive @relay(pattern: Boolean, plural: Boolean) on FRAGMENT | FIELD
 
   ${source}
   `;
     return buildASTSchema(parse(source));
   } catch (error) {
-    throw new Error(`
+    throw new Error(
+      `
 Error loading schema. Expected the schema to be a .graphql or a .json
 file, describing your GraphQL server's API. Error detail:
 
 ${error.stack}
-    `.trim());
+    `.trim(),
+    );
   }
 }
 
@@ -161,9 +165,11 @@ ${error.stack}
 const WATCHMAN_ROOT_FILES = ['.git', '.hg', '.watchmanconfig'];
 function hasWatchmanRootFile(testPath) {
   while (path.dirname(testPath) !== testPath) {
-    if (WATCHMAN_ROOT_FILES.some(file => {
-      return fs.existsSync(path.join(testPath, file));
-    })) {
+    if (
+      WATCHMAN_ROOT_FILES.some(file => {
+        return fs.existsSync(path.join(testPath, file));
+      })
+    ) {
       return true;
     }
     testPath = path.dirname(testPath);
@@ -175,31 +181,31 @@ function hasWatchmanRootFile(testPath) {
 const argv = yargs
   .usage(
     'Create Relay generated files\n\n' +
-    '$0 --schema <path> --src <path> [--watch]')
+      '$0 --schema <path> --src <path> [--watch]',
+  )
   .options({
-    'schema': {
+    schema: {
       describe: 'Path to schema.graphql or schema.json',
       demandOption: true,
       type: 'string',
     },
-    'src': {
+    src: {
       describe: 'Root directory of application code',
       demandOption: true,
       type: 'string',
     },
-    'extensions': {
+    extensions: {
       array: true,
       default: ['js'],
       describe: 'File extensions to compile (--extensions js jsx)',
       type: 'string',
     },
-    'watch': {
+    watch: {
       describe: 'If specified, watches files and regenerates on changes',
       type: 'boolean',
     },
   })
-  .help()
-  .argv;
+  .help().argv;
 
 // Run script with args
 run(argv).catch(error => {

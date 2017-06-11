@@ -7,6 +7,8 @@ permalink: docs/guides-babel-plugin.html
 next: graphql-relay-specification
 ---
 
+*`babel-relay-plugin` 已經被棄用。請使用 [`babel-plugin-relay`](./babel-plugin-relay.html#using-with-relay-classic) 來搭配 Relay Classic。。*
+
 Relay 使用 **babel** plugin 來把 `Relay.QL` 字串模板轉換成
 描述每個 query 並從 GraphQL schema 載入資料的
 JavaScript 程式碼。

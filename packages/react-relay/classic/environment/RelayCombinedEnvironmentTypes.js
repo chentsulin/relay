@@ -8,14 +8,13 @@
  *
  * @providesModule RelayCombinedEnvironmentTypes
  * @flow
+ * @format
  */
 
 'use strict';
 
 import type {DataID} from 'RelayInternalTypes';
-import type {
-  Variables,
-} from 'RelayTypes';
+import type {Variables} from 'RelayTypes';
 
 /**
  * Settings for how a query response may be cached.
@@ -52,7 +51,7 @@ export type Record = {[key: string]: mixed};
 /**
  * A collection of records keyed by id.
  */
-export type RecordMap = {[dataID: DataID]: ?Record};
+export type RecordMap<T> = {[dataID: DataID]: ?T};
 
 /**
  * A selector defines the starting point for a traversal into the graph for the
@@ -67,9 +66,9 @@ export type CSelector<TNode> = {
 /**
  * A representation of a selector and its results at a particular point in time.
  */
-export type CSnapshot<TNode> = CSelector<TNode> & {
+export type CSnapshot<TNode, TRecord> = CSelector<TNode> & {
   data: ?SelectorData,
-  seenRecords: RecordMap,
+  seenRecords: RecordMap<TRecord>,
 };
 
 /**
@@ -151,9 +150,7 @@ export interface CEnvironment<
   /**
    * Read the results of a selector from in-memory records in the store.
    */
-  lookup(
-    selector: CSelector<TNode>,
-  ): CSnapshot<TNode>,
+  lookup(selector: CSelector<TNode>): CSnapshot<TNode, Record>,
 
   /**
    * Subscribe to changes to the results of a selector. The callback is called
@@ -161,8 +158,8 @@ export interface CEnvironment<
    * the snapshot's selector to change.
    */
   subscribe(
-    snapshot: CSnapshot<TNode>,
-    callback: (snapshot: CSnapshot<TNode>) => void,
+    snapshot: CSnapshot<TNode, Record>,
+    callback: (snapshot: CSnapshot<TNode, Record>) => void,
   ): Disposable,
 
   /**
@@ -234,6 +231,7 @@ export interface CUnstableEnvironmentCore<
    */
   createFragmentSpecResolver: (
     context: CRelayContext<TEnvironment>,
+    containerName: string,
     fragments: CFragmentMap<TFragment>,
     props: Props,
     callback: () => void,

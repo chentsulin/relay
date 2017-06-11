@@ -8,6 +8,7 @@
  *
  * @providesModule RelayModernEnvironment
  * @flow
+ * @format
  */
 
 'use strict';
@@ -16,7 +17,9 @@ const RelayCore = require('RelayCore');
 const RelayDefaultHandlerProvider = require('RelayDefaultHandlerProvider');
 const RelayPublishQueue = require('RelayPublishQueue');
 
+const invariant = require('invariant');
 const normalizeRelayPayload = require('normalizeRelayPayload');
+const warning = require('warning');
 
 import type {CacheConfig, Disposable} from 'RelayCombinedEnvironmentTypes';
 import type {HandlerProvider} from 'RelayDefaultHandlerProvider';
@@ -51,9 +54,9 @@ class RelayModernEnvironment implements Environment {
   unstable_internal: UnstableEnvironmentCore;
 
   constructor(config: EnvironmentConfig) {
-    const handlerProvider = config.handlerProvider ?
-      config.handlerProvider :
-      RelayDefaultHandlerProvider;
+    const handlerProvider = config.handlerProvider
+      ? config.handlerProvider
+      : RelayDefaultHandlerProvider;
     this._network = config.network;
     this._publishQueue = new RelayPublishQueue(config.store, handlerProvider);
     this._store = config.store;
@@ -75,17 +78,17 @@ class RelayModernEnvironment implements Environment {
     return {dispose};
   }
 
-  check(selector: Selector): boolean {
-    return this._store.check(selector);
+  check(readSelector: Selector): boolean {
+    return this._store.check(readSelector);
   }
 
   commitPayload(
-    selector: Selector,
+    operationSelector: OperationSelector,
     payload: PayloadData,
   ): void {
     // Do not handle stripped nulls when commiting a payload
-    const relayPayload = normalizeRelayPayload(selector, payload);
-    this._publishQueue.commitPayload(selector, relayPayload);
+    const relayPayload = normalizeRelayPayload(operationSelector.root, payload);
+    this._publishQueue.commitPayload(operationSelector, relayPayload);
     this._publishQueue.run();
   }
 
@@ -94,8 +97,8 @@ class RelayModernEnvironment implements Environment {
     this._publishQueue.run();
   }
 
-  lookup(selector: Selector): Snapshot {
-    return this._store.lookup(selector);
+  lookup(readSelector: Selector): Snapshot {
+    return this._store.lookup(readSelector);
   }
 
   subscribe(
@@ -126,20 +129,42 @@ class RelayModernEnvironment implements Environment {
     const dispose = () => {
       isDisposed = true;
     };
-    this._network.request(operation.node, operation.variables, cacheConfig).then(payload => {
+    const onRequestSuccess = payload => {
       if (isDisposed) {
         return;
       }
-      this._publishQueue.commitPayload(operation.fragment, payload);
+      this._publishQueue.commitPayload(operation, payload);
       this._publishQueue.run();
       onNext && onNext(payload);
       onCompleted && onCompleted();
-    }).catch(error => {
+    };
+    const onRequestError = error => {
       if (isDisposed) {
         return;
       }
       onError && onError(error);
-    });
+    };
+    const networkRequest = this._network.request(
+      operation.node,
+      operation.variables,
+      cacheConfig,
+    );
+    switch (networkRequest.kind) {
+      case 'data':
+        onRequestSuccess(networkRequest.data);
+        break;
+      case 'error':
+        onRequestError(networkRequest.error);
+        break;
+      case 'promise':
+        networkRequest.promise.then(onRequestSuccess).catch(onRequestError);
+        break;
+      default:
+        invariant(
+          false,
+          `RelayModernEnvionment: unsupported network request type "${networkRequest.kind}"`,
+        );
+    }
     return {dispose};
   }
 
@@ -164,7 +189,7 @@ class RelayModernEnvironment implements Environment {
         onCompleted,
         onError,
         onNext: payload => {
-          this._publishQueue.commitPayload(operation.fragment, payload);
+          this._publishQueue.commitPayload(operation, payload);
           this._publishQueue.run();
           onNext && onNext(payload);
         },
@@ -191,7 +216,7 @@ class RelayModernEnvironment implements Environment {
   }): Disposable {
     let hasOptimisticUpdate = optimisticResponse || optimisticUpdater;
     const optimisticUpdate = {
-      selector: operation.fragment,
+      operation: operation,
       selectorStoreUpdater: optimisticUpdater,
       response: optimisticResponse ? optimisticResponse() : null,
     };
@@ -208,22 +233,19 @@ class RelayModernEnvironment implements Environment {
       }
       isDisposed = true;
     };
-    this._network.request(
-      operation.node,
-      operation.variables,
-      {force: true},
-      uploadables,
-    ).then(payload => {
+    const onRequestSuccess = payload => {
       if (isDisposed) {
         return;
       }
       if (hasOptimisticUpdate) {
         this._publishQueue.revertUpdate(optimisticUpdate);
       }
-      this._publishQueue.commitPayload(operation.fragment, payload, updater);
+      this._publishQueue.commitPayload(operation, payload, updater);
       this._publishQueue.run();
       onCompleted && onCompleted(payload.errors);
-    }).catch(error => {
+    };
+
+    const onRequestError = error => {
       if (isDisposed) {
         return;
       }
@@ -232,7 +254,23 @@ class RelayModernEnvironment implements Environment {
       }
       this._publishQueue.run();
       onError && onError(error);
-    });
+    };
+
+    const networkRequest = this._network.request(
+      operation.node,
+      operation.variables,
+      {force: true},
+      uploadables,
+    );
+
+    if (networkRequest.promise) {
+      networkRequest.promise.then(onRequestSuccess).catch(onRequestError);
+    } else {
+      warning(
+        false,
+        'RelayModernEnvironment: mutation request cannot be synchronous.',
+      );
+    }
     return {dispose};
   }
 
@@ -257,7 +295,7 @@ class RelayModernEnvironment implements Environment {
         onCompleted,
         onError,
         onNext: payload => {
-          this._publishQueue.commitPayload(operation.fragment, payload, updater);
+          this._publishQueue.commitPayload(operation, payload, updater);
           this._publishQueue.run();
           onNext && onNext(payload);
         },

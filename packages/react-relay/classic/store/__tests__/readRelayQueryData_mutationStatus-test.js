@@ -7,9 +7,12 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
+
+jest.enableAutomock();
 
 const Relay = require('Relay');
 const RelayMutationTransaction = require('RelayMutationTransaction');
@@ -35,8 +38,10 @@ describe('readRelayQueryData (mutationStatus)', () => {
     mutationIDs[dataID].push(mutationID);
 
     mutationStatuses[mutationID] = mutationStatus;
-    mutationTransactions[mutationID] =
-      new RelayMutationTransaction(storeData.getMutationQueue(), mutationID);
+    mutationTransactions[mutationID] = new RelayMutationTransaction(
+      storeData.getMutationQueue(),
+      mutationID,
+    );
 
     return {
       setStatus(newStatus) {
@@ -54,7 +59,7 @@ describe('readRelayQueryData (mutationStatus)', () => {
       storeData.getQueuedStore(),
       storeData.getRecordWriter(),
       query,
-      payload
+      payload,
     );
   }
 
@@ -66,15 +71,17 @@ describe('readRelayQueryData (mutationStatus)', () => {
     mutationTransactions = {};
     storeData = new RelayStoreData();
 
-    storeData.getClientMutationIDs =
-      jest.fn(dataID => mutationIDs[dataID]);
-    storeData.getMutationQueue().getStatus =
-      jest.fn(id => mutationStatuses[id]);
-    storeData.getMutationQueue().getTransaction =
-      jest.fn(id => mutationTransactions[id]);
+    storeData.getClientMutationIDs = jest.fn(dataID => mutationIDs[dataID]);
+    storeData.getMutationQueue().getStatus = jest.fn(
+      id => mutationStatuses[id],
+    );
+    storeData.getMutationQueue().getTransaction = jest.fn(
+      id => mutationTransactions[id],
+    );
 
     writeQueryPayload({
-      query: getNode(Relay.QL`
+      query: getNode(
+        Relay.QL`
         query {
           node(id: "123") {
             ...on Actor {
@@ -84,7 +91,8 @@ describe('readRelayQueryData (mutationStatus)', () => {
             }
           }
         }
-      `),
+      `,
+      ),
       payload: {
         node: {
           __typename: 'Actor',
@@ -98,11 +106,13 @@ describe('readRelayQueryData (mutationStatus)', () => {
   it('omits `__mutationStatus__` for records without pending mutations', () => {
     const data = read({
       dataID: '123',
-      node: getNode(Relay.QL`
+      node: getNode(
+        Relay.QL`
         fragment on Actor {
           firstName
         }
-      `),
+      `,
+      ),
     });
     expect(data).toEqual({
       __dataID__: '123',
@@ -119,11 +129,13 @@ describe('readRelayQueryData (mutationStatus)', () => {
 
     const data = read({
       dataID: '123',
-      node: getNode(Relay.QL`
+      node: getNode(
+        Relay.QL`
         fragment on Actor {
           firstName
         }
-      `),
+      `,
+      ),
     });
     expect(data).toEqual({
       __dataID__: '123',
@@ -146,11 +158,13 @@ describe('readRelayQueryData (mutationStatus)', () => {
 
     const dataA = read({
       dataID: '123',
-      node: getNode(Relay.QL`
+      node: getNode(
+        Relay.QL`
         fragment on Actor {
           firstName
         }
-      `),
+      `,
+      ),
     });
     expect(dataA).toEqual({
       __dataID__: '123',
@@ -158,20 +172,20 @@ describe('readRelayQueryData (mutationStatus)', () => {
       firstName: 'Alice',
     });
 
-    mockTransactionA.setStatus(
-      RelayMutationTransactionStatus.COMMIT_FAILED
-    );
+    mockTransactionA.setStatus(RelayMutationTransactionStatus.COMMIT_FAILED);
     mockTransactionB.setStatus(
-      RelayMutationTransactionStatus.COLLISION_COMMIT_FAILED
+      RelayMutationTransactionStatus.COLLISION_COMMIT_FAILED,
     );
 
     const dataB = read({
       dataID: '123',
-      node: getNode(Relay.QL`
+      node: getNode(
+        Relay.QL`
         fragment on Actor {
           firstName
         }
-      `),
+      `,
+      ),
     });
     expect(dataB).toEqual({
       __dataID__: '123',

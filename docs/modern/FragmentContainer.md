@@ -148,13 +148,13 @@ Fragment 組合的運作方式很類似 — parent container 的 fragment 組合
 class TodoList extends React.Component {/* 同上 */}
 
 module.exports = createFragmentContainer(
-  TodoList, {
+  TodoList,
   // 這 `_list` fragment 命名後綴對應到 prop `list`，
   // 它預期會被 `<TodoList>` component 填入伺服器來的資料。
   graphql`
     fragment TodoList_list on TodoList {
-      # 指定任何 '<TodoList>' 自己需要的欄位。
-      title,
+      # S指定任何 '<TodoList>' 自己需要的欄位。
+      title
       # 包含一個到 child component 的 fragment 的參考。
       todoItems {
         ...TodoItem_item

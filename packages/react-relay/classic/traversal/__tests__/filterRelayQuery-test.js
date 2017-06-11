@@ -7,9 +7,12 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
+
+jest.disableAutomock();
 
 require('configureForRelayOSS');
 
@@ -27,7 +30,8 @@ describe('filterRelayQuery()', () => {
   beforeEach(function() {
     jest.resetModules();
 
-    query = getNode(Relay.QL`
+    query = getNode(
+      Relay.QL`
       query {
         viewer {
           newsFeed(first: 10) {
@@ -41,7 +45,8 @@ describe('filterRelayQuery()', () => {
           }
         }
       }
-    `);
+    `,
+    );
 
     jasmine.addMatchers(RelayTestUtils.matchers);
   });
@@ -56,12 +61,12 @@ describe('filterRelayQuery()', () => {
 
   it('filters specific nodes', () => {
     const filter = function(node) {
-      return !(
-        node instanceof RelayQuery.Field &&
-        node.getSchemaName() === 'text'
-      );
+      return !(node instanceof RelayQuery.Field &&
+        node.getSchemaName() === 'text');
     };
-    expect(filterRelayQuery(query, filter)).toEqualQueryRoot(getNode(Relay.QL`
+    expect(filterRelayQuery(query, filter)).toEqualQueryRoot(
+      getNode(
+        Relay.QL`
       query {
         viewer {
           newsFeed(first: 10) {
@@ -78,6 +83,8 @@ describe('filterRelayQuery()', () => {
           }
         }
       }
-    `));
+    `,
+      ),
+    );
   });
 });

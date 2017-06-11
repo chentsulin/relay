@@ -7,9 +7,12 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
+
+jest.enableAutomock();
 
 require('configureForRelayOSS');
 
@@ -51,7 +54,7 @@ describe('RelayContainer.hasPartialData', () => {
   it('returns true for records with partial data bit set', () => {
     const instance = RelayTestRenderer.render(
       genMockPointer => <MockContainer foo={genMockPointer('123')} />,
-      environment
+      environment,
     );
     const prop = {
       __dataID__: '123',
@@ -63,7 +66,7 @@ describe('RelayContainer.hasPartialData', () => {
   it('returns false for records without partial data bit set', () => {
     const instance = RelayTestRenderer.render(
       genMockPointer => <MockContainer foo={genMockPointer('123')} />,
-      environment
+      environment,
     );
     expect(instance.hasPartialData({__dataID__: '123'})).toBe(false);
   });

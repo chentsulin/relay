@@ -8,6 +8,7 @@
  *
  * @providesModule FileParser
  * @flow
+ * @format
  */
 
 'use strict';
@@ -26,10 +27,7 @@ class FileParser {
   _baseDir: string;
   _parse: ParseFn;
 
-  constructor(config: {
-    baseDir: string,
-    parse: ParseFn,
-  }) {
+  constructor(config: {baseDir: string, parse: ParseFn}) {
     this._baseDir = config.baseDir;
     this._parse = config.parse;
   }
@@ -44,7 +42,15 @@ class FileParser {
     let documents = ImmutableMap();
 
     files.forEach(file => {
-      const doc = this._parse(path.join(this._baseDir, file));
+      const doc = (() => {
+        const filePath = path.join(this._baseDir, file);
+        try {
+          return this._parse(filePath);
+        } catch (error) {
+          throw new Error(`Parse error: ${error} in "${filePath}"`);
+        }
+      })();
+
       if (!doc) {
         this._documents.delete(file);
         return;

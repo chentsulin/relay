@@ -8,6 +8,7 @@
  *
  * @providesModule RelayEnvironmentTypes
  * @flow
+ * @format
  */
 
 'use strict';
@@ -26,6 +27,7 @@ import type {
   CSnapshot,
   CUnstableEnvironmentCore,
   Disposable,
+  Record,
 } from 'RelayCombinedEnvironmentTypes';
 import type {GraphQLTaggedNode} from 'RelayModernGraphQLTag';
 import type {UploadableMap} from 'RelayNetworkTypes';
@@ -42,7 +44,7 @@ export type FragmentMap = CFragmentMap<TFragment>;
 export type OperationSelector = COperationSelector<TNode, TOperation>;
 export type RelayContext = CRelayContext<TEnvironment>;
 export type Selector = CSelector<TNode>;
-export type Snapshot = CSnapshot<TNode>;
+export type Snapshot = CSnapshot<TNode, Record>;
 export type UnstableEnvironmentCore = CUnstableEnvironmentCore<
   TEnvironment,
   TFragment,
@@ -55,14 +57,15 @@ export type UnstableEnvironmentCore = CUnstableEnvironmentCore<
  * The public API of Relay core. Represents an encapsulated environment with its
  * own in-memory cache.
  */
-export interface Environment extends CEnvironment<
-  TEnvironment,
-  TFragment,
-  TGraphQLTaggedNode,
-  TNode,
-  TOperation,
-  TPayload,
-> {
+export interface Environment
+  extends CEnvironment<
+    TEnvironment,
+    TFragment,
+    TGraphQLTaggedNode,
+    TNode,
+    TOperation,
+    TPayload,
+  > {
   /**
    * Applies an optimistic mutation to the store without committing it to the
    * server. The returned Disposable can be used to revert this change at a
@@ -80,9 +83,9 @@ export interface Environment extends CEnvironment<
    * server. The returned Disposable can be used to bypass the `onCompleted`
    * and `onError` callbacks when the server response is returned.
    */
-  sendMutation(config: {|
+  sendMutation<ResponseType>(config: {|
     configs: Array<RelayMutationConfig>,
-    onCompleted?: ?(response: {[key: string]: Object}) => void,
+    onCompleted?: ?(response: ResponseType) => void,
     onError?: ?(error: Error) => void,
     operation: ConcreteOperationDefinition,
     optimisticOperation?: ?ConcreteOperationDefinition,

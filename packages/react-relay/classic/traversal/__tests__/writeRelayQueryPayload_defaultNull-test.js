@@ -7,22 +7,21 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
 
+jest.enableAutomock();
+
 require('configureForRelayOSS');
 
-jest
-  .unmock('GraphQLRange')
-  .unmock('GraphQLSegment')
-  .mock('warning');
+jest.unmock('GraphQLRange').unmock('GraphQLSegment').mock('warning');
 
 const Relay = require('Relay');
 const RelayRecordStore = require('RelayRecordStore');
 const RelayRecordWriter = require('RelayRecordWriter');
 const RelayTestUtils = require('RelayTestUtils');
-
 
 describe('writeRelayQueryPayload()', () => {
   const {getNode, writePayload} = RelayTestUtils;
@@ -38,14 +37,16 @@ describe('writeRelayQueryPayload()', () => {
       const store = new RelayRecordStore({records});
       const writer = new RelayRecordWriter(records, {}, false);
 
-      const query = getNode(Relay.QL`
+      const query = getNode(
+        Relay.QL`
         query {
           node(id:"123") {
             id
             name
           }
         }
-      `);
+      `,
+      );
       const payload = {
         node: {
           __typename: 'User',
@@ -67,14 +68,16 @@ describe('writeRelayQueryPayload()', () => {
       const store = new RelayRecordStore({records});
       const writer = new RelayRecordWriter(records, {}, false);
 
-      const query = getNode(Relay.QL`
+      const query = getNode(
+        Relay.QL`
         query {
           node(id:"123") {
             id
             name
           }
         }
-      `);
+      `,
+      );
       const payload = {
         node: {
           __typename: 'User',
@@ -92,7 +95,7 @@ describe('writeRelayQueryPayload()', () => {
       expect(store.getField('123', 'name')).toBe(undefined);
       expect([
         'RelayQueryWriter: Encountered an explicit `undefined` field `%s` on ' +
-        'record `%s`, expected response to not contain `undefined`.',
+          'record `%s`, expected response to not contain `undefined`.',
         'name',
         '123',
       ]).toBeWarnedNTimes(1);
@@ -102,7 +105,8 @@ describe('writeRelayQueryPayload()', () => {
       const records = {};
       const store = new RelayRecordStore({records});
       const writer = new RelayRecordWriter(records, {}, false);
-      const query = getNode(Relay.QL`
+      const query = getNode(
+        Relay.QL`
         query {
           viewer {
             actor {
@@ -110,7 +114,8 @@ describe('writeRelayQueryPayload()', () => {
             }
           }
         }
-      `);
+      `,
+      );
       const payload = {
         viewer: {},
       };
@@ -135,7 +140,8 @@ describe('writeRelayQueryPayload()', () => {
       const store = new RelayRecordStore({records});
       const writer = new RelayRecordWriter(records, {}, false);
 
-      const query = getNode(Relay.QL`
+      const query = getNode(
+        Relay.QL`
         query {
           node(id:"123") {
             allPhones {
@@ -145,7 +151,8 @@ describe('writeRelayQueryPayload()', () => {
             }
           }
         }
-      `);
+      `,
+      );
       const payload = {
         node: {
           __typename: 'User',
@@ -167,7 +174,8 @@ describe('writeRelayQueryPayload()', () => {
       const records = {};
       const store = new RelayRecordStore({records});
       const writer = new RelayRecordWriter(records, {}, false);
-      const query = getNode(Relay.QL`
+      const query = getNode(
+        Relay.QL`
         query {
           node(id:"123") {
             friends(first: 3) {
@@ -184,7 +192,8 @@ describe('writeRelayQueryPayload()', () => {
             }
           }
         }
-      `);
+      `,
+      );
 
       const payload = {
         node: {

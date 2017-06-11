@@ -13,10 +13,10 @@ Relay Modern 是新版的 Relay，重從頭開始設計讓他更容易使用、�
 
 ### 升級到 react-relay v1.0.0
 
-Relay v1.0 導入了 Relay Modern API。要取得 Relay v1.0 的 release-candidate，必須安裝 `@dev` 的 build：
+Relay v1.0 導入了 Relay Modern API：
 
 ```sh
-yarn add react-relay@dev
+yarn add react-relay
 ```
 
 在升級既有的 Relay 應用程式時，把全部的 `require('react-relay')` 改成 `require('react-relay/classic')` 就能繼續的載入 Relay Classic API。
@@ -26,7 +26,7 @@ yarn add react-relay@dev
 Relay Modern 需要一個 Babel plugin 來把 GraphQL 轉換執行期產物：
 
 ```sh
-yarn add --dev babel-plugin-relay@dev
+yarn add --dev babel-plugin-relay
 ```
 
 把 `"relay"` 加到 .babelrc 檔案的 plugins 清單。如果你是在升級既有的 Relay 應用程式，請看[這份文件](./babel-plugin-relay.html)。
@@ -36,7 +36,7 @@ yarn add --dev babel-plugin-relay@dev
 Relay Modern 的預編譯需要新的 Relay Compiler：
 
 ```sh
-yarn add --dev relay-compiler@dev
+yarn add --dev relay-compiler
 ```
 
 在變更任何在你的 Relay 應用程式的 GraphQL 之後執行 Relay Compiler。把它寫成 `yarn script` 可能會有點幫助。在你的 package.json 檔案加一個進入點到 `"scripts"`。
@@ -46,6 +46,32 @@ yarn add --dev relay-compiler@dev
 ```
 
 在編輯應用程式的檔案後，接著執行 `yarn run relay` 來產生新的檔案，或是執行 `yarn run relay -- --watch` 來在持續運行的 process 上跑 compiler，可以在存檔時自動地產生新檔案。
+
+
+## JavaScript environment requirements
+
+The Relay Modern packages distributed on NPM use the widely-supported ES5
+version of JavaScript to support as many browser environments as possible.
+
+However, Relay Modern expects modern JavaScript global types (`Map`, `Set`,
+`Promise`, `Object.assign`) to be defined. If you support older browsers and
+devices which may not yet provide these natively, consider including a global
+polyfill in your bundled application, such as [core-js][] or
+[babel-polyfill](https://babeljs.io/docs/usage/polyfill/).
+
+A polyfilled environment for Relay using [core-js][] to support older browsers
+might look like:
+
+```js
+require('core-js/es6/map');
+require('core-js/es6/set');
+require('core-js/es6/promise');
+require('core-js/es6/object');
+
+require('./myRelayApplication');
+```
+
+[core-js]: https://github.com/zloirock/core-js
 
 
 ## 轉換到 Relay Modern

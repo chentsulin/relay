@@ -7,9 +7,12 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
+
+jest.disableAutomock();
 
 const RelayTestUtils = require('RelayTestUtils');
 
@@ -29,11 +32,9 @@ describe('RelayTestUtils', () => {
                 if (expected) {
                   return {
                     pass: false,
-                    message: (
-                      'Expected matcher to fail with message: ' +
+                    message: 'Expected matcher to fail with message: ' +
                       JSON.stringify(expected) +
-                      ' but it passed.'
-                    ),
+                      ' but it passed.',
                   };
                 } else {
                   return {
@@ -45,23 +46,19 @@ describe('RelayTestUtils', () => {
                 if (!actual.message.match(expected)) {
                   return {
                     pass: false,
-                    message: (
-                      'Expected matcher to fail with message matching: ' +
+                    message: 'Expected matcher to fail with message matching: ' +
                       expected.toString() +
                       ' but it failed with message: ' +
-                      JSON.stringify(actual.message)
-                    ),
+                      JSON.stringify(actual.message),
                   };
                 }
               } else if (expected && actual.message !== expected) {
                 return {
                   pass: false,
-                  message: (
-                    'Expected matcher to fail with message: ' +
+                  message: 'Expected matcher to fail with message: ' +
                     JSON.stringify(expected) +
                     ' but it failed with message: ' +
-                    JSON.stringify(actual.message)
-                  ),
+                    JSON.stringify(actual.message),
                 };
               }
               return {pass: true};
@@ -77,10 +74,8 @@ describe('RelayTestUtils', () => {
               } else {
                 return {
                   pass: false,
-                  message: (
-                    'Expected matcher to pass but it failed with message: ' +
-                    JSON.stringify(actual.message)
-                  ),
+                  message: 'Expected matcher to pass but it failed with message: ' +
+                    JSON.stringify(actual.message),
                 };
               }
             },
@@ -93,7 +88,7 @@ describe('RelayTestUtils', () => {
       it('compares equal primitive objects', () => {
         expect(comparator('foo', 'foo')).toPass();
         expect(comparator('foo', 'bar')).toFail(
-          'Expected value to be "bar", but got "foo"'
+          'Expected value to be "bar", but got "foo"',
         );
 
         expect(comparator(7337, 7337)).toPass();
@@ -103,83 +98,86 @@ describe('RelayTestUtils', () => {
       it('compares null', () => {
         expect(comparator(null, null)).toPass();
         expect(comparator(null, 1)).toFail(
-          'Expected value to be 1, but got null'
+          'Expected value to be 1, but got null',
         );
       });
 
       it('compares shallow arrays', () => {
         expect(comparator([1, 2, 'foo'], [1, 2, 'foo'])).toPass();
         expect(comparator([1, 2, 'bar'], [1, 2, 'baz'])).toFail(
-          'Expected property at path `2` to be "baz", but got "bar"'
+          'Expected property at path `2` to be "baz", but got "bar"',
         );
         expect(comparator([1, 2, 3], [1, 2])).toFail();
         expect(comparator([1, 2], [1, 2, 3])).toFail();
       });
 
       it('compares nested arrays', () => {
-        expect(comparator(
-          [1, 2, ['this', null], 'foo'],
-          [1, 2, ['this', null], 'foo']
-        )).toPass();
+        expect(
+          comparator(
+            [1, 2, ['this', null], 'foo'],
+            [1, 2, ['this', null], 'foo'],
+          ),
+        ).toPass();
 
-        expect(comparator(
-          [1, 2, ['this', null], 'foo'],
-          [10, 20, ['this', null], 'foo']
-        )).toFail();
+        expect(
+          comparator(
+            [1, 2, ['this', null], 'foo'],
+            [10, 20, ['this', null], 'foo'],
+          ),
+        ).toFail();
 
-        expect(comparator(
-          [1, 2, ['this', null], 'foo'],
-          [1, 2, ['that', null], 'foo']
-        )).toFail();
+        expect(
+          comparator(
+            [1, 2, ['this', null], 'foo'],
+            [1, 2, ['that', null], 'foo'],
+          ),
+        ).toFail();
       });
 
       it('compares simple objects', () => {
-        expect(comparator(
-          {foo: 1, bar: 'thing'},
-          {foo: 1, bar: 'thing'},
-        )).toPass();
+        expect(
+          comparator({foo: 1, bar: 'thing'}, {foo: 1, bar: 'thing'}),
+        ).toPass();
 
-        expect(comparator(
-          {foo: 1, bar: 'thing'},
-          {fizz: 1, buzz: 'thing'},
-        )).toFail();
+        expect(
+          comparator({foo: 1, bar: 'thing'}, {fizz: 1, buzz: 'thing'}),
+        ).toFail();
 
-        expect(comparator(
-          {foo: 1, bar: 'thing'},
-          {foo: 10, bar: 'things'},
-        )).toFail();
+        expect(
+          comparator({foo: 1, bar: 'thing'}, {foo: 10, bar: 'things'}),
+        ).toFail();
 
-        expect(comparator(
-          {foo: 1, bar: 'thing'},
-          {foo: 1},
-        )).toFail();
+        expect(comparator({foo: 1, bar: 'thing'}, {foo: 1})).toFail();
       });
 
       it('compares nested objects', () => {
-        expect(comparator(
-          {foo: 1, bar: {other: 'thing'}},
-          {foo: 1, bar: {other: 'thing'}},
-        )).toPass();
+        expect(
+          comparator(
+            {foo: 1, bar: {other: 'thing'}},
+            {foo: 1, bar: {other: 'thing'}},
+          ),
+        ).toPass();
 
-        expect(comparator(
-          {foo: 1, bar: {other: 'thing'}},
-          {foo: 1, bar: {other: 'thing', excess: true}},
-        )).toFail();
+        expect(
+          comparator(
+            {foo: 1, bar: {other: 'thing'}},
+            {foo: 1, bar: {other: 'thing', excess: true}},
+          ),
+        ).toFail();
       });
 
       it('compares objects with metadata attributes', () => {
-        expect(comparator(
-          {__dataID__: 'client:0', foo: 1, bar: {other: 'thing'}},
-          {foo: 1, bar: {other: 'thing'}},
-        )).toPass();
+        expect(
+          comparator(
+            {__dataID__: 'client:0', foo: 1, bar: {other: 'thing'}},
+            {foo: 1, bar: {other: 'thing'}},
+          ),
+        ).toPass();
       });
 
       it('deals with undefined values', () => {
-        expect(comparator(
-          undefined,
-          {thing: 1}
-        )).toFail(
-          /^Expected value to be {\"thing\":1}, but got undefined$/
+        expect(comparator(undefined, {thing: 1})).toFail(
+          /^Expected value to be {\"thing\":1}, but got undefined$/,
         );
       });
 
@@ -189,7 +187,7 @@ describe('RelayTestUtils', () => {
 
         // But note that we at least distinguish different object types.
         expect(comparator([], new Date())).toFail(
-          /^Expected value to be ".+", but got \[\]$/
+          /^Expected value to be ".+", but got \[\]$/,
         );
       });
     });

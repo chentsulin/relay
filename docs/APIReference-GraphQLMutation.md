@@ -264,4 +264,4 @@ rollback(): void;
 
 ## 參閱
 
-可以[在測試組中](https://github.com/facebook/relay/blob/master/src/mutation/__tests__/RelayGraphQLMutation-test.js)找到更多詳細的用法範例。
+可以[在測試組中](https://github.com/facebook/relay/blob/master/packages/react-relay/classic/mutation/__tests__/RelayGraphQLMutation-test.js)找到更多詳細的用法範例。

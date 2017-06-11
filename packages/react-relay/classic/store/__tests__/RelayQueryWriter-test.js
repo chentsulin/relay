@@ -7,9 +7,12 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
+
+jest.enableAutomock();
 
 require('configureForRelayOSS');
 
@@ -51,7 +54,7 @@ describe('RelayQueryWriter', () => {
   describe('query tracking', () => {
     it('tracks a node upon creation', () => {
       const queryTracker = new RelayQueryTracker();
-      const trackNodeForID = queryTracker.trackNodeForID = jest.fn();
+      const trackNodeForID = (queryTracker.trackNodeForID = jest.fn());
       const queryWriter = new RelayQueryWriter(
         store,
         recordWriter,

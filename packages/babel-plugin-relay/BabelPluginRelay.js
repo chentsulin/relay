@@ -7,6 +7,7 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @providesModule BabelPluginRelay
+ * @format
  */
 
 'use strict';
@@ -36,7 +37,7 @@ const invariant = require('./invariant');
  *     }
  *
  */
-module.exports = function BabelPluginRelay({ types: t }) {
+module.exports = function BabelPluginRelay({types: t}) {
   return {
     visitor: {
       TaggedTemplateExpression(path, state) {
@@ -53,18 +54,23 @@ module.exports = function BabelPluginRelay({ types: t }) {
           const schema = state.opts && state.opts.schema;
           invariant(
             schema,
-            'babel-plugin-relay: Missing schema option'
+            'babel-plugin-relay: Missing schema option. ' +
+              'Check your .babelrc file or wherever you configure your Babel ' +
+              'plugins to ensure the "relay" plugin has a "schema" option.\n' +
+              'https://facebook.github.io/relay/docs/babel-plugin-relay.html#additional-options',
           );
           const documentName = getDocumentName(path, state);
-          path.replaceWith(compileRelayQLTag(
-            t,
-            schema,
-            quasi,
-            documentName,
-            propName,
-            tagName,
-            state
-          ));
+          path.replaceWith(
+            compileRelayQLTag(
+              t,
+              schema,
+              quasi,
+              documentName,
+              propName,
+              tagName,
+              state,
+            ),
+          );
         }
       },
     },

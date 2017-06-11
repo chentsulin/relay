@@ -7,12 +7,12 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
 
-jest
-  .autoMockOff();
+jest.autoMockOff();
 
 const React = require('React');
 const ReactRelayFragmentContainer = require('ReactRelayFragmentContainer');
@@ -21,6 +21,7 @@ const ReactTestRenderer = require('ReactTestRenderer');
 const RelayModernTestUtils = require('RelayModernTestUtils');
 const {ROOT_ID} = require('RelayStoreUtils');
 const {createMockEnvironment} = require('RelayModernMockEnvironment');
+const {createOperationSelector} = require('RelayModernOperationSelector');
 
 describe('ReactRelayFragmentContainer', () => {
   let TestComponent;
@@ -57,6 +58,10 @@ describe('ReactRelayFragmentContainer', () => {
     setProps(props) {
       this.setState({props});
     }
+    setContext(env, vars) {
+      this.relay = {environment: env, variables: vars};
+      this.setState({context: {environment: env, variables: vars}});
+    }
     render() {
       const child = React.Children.only(this.props.children);
       if (this.state.props) {
@@ -74,7 +79,8 @@ describe('ReactRelayFragmentContainer', () => {
     jasmine.addMatchers(RelayModernTestUtils.matchers);
 
     environment = createMockEnvironment();
-    ({UserFragment, UserQuery} = environment.mock.compile(`
+    ({UserFragment, UserQuery} = environment.mock.compile(
+      `
       query UserQuery($id: ID!) {
         node(id: $id) {
           ...UserFragment
@@ -87,7 +93,8 @@ describe('ReactRelayFragmentContainer', () => {
         id
         name @include(if: $cond)
       }
-    `));
+    `,
+    ));
 
     render = jest.fn(() => <div />);
     spec = {
@@ -96,36 +103,28 @@ describe('ReactRelayFragmentContainer', () => {
     variables = {rootVariable: 'root'};
     TestComponent = render;
     TestComponent.displayName = 'TestComponent';
-    TestContainer = ReactRelayFragmentContainer.createContainer(TestComponent, spec);
+    TestContainer = ReactRelayFragmentContainer.createContainer(
+      TestComponent,
+      spec,
+    );
 
     // Pre-populate the store with data
-    environment.commitPayload(
-      {
-        dataID: ROOT_ID,
-        node: UserQuery.query,
-        variables: {id: '4'},
+    environment.commitPayload(createOperationSelector(UserQuery, {id: '4'}), {
+      node: {
+        id: '4',
+        __typename: 'User',
+        name: 'Zuck',
       },
-      {
-        node: {
-          id: '4',
-          __typename: 'User',
-          name: 'Zuck',
-        },
-      }
-    );
+    });
     environment.commitPayload(
-      {
-        dataID: ROOT_ID,
-        node: UserQuery.query,
-        variables: {id: '842472'},
-      },
+      createOperationSelector(UserQuery, {id: '842472'}),
       {
         node: {
           id: '842472',
           __typename: 'User',
           name: 'Joe',
         },
-      }
+      },
     );
   });
 
@@ -138,7 +137,7 @@ describe('ReactRelayFragmentContainer', () => {
       ReactRelayFragmentContainer.createContainer(TestComponent, 'a string');
     }).toFailInvariant(
       'Could not create Relay Container for `TestComponent`. ' +
-      'Expected a set of GraphQL fragments, got `a string` instead.'
+        'Expected a set of GraphQL fragments, got `a string` instead.',
     );
   });
 
@@ -149,15 +148,15 @@ describe('ReactRelayFragmentContainer', () => {
       });
     }).toFailInvariant(
       'Could not create Relay Container for `TestComponent`. ' +
-      'The value of fragment `foo` was expected to be a fragment, ' +
-      'got `null` instead.'
+        'The value of fragment `foo` was expected to be a fragment, ' +
+        'got `null` instead.',
     );
   });
 
   it('does not throw when fragments are in modern mode', () => {
     expect(() => {
       ReactRelayFragmentContainer.createContainer(TestComponent, {
-        foo: () => ({ kind: 'Fragment' }),
+        foo: () => ({kind: 'Fragment'}),
       });
     }).not.toThrow();
   });
@@ -166,7 +165,7 @@ describe('ReactRelayFragmentContainer', () => {
     ReactTestRenderer.create(
       <ContextSetter environment={environment} variables={variables}>
         <TestContainer bar={1} foo={'foo'} />
-      </ContextSetter>
+      </ContextSetter>,
     );
     expect(render.mock.calls.length).toBe(1);
     expect(render.mock.calls[0][0]).toEqual({
@@ -185,7 +184,7 @@ describe('ReactRelayFragmentContainer', () => {
     ReactTestRenderer.create(
       <ContextSetter environment={environment} variables={variables}>
         <TestContainer user={null} />
-      </ContextSetter>
+      </ContextSetter>,
     );
     // Data & Variables are passed to component
     expect(render.mock.calls.length).toBe(1);
@@ -209,7 +208,7 @@ describe('ReactRelayFragmentContainer', () => {
     ReactTestRenderer.create(
       <ContextSetter environment={environment} variables={variables}>
         <TestContainer user={userPointer} />
-      </ContextSetter>
+      </ContextSetter>,
     );
     // Data & Variables are passed to component
     expect(render.mock.calls.length).toBe(1);
@@ -246,7 +245,7 @@ describe('ReactRelayFragmentContainer', () => {
     ReactTestRenderer.create(
       <ContextSetter environment={environment} variables={variables}>
         <TestContainer user={userPointer} />
-      </ContextSetter>
+      </ContextSetter>,
     );
     const callback = environment.subscribe.mock.calls[0][1];
     render.mockClear();
@@ -289,7 +288,7 @@ describe('ReactRelayFragmentContainer', () => {
     const instance = ReactTestRenderer.create(
       <ContextSetter environment={environment} variables={variables}>
         <TestContainer user={userPointer} />
-      </ContextSetter>
+      </ContextSetter>,
     );
     render.mockClear();
     environment.lookup.mockClear();
@@ -329,6 +328,50 @@ describe('ReactRelayFragmentContainer', () => {
     });
   });
 
+  it('resolves for new variables in context', () => {
+    const userPointer = environment.lookup({
+      dataID: ROOT_ID,
+      node: UserQuery.fragment,
+      variables: {id: '4'},
+    }).data.node;
+    const instance = ReactTestRenderer.create(
+      <ContextSetter environment={environment} variables={variables}>
+        <TestContainer user={userPointer} />
+      </ContextSetter>,
+    );
+    render.mockClear();
+    environment.lookup.mockClear();
+    environment.subscribe.mockClear();
+
+    // Update the variables in context
+    const newVariables = {id: '6'};
+    instance.getInstance().setContext(environment, newVariables);
+
+    // New data & variables are passed to component
+    expect(render.mock.calls.length).toBe(1);
+    expect(render.mock.calls[0][0]).toEqual({
+      relay: {
+        environment: jasmine.any(Object),
+      },
+      user: {
+        id: '4',
+        name: 'Zuck',
+      },
+    });
+    // Container subscribes for updates on new props
+    expect(environment.subscribe.mock.calls.length).toBe(1);
+    expect(environment.subscribe.mock.calls[0][0]).toEqual({
+      dataID: '4',
+      data: {
+        id: '4',
+        name: 'Zuck',
+      },
+      node: UserFragment,
+      seenRecords: jasmine.any(Object),
+      variables: {cond: true},
+    });
+  });
+
   it('does not update for same props/data', () => {
     const userPointer = environment.lookup({
       dataID: ROOT_ID,
@@ -338,7 +381,7 @@ describe('ReactRelayFragmentContainer', () => {
     const instance = ReactTestRenderer.create(
       <ContextSetter environment={environment} variables={variables}>
         <TestContainer user={userPointer} />
-      </ContextSetter>
+      </ContextSetter>,
     );
     render.mockClear();
     environment.lookup.mockClear();
@@ -363,13 +406,8 @@ describe('ReactRelayFragmentContainer', () => {
     const fn = () => null;
     const instance = ReactTestRenderer.create(
       <ContextSetter environment={environment} variables={variables}>
-        <TestContainer
-          fn={fn}
-          nil={null}
-          scalar={scalar}
-          user={userPointer}
-          />
-      </ContextSetter>
+        <TestContainer fn={fn} nil={null} scalar={scalar} user={userPointer} />
+      </ContextSetter>,
     );
     render.mockClear();
     environment.lookup.mockClear();
@@ -397,12 +435,8 @@ describe('ReactRelayFragmentContainer', () => {
     const fn = () => null;
     const instance = ReactTestRenderer.create(
       <ContextSetter environment={environment} variables={variables}>
-        <TestContainer
-          fn={fn}
-          scalar={scalar}
-          user={userPointer}
-          />
-      </ContextSetter>
+        <TestContainer fn={fn} scalar={scalar} user={userPointer} />
+      </ContextSetter>,
     );
     const initialProps = render.mock.calls[0][0];
     render.mockClear();
@@ -435,12 +469,8 @@ describe('ReactRelayFragmentContainer', () => {
     const fn = () => null;
     const instance = ReactTestRenderer.create(
       <ContextSetter environment={environment} variables={variables}>
-        <TestContainer
-          fn={fn}
-          scalar={scalar}
-          user={userPointer}
-          />
-      </ContextSetter>
+        <TestContainer fn={fn} scalar={scalar} user={userPointer} />
+      </ContextSetter>,
     );
     const initialProps = render.mock.calls[0][0];
     render.mockClear();
@@ -470,12 +500,8 @@ describe('ReactRelayFragmentContainer', () => {
     }).data.node;
     const instance = ReactTestRenderer.create(
       <ContextSetter environment={environment} variables={variables}>
-        <TestContainer
-          arr={[]}
-          obj={{}}
-          user={userPointer}
-          />
-      </ContextSetter>
+        <TestContainer arr={[]} obj={{}} user={userPointer} />
+      </ContextSetter>,
     );
     const initialProps = render.mock.calls[0][0];
     render.mockClear();

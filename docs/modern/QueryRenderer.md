@@ -9,7 +9,7 @@ next: fragment-container
 
 `QueryRenderer` 是 Relay tree 的根部。它取得一個 query、抓取資料、並帶著資料呼叫 `render` callback。
 
-`QueryRenderer` 是 React component，所以它可以被 render 在任何 React component 可以被 render 的地方。它不需要在最頂層。它也可以被 render 在其他的 Relay component *裡面* (舉例來說，要在不同的網路往返延遲地抓取資料)。
+A `QueryRenderer` is a React component, so it can be rendered anywhere that a React component can be rendered, not just at the top level. A `QueryRenderer` can be rendered *within* other Relay components, for example to lazily fetch additional data for a popover. However, a `QueryRenderer` will not start loading its data until it is mounted, so nested `QueryRenderer` components can lead to avoidable request waterfalls if used unnecessarily.
 
 ```
 const {

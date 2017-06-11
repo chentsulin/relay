@@ -8,6 +8,7 @@
  *
  * @providesModule RelayNetworkLayer
  * @flow
+ * @format
  */
 
 'use strict';
@@ -57,7 +58,7 @@ class RelayNetworkLayer {
       warning(
         false,
         'RelayNetworkLayer: Call received to injectDefaultImplementation(), ' +
-        'but a default layer was already injected.'
+          'but a default layer was already injected.',
       );
     }
     this._defaultImplementation = implementation;
@@ -68,7 +69,7 @@ class RelayNetworkLayer {
       warning(
         false,
         'RelayNetworkLayer: Call received to injectImplementation(), but ' +
-        'a layer was already injected.'
+          'a layer was already injected.',
       );
     }
     this._implementation = implementation;
@@ -76,8 +77,8 @@ class RelayNetworkLayer {
 
   addNetworkSubscriber(
     queryCallback?: ?QueryCallback,
-    mutationCallback?: ?MutationCallback
-  ) : ChangeSubscription {
+    mutationCallback?: ?MutationCallback,
+  ): ChangeSubscription {
     const index = this._subscribers.length;
     this._subscribers.push({queryCallback, mutationCallback});
     return {
@@ -101,6 +102,7 @@ class RelayNetworkLayer {
   }
 
   sendQueries(queryRequests: Array<RelayQueryRequest>): void {
+    profileQueue(queryRequests);
     const implementation = this._getImplementation();
     this._subscribers.forEach(({queryCallback}) => {
       if (queryCallback) {
@@ -126,7 +128,7 @@ class RelayNetworkLayer {
     invariant(
       implementation,
       'RelayNetworkLayer: Use `RelayEnvironment.injectNetworkLayer` to ' +
-      'configure a network layer.'
+        'configure a network layer.',
     );
     return implementation;
   }
@@ -144,7 +146,6 @@ class RelayNetworkLayer {
       this._queue = currentQueue;
       resolveImmediate(() => {
         this._queue = null;
-        profileQueue(currentQueue);
         this.sendQueries(currentQueue);
       });
     }
@@ -161,7 +162,10 @@ function profileQueue(currentQueue: Array<RelayQueryRequest>): void {
   // TODO #8783781: remove aggregate `fetchRelayQuery` profiler
   let firstResultProfiler = RelayProfiler.profile('fetchRelayQuery');
   currentQueue.forEach(query => {
-    const profiler = RelayProfiler.profile('fetchRelayQuery.query');
+    const profiler = RelayProfiler.profile(
+      'fetchRelayQuery.query',
+      query.getQuery().getName(),
+    );
     const onSettle = () => {
       profiler.stop();
       if (firstResultProfiler) {
@@ -169,6 +173,10 @@ function profileQueue(currentQueue: Array<RelayQueryRequest>): void {
         firstResultProfiler = null;
       }
     };
+    /* $FlowFixMe(site=react_native_fb,oss) - Flow now prevents you from calling a
+     * function with more arguments than it expects. This comment suppresses an
+     * error that was noticed when we made this change. Delete this comment to
+     * see the error. */
     query.done(onSettle, onSettle);
   });
 }

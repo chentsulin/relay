@@ -7,9 +7,12 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
+
+jest.disableAutomock();
 
 const RelayMetaRoute = require('RelayMetaRoute');
 
@@ -26,16 +29,16 @@ describe('RelayMetaRoute', () => {
   });
 
   it('returns caches objects when using `get`', () => {
-    expect(
-      RelayMetaRoute.get('TestRoute')
-    ).toBe(RelayMetaRoute.get('TestRoute'));
+    expect(RelayMetaRoute.get('TestRoute')).toBe(
+      RelayMetaRoute.get('TestRoute'),
+    );
 
-    expect(
-      RelayMetaRoute.get('TestRoute')
-    ).not.toBe(RelayMetaRoute.get('TestRoute2'));
+    expect(RelayMetaRoute.get('TestRoute')).not.toBe(
+      RelayMetaRoute.get('TestRoute2'),
+    );
 
-    expect(
-      RelayMetaRoute.get('TestRoute2')
-    ).toBe(RelayMetaRoute.get('TestRoute2'));
+    expect(RelayMetaRoute.get('TestRoute2')).toBe(
+      RelayMetaRoute.get('TestRoute2'),
+    );
   });
 });

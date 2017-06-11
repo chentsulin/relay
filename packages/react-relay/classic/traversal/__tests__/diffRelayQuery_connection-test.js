@@ -7,16 +7,16 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
 
+jest.enableAutomock();
+
 require('configureForRelayOSS');
 
-jest
-  .unmock('GraphQLRange')
-  .unmock('GraphQLSegment')
-  .mock('warning');
+jest.unmock('GraphQLRange').unmock('GraphQLSegment').mock('warning');
 
 const Relay = require('Relay');
 const RelayConnectionInterface = require('RelayConnectionInterface');
@@ -39,7 +39,7 @@ describe('diffRelayQuery', () => {
     ({HAS_NEXT_PAGE, HAS_PREV_PAGE, PAGE_INFO} = RelayConnectionInterface);
 
     rootCallMap = {
-      'viewer': {'': 'client:1'},
+      viewer: {'': 'client:1'},
     };
 
     jasmine.addMatchers(RelayTestUtils.matchers);
@@ -50,7 +50,8 @@ describe('diffRelayQuery', () => {
     const store = new RelayRecordStore({records}, {rootCallMap});
     const tracker = new RelayQueryTracker();
 
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         viewer {
           newsFeed(first: 3) {
@@ -62,7 +63,8 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
+    `,
+    );
     const diffQueries = diffRelayQuery(query, store, tracker);
     expect(diffQueries.length).toBe(1);
     expect(diffQueries[0]).toBeQueryRoot(query);
@@ -89,7 +91,8 @@ describe('diffRelayQuery', () => {
         },
       },
     };
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         viewer {
           newsFeed(first: 3) {
@@ -101,7 +104,8 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
+    `,
+    );
     // Write full data for all 3 items
     writePayload(store, writer, query, payload, tracker);
 
@@ -150,7 +154,8 @@ describe('diffRelayQuery', () => {
         },
       },
     };
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         viewer {
           newsFeed(first: 5) {
@@ -162,13 +167,16 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
+    `,
+    );
     writePayload(store, writer, query, payload, tracker);
 
     // Nothing to fetch for records 1-3, fetch extension of range for 4-5
     const diffQueries = diffRelayQuery(query, store, tracker);
     expect(diffQueries.length).toBe(1);
-    expect(diffQueries[0]).toEqualQueryRoot(getNode(Relay.QL`
+    expect(diffQueries[0]).toEqualQueryRoot(
+      getNode(
+        Relay.QL`
       query {
         viewer {
           newsFeed(after:"c3",first:$count) {
@@ -180,9 +188,12 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `, {
-      count: 2,
-    }));
+    `,
+        {
+          count: 2,
+        },
+      ),
+    );
   });
 
   it('does not fetch missing `edges` data for generated `node` ids', () => {
@@ -192,7 +203,8 @@ describe('diffRelayQuery', () => {
     const tracker = new RelayQueryTracker();
 
     // Provide empty IDs to simulate non-refetchable nodes
-    const writeQuery = getNode(Relay.QL`
+    const writeQuery = getNode(
+      Relay.QL`
       query {
         viewer {
           newsFeed(first: 3) {
@@ -206,7 +218,8 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
+    `,
+    );
     const payload = {
       viewer: {
         newsFeed: {
@@ -243,7 +256,8 @@ describe('diffRelayQuery', () => {
     writePayload(store, writer, writeQuery, payload, tracker);
 
     // @relay(isConnectionWithoutNodeID: true) should silence the warning.
-    const fetchQueryA = getNode(Relay.QL`
+    const fetchQueryA = getNode(
+      Relay.QL`
       query {
         viewer {
           newsFeed(first: 3) @relay(isConnectionWithoutNodeID: true) {
@@ -257,22 +271,24 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
+    `,
+    );
     const diffQueries = diffRelayQuery(fetchQueryA, store, tracker);
     expect(diffQueries.length).toBe(0);
     expect([
       'RelayDiffQueryBuilder: Field `node` on connection `%s` cannot be ' +
-      'retrieved if it does not have an `id` field. If you expect fields ' +
-      'to be retrieved on this field, add an `id` field in the schema. ' +
-      'If you choose to ignore this warning, you can silence it by ' +
-      'adding `@relay(isConnectionWithoutNodeID: true)` to the ' +
-      'connection field.',
+        'retrieved if it does not have an `id` field. If you expect fields ' +
+        'to be retrieved on this field, add an `id` field in the schema. ' +
+        'If you choose to ignore this warning, you can silence it by ' +
+        'adding `@relay(isConnectionWithoutNodeID: true)` to the ' +
+        'connection field.',
       'newsFeed',
     ]).toBeWarnedNTimes(0);
 
     // `feedback{id}` is missing but there is no way to refetch it
     // Warn that data cannot be refetched
-    const fetchQueryB = getNode(Relay.QL`
+    const fetchQueryB = getNode(
+      Relay.QL`
       query {
         viewer {
           newsFeed(first: 3) {
@@ -286,16 +302,17 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
+    `,
+    );
     diffRelayQuery(fetchQueryB, store, tracker);
 
     expect([
       'RelayDiffQueryBuilder: Field `node` on connection `%s` cannot be ' +
-      'retrieved if it does not have an `id` field. If you expect fields ' +
-      'to be retrieved on this field, add an `id` field in the schema. ' +
-      'If you choose to ignore this warning, you can silence it by ' +
-      'adding `@relay(isConnectionWithoutNodeID: true)` to the ' +
-      'connection field.',
+        'retrieved if it does not have an `id` field. If you expect fields ' +
+        'to be retrieved on this field, add an `id` field in the schema. ' +
+        'If you choose to ignore this warning, you can silence it by ' +
+        'adding `@relay(isConnectionWithoutNodeID: true)` to the ' +
+        'connection field.',
       'newsFeed',
     ]).toBeWarnedNTimes(3);
   });
@@ -307,7 +324,8 @@ describe('diffRelayQuery', () => {
     const tracker = new RelayQueryTracker();
 
     // Provide empty IDs to simulate non-refetchable nodes
-    const writeQuery = getNode(Relay.QL`
+    const writeQuery = getNode(
+      Relay.QL`
       query {
         viewer {
           newsFeed(first: 1) {
@@ -321,7 +339,8 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
+    `,
+    );
     const payload = {
       viewer: {
         newsFeed: {
@@ -345,7 +364,8 @@ describe('diffRelayQuery', () => {
 
     // `message{text}` available in the store.
     // Does not warn that data cannot be refetched sine no data is missing.
-    const fetchQuery = getNode(Relay.QL`
+    const fetchQuery = getNode(
+      Relay.QL`
       query {
         viewer {
           newsFeed(first: 1) {
@@ -359,16 +379,17 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
+    `,
+    );
     const diffQueries = diffRelayQuery(fetchQuery, store, tracker);
     expect(diffQueries.length).toBe(0);
     expect([
       'RelayDiffQueryBuilder: Field `node` on connection `%s` cannot be ' +
-      'retrieved if it does not have an `id` field. If you expect fields ' +
-      'to be retrieved on this field, add an `id` field in the schema. ' +
-      'If you choose to ignore this warning, you can silence it by ' +
-      'adding `@relay(isConnectionWithoutNodeID: true)` to the ' +
-      'connection field.',
+        'retrieved if it does not have an `id` field. If you expect fields ' +
+        'to be retrieved on this field, add an `id` field in the schema. ' +
+        'If you choose to ignore this warning, you can silence it by ' +
+        'adding `@relay(isConnectionWithoutNodeID: true)` to the ' +
+        'connection field.',
       'newsFeed',
     ]).toBeWarnedNTimes(0);
   });
@@ -380,7 +401,8 @@ describe('diffRelayQuery', () => {
     const tracker = new RelayQueryTracker();
 
     // Provide empty IDs to simulate non-refetchable nodes
-    const writeQuery = getNode(Relay.QL`
+    const writeQuery = getNode(
+      Relay.QL`
       query {
         viewer {
           newsFeed(first: 1) {
@@ -401,7 +423,8 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
+    `,
+    );
 
     const payload = {
       viewer: {
@@ -443,7 +466,8 @@ describe('diffRelayQuery', () => {
     writePayload(store, writer, writeQuery, payload, tracker);
 
     // Missing the `body{text}` on comment.
-    const fetchQuery = getNode(Relay.QL`
+    const fetchQuery = getNode(
+      Relay.QL`
       query {
         viewer {
           newsFeed(first: 1) {
@@ -465,24 +489,29 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
+    `,
+    );
     const diffQueries = diffRelayQuery(fetchQuery, store, tracker);
     expect(diffQueries.length).toBe(1);
-    expect(diffQueries[0]).toEqualQueryRoot(getNode(Relay.QL`
+    expect(diffQueries[0]).toEqualQueryRoot(
+      getNode(
+        Relay.QL`
       query {
         node(id:"commentid"){
           __typename
           ... on Comment {id, body {text}}
         }
       }
-    `));
+    `,
+      ),
+    );
     expect([
       'RelayDiffQueryBuilder: Field `node` on connection `%s` cannot be ' +
-      'retrieved if it does not have an `id` field. If you expect fields ' +
-      'to be retrieved on this field, add an `id` field in the schema. ' +
-      'If you choose to ignore this warning, you can silence it by ' +
-      'adding `@relay(isConnectionWithoutNodeID: true)` to the ' +
-      'connection field.',
+        'retrieved if it does not have an `id` field. If you expect fields ' +
+        'to be retrieved on this field, add an `id` field in the schema. ' +
+        'If you choose to ignore this warning, you can silence it by ' +
+        'adding `@relay(isConnectionWithoutNodeID: true)` to the ' +
+        'connection field.',
       'newsFeed',
     ]).toBeWarnedNTimes(0);
   });
@@ -529,7 +558,8 @@ describe('diffRelayQuery', () => {
         },
       },
     };
-    const writeQuery = getNode(Relay.QL`
+    const writeQuery = getNode(
+      Relay.QL`
       query {
         viewer {
           newsFeed(first: 3) {
@@ -543,11 +573,13 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
+    `,
+    );
     writePayload(store, writer, writeQuery, payload, tracker);
 
     // Split one `node()` query per edge to fetch missing `feedback{id}`
-    const fetchQuery = getNode(Relay.QL`
+    const fetchQuery = getNode(
+      Relay.QL`
       query {
         viewer {
           newsFeed(first: 3) {
@@ -561,10 +593,13 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
+    `,
+    );
     const diffQueries = diffRelayQuery(fetchQuery, store, tracker);
     expect(diffQueries.length).toBe(3);
-    expect(diffQueries[0]).toEqualQueryRoot(getVerbatimNode(Relay.QL`
+    expect(diffQueries[0]).toEqualQueryRoot(
+      getVerbatimNode(
+        Relay.QL`
       query {
         node(id:"s1") {
           id
@@ -578,8 +613,12 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `));
-    expect(diffQueries[1]).toEqualQueryRoot(getVerbatimNode(Relay.QL`
+    `,
+      ),
+    );
+    expect(diffQueries[1]).toEqualQueryRoot(
+      getVerbatimNode(
+        Relay.QL`
       query {
         node(id:"s2") {
           id
@@ -593,8 +632,12 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `));
-    expect(diffQueries[2]).toEqualQueryRoot(getVerbatimNode(Relay.QL`
+    `,
+      ),
+    );
+    expect(diffQueries[2]).toEqualQueryRoot(
+      getVerbatimNode(
+        Relay.QL`
       query {
         node(id:"s3") {
           id
@@ -608,53 +651,58 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `));
+    `,
+      ),
+    );
   });
 
-  it('fetches missing `node` data via a `node()` query and missing `edges` ' +
-     'data via a `connection.find()` query if connection is findable', () => {
-    const records = {};
-    const store = new RelayRecordStore({records}, {rootCallMap});
-    const writer = new RelayRecordWriter(records, rootCallMap, false);
-    const tracker = new RelayQueryTracker();
+  it(
+    'fetches missing `node` data via a `node()` query and missing `edges` ' +
+      'data via a `connection.find()` query if connection is findable',
+    () => {
+      const records = {};
+      const store = new RelayRecordStore({records}, {rootCallMap});
+      const writer = new RelayRecordWriter(records, rootCallMap, false);
+      const tracker = new RelayQueryTracker();
 
-    const payload = {
-      viewer: {
-        newsFeed: {
-          edges: [
-            {
-              cursor: 'c1',
-              node: {
-                id: 's1',
-                __typename: 'Story',
-                message: {text: 's1'},
+      const payload = {
+        viewer: {
+          newsFeed: {
+            edges: [
+              {
+                cursor: 'c1',
+                node: {
+                  id: 's1',
+                  __typename: 'Story',
+                  message: {text: 's1'},
+                },
               },
-            },
-            {
-              cursor: 'c2',
-              node: {
-                id: 's2',
-                __typename: 'Story',
-                message: {text: 's2'},
+              {
+                cursor: 'c2',
+                node: {
+                  id: 's2',
+                  __typename: 'Story',
+                  message: {text: 's2'},
+                },
               },
-            },
-            {
-              cursor: 'c3',
-              node: {
-                id: 's3',
-                __typename: 'Story',
-                message: {text: 's3'},
+              {
+                cursor: 'c3',
+                node: {
+                  id: 's3',
+                  __typename: 'Story',
+                  message: {text: 's3'},
+                },
               },
+            ],
+            [PAGE_INFO]: {
+              [HAS_NEXT_PAGE]: true,
+              [HAS_PREV_PAGE]: false,
             },
-          ],
-          [PAGE_INFO]: {
-            [HAS_NEXT_PAGE]: true,
-            [HAS_PREV_PAGE]: false,
           },
         },
-      },
-    };
-    const writeQuery = getNode(Relay.QL`
+      };
+      const writeQuery = getNode(
+        Relay.QL`
       query {
         viewer {
           newsFeed(first: 3) {
@@ -668,12 +716,14 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
-    writePayload(store, writer, writeQuery, payload, tracker);
+    `,
+      );
+      writePayload(store, writer, writeQuery, payload, tracker);
 
-    // node: `feedback{id}` is missing (fetch via node() query)
-    // edges: `sortKey` is missing (fetch via .find() query)
-    const fetchQuery = getNode(Relay.QL`
+      // node: `feedback{id}` is missing (fetch via node() query)
+      // edges: `sortKey` is missing (fetch via .find() query)
+      const fetchQuery = getNode(
+        Relay.QL`
       query {
         viewer {
           newsFeed(first: 3) {
@@ -690,10 +740,13 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
-    const diffQueries = diffRelayQuery(fetchQuery, store, tracker);
-    expect(diffQueries.length).toBe(6);
-    expect(diffQueries[0]).toEqualQueryRoot(getVerbatimNode(Relay.QL`
+    `,
+      );
+      const diffQueries = diffRelayQuery(fetchQuery, store, tracker);
+      expect(diffQueries.length).toBe(6);
+      expect(diffQueries[0]).toEqualQueryRoot(
+        getVerbatimNode(
+          Relay.QL`
       query {
         node(id:"s1") {
           id
@@ -707,8 +760,12 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `));
-    expect(diffQueries[1]).toEqualQueryRoot(getVerbatimNode(Relay.QL`
+    `,
+        ),
+      );
+      expect(diffQueries[1]).toEqualQueryRoot(
+        getVerbatimNode(
+          Relay.QL`
       query {
         viewer {
           newsFeed(find:"s1") {
@@ -723,8 +780,12 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `));
-    expect(diffQueries[2]).toEqualQueryRoot(getVerbatimNode(Relay.QL`
+    `,
+        ),
+      );
+      expect(diffQueries[2]).toEqualQueryRoot(
+        getVerbatimNode(
+          Relay.QL`
       query {
         node(id:"s2") {
           id
@@ -738,8 +799,12 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `));
-    expect(diffQueries[3]).toEqualQueryRoot(getVerbatimNode(Relay.QL`
+    `,
+        ),
+      );
+      expect(diffQueries[3]).toEqualQueryRoot(
+        getVerbatimNode(
+          Relay.QL`
       query {
         viewer {
           newsFeed(find:"s2") {
@@ -754,8 +819,12 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `));
-    expect(diffQueries[4]).toEqualQueryRoot(getVerbatimNode(Relay.QL`
+    `,
+        ),
+      );
+      expect(diffQueries[4]).toEqualQueryRoot(
+        getVerbatimNode(
+          Relay.QL`
       query {
         node(id:"s3") {
           id
@@ -769,8 +838,12 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `));
-    expect(diffQueries[5]).toEqualQueryRoot(getVerbatimNode(Relay.QL`
+    `,
+        ),
+      );
+      expect(diffQueries[5]).toEqualQueryRoot(
+        getVerbatimNode(
+          Relay.QL`
       query {
         viewer {
           newsFeed(find:"s3") {
@@ -785,61 +858,67 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `));
+    `,
+        ),
+      );
 
-    // Ensure that a `__typename` field is generated
-    const typeField = diffQueries[5]
-      .getFieldByStorageKey('newsFeed')
-      .getFieldByStorageKey('edges')
-      .getFieldByStorageKey('node')
-      .getFieldByStorageKey('__typename');
-    expect(typeField).toBeTruthy();
-  });
+      // Ensure that a `__typename` field is generated
+      const typeField = diffQueries[5]
+        .getFieldByStorageKey('newsFeed')
+        .getFieldByStorageKey('edges')
+        .getFieldByStorageKey('node')
+        .getFieldByStorageKey('__typename');
+      expect(typeField).toBeTruthy();
+    },
+  );
 
-  it('fetches missing `node` data via a `node()` query and warns about ' +
-     'unfetchable `edges` data if connection is not findable', () => {
-    const records = {};
-    const store = new RelayRecordStore({records}, {rootCallMap});
-    const writer = new RelayRecordWriter(records, rootCallMap, false);
-    const tracker = new RelayQueryTracker();
+  it(
+    'fetches missing `node` data via a `node()` query and warns about ' +
+      'unfetchable `edges` data if connection is not findable',
+    () => {
+      const records = {};
+      const store = new RelayRecordStore({records}, {rootCallMap});
+      const writer = new RelayRecordWriter(records, rootCallMap, false);
+      const tracker = new RelayQueryTracker();
 
-    const payload = {
-      viewer: {
-        notificationStories: {
-          edges: [
-            {
-              cursor: 'c1',
-              node: {
-                id: 's1',
-                __typename: 'Story',
-                message: {text: 's1'},
+      const payload = {
+        viewer: {
+          notificationStories: {
+            edges: [
+              {
+                cursor: 'c1',
+                node: {
+                  id: 's1',
+                  __typename: 'Story',
+                  message: {text: 's1'},
+                },
               },
-            },
-            {
-              cursor: 'c2',
-              node: {
-                id: 's2',
-                __typename: 'Story',
-                message: {text: 's2'},
+              {
+                cursor: 'c2',
+                node: {
+                  id: 's2',
+                  __typename: 'Story',
+                  message: {text: 's2'},
+                },
               },
-            },
-            {
-              cursor: 'c3',
-              node: {
-                id: 's3',
-                __typename: 'Story',
-                message: {text: 's3'},
+              {
+                cursor: 'c3',
+                node: {
+                  id: 's3',
+                  __typename: 'Story',
+                  message: {text: 's3'},
+                },
               },
+            ],
+            [PAGE_INFO]: {
+              [HAS_NEXT_PAGE]: true,
+              [HAS_PREV_PAGE]: false,
             },
-          ],
-          [PAGE_INFO]: {
-            [HAS_NEXT_PAGE]: true,
-            [HAS_PREV_PAGE]: false,
           },
         },
-      },
-    };
-    const writeQuery = getNode(Relay.QL`
+      };
+      const writeQuery = getNode(
+        Relay.QL`
       query {
         viewer {
           notificationStories(first: 3) {
@@ -853,13 +932,15 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
-    writePayload(store, writer, writeQuery, payload, tracker);
+    `,
+      );
+      writePayload(store, writer, writeQuery, payload, tracker);
 
-    // node: `feedback{id}` is missing (fetch via node() query)
-    // edges: `showBeeper` is missing but cannot be refetched because
-    // `notificationStories` does not support `.find()`
-    const fetchQuery = getNode(Relay.QL`
+      // node: `feedback{id}` is missing (fetch via node() query)
+      // edges: `showBeeper` is missing but cannot be refetched because
+      // `notificationStories` does not support `.find()`
+      const fetchQuery = getNode(
+        Relay.QL`
       query {
         viewer {
           notificationStories(first: 3) {
@@ -874,10 +955,13 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
-    const diffQueries = diffRelayQuery(fetchQuery, store, tracker);
-    expect(diffQueries.length).toBe(3);
-    expect(diffQueries[0]).toEqualQueryRoot(getVerbatimNode(Relay.QL`
+    `,
+      );
+      const diffQueries = diffRelayQuery(fetchQuery, store, tracker);
+      expect(diffQueries.length).toBe(3);
+      expect(diffQueries[0]).toEqualQueryRoot(
+        getVerbatimNode(
+          Relay.QL`
       query {
         node(id:"s1") {
           id
@@ -891,8 +975,12 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `));
-    expect(diffQueries[1]).toEqualQueryRoot(getVerbatimNode(Relay.QL`
+    `,
+        ),
+      );
+      expect(diffQueries[1]).toEqualQueryRoot(
+        getVerbatimNode(
+          Relay.QL`
       query {
         node(id:"s2") {
           id
@@ -906,8 +994,12 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `));
-    expect(diffQueries[2]).toEqualQueryRoot(getVerbatimNode(Relay.QL`
+    `,
+        ),
+      );
+      expect(diffQueries[2]).toEqualQueryRoot(
+        getVerbatimNode(
+          Relay.QL`
       query {
         node(id:"s3") {
           id
@@ -921,14 +1013,17 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `));
-    expect([
-      'RelayDiffQueryBuilder: connection `edges{*}` fields can only be ' +
-      'refetched if the connection supports the `find` call. Cannot ' +
-      'refetch data for field `%s`.',
-      'notificationStories',
-    ]).toBeWarnedNTimes(3);
-  });
+    `,
+        ),
+      );
+      expect([
+        'RelayDiffQueryBuilder: connection `edges{*}` fields can only be ' +
+          'refetched if the connection supports the `find` call. Cannot ' +
+          'refetch data for field `%s`.',
+        'notificationStories',
+      ]).toBeWarnedNTimes(3);
+    },
+  );
 
   it('does not flatten fragments when creating new root queries', () => {
     const records = {};
@@ -939,9 +1034,7 @@ describe('diffRelayQuery', () => {
     const payload = {
       viewer: {
         newsFeed: {
-          edges: [
-            {cursor: 'c1', node: {id:'s1', message:{text:'s1'}}},
-          ],
+          edges: [{cursor: 'c1', node: {id: 's1', message: {text: 's1'}}}],
           [PAGE_INFO]: {
             [HAS_NEXT_PAGE]: true,
             [HAS_PREV_PAGE]: false,
@@ -949,7 +1042,8 @@ describe('diffRelayQuery', () => {
         },
       },
     };
-    const writeQuery = getNode(Relay.QL`
+    const writeQuery = getNode(
+      Relay.QL`
       query {
         viewer {
           newsFeed(first: 1) {
@@ -963,14 +1057,16 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
+    `,
+    );
     writePayload(store, writer, writeQuery, payload, tracker);
 
     // node: `feedback{id}` is missing (fetch via node() query)
     // edges: `sortKey` is missing (fetch via .find() query)
     const edgeFragment = Relay.QL`fragment on NewsFeedEdge{sortKey}`;
     const nodeFragment = Relay.QL`fragment on FeedUnit{feedback{id}}`;
-    const fetchQuery = getNode(Relay.QL`
+    const fetchQuery = getNode(
+      Relay.QL`
       query {
         viewer {
           newsFeed(first: 1) {
@@ -983,7 +1079,8 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
+    `,
+    );
     // skip flattening to check fragment structure
     const diffQueries = diffRelayQuery(fetchQuery, store, tracker);
     expect(diffQueries[0]).toContainQueryNode(getNode(nodeFragment));
@@ -997,7 +1094,8 @@ describe('diffRelayQuery', () => {
     const tracker = new RelayQueryTracker();
 
     // Create the first query with a selection on a connection.
-    const firstQuery = getNode(Relay.QL`
+    const firstQuery = getNode(
+      Relay.QL`
       query {
         viewer {
           newsFeed(first: 3) {
@@ -1012,7 +1110,8 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
+    `,
+    );
 
     const firstPayload = {
       viewer: {
@@ -1027,7 +1126,8 @@ describe('diffRelayQuery', () => {
 
     // Create a second query that requests a different selection on the null
     // connection.
-    const secondQuery = getNode(Relay.QL`
+    const secondQuery = getNode(
+      Relay.QL`
       query {
         viewer {
           newsFeed(first: 3) {
@@ -1041,7 +1141,8 @@ describe('diffRelayQuery', () => {
           }
         }
       }
-    `);
+    `,
+    );
 
     // Everything can be diffed out, connection is null.
     const diffQueries = diffRelayQuery(secondQuery, store, tracker);
@@ -1053,5 +1154,4 @@ describe('diffRelayQuery', () => {
     expect(trackedQueries[1][1]).toBe('client:1');
     expect(trackedQueries[1][0]).toEqualQueryRoot(secondQuery);
   });
-
 });

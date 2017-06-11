@@ -8,6 +8,7 @@
  *
  * @providesModule QueryBuilder
  * @flow
+ * @format
  */
 
 'use strict';
@@ -61,7 +62,7 @@ if (__DEV__) {
 const QueryBuilder = {
   createBatchCallVariable(
     sourceQueryID: string,
-    jsonPath: string
+    jsonPath: string,
   ): ConcreteBatchCallVariable {
     return {
       kind: 'BatchCallVariable',
@@ -73,7 +74,7 @@ const QueryBuilder = {
   createCall(
     name: string,
     value: ?ConcreteValue,
-    type?: ?string
+    type?: ?string,
   ): ConcreteCall {
     return {
       kind: 'Call',
@@ -85,18 +86,14 @@ const QueryBuilder = {
     };
   },
 
-  createCallValue(
-    callValue: mixed
-  ): ConcreteCallValue {
+  createCallValue(callValue: mixed): ConcreteCallValue {
     return {
       kind: 'CallValue',
       callValue,
     };
   },
 
-  createCallVariable(
-    callVariableName: string
-  ): ConcreteCallVariable {
+  createCallVariable(callVariableName: string): ConcreteCallVariable {
     return {
       kind: 'CallVariable',
       callVariableName,
@@ -105,7 +102,7 @@ const QueryBuilder = {
 
   createDirective(
     name: string,
-    args: Array<ConcreteDirectiveArgument>
+    args: Array<ConcreteDirectiveArgument>,
   ): ConcreteDirective {
     return {
       args,
@@ -116,7 +113,7 @@ const QueryBuilder = {
 
   createDirectiveArgument(
     name: string,
-    value: ?ConcreteDirectiveValue
+    value: ?ConcreteDirectiveValue,
   ): ConcreteDirectiveArgument {
     return {
       name,
@@ -225,15 +222,17 @@ const QueryBuilder = {
       warning(
         partialQuery.identifyingArgValue != null,
         'QueryBuilder.createQuery(): An argument value may be required for ' +
-        'query `%s(%s: ???)`.',
+          'query `%s(%s: ???)`.',
         partialQuery.fieldName,
-        identifyingArgName
-      );
-      calls = [QueryBuilder.createCall(
         identifyingArgName,
-        partialQuery.identifyingArgValue,
-        metadata.identifyingArgType
-      )];
+      );
+      calls = [
+        QueryBuilder.createCall(
+          identifyingArgName,
+          partialQuery.identifyingArgValue,
+          metadata.identifyingArgType,
+        ),
+      ];
     }
     return {
       calls,
@@ -337,11 +336,7 @@ const QueryBuilder = {
 };
 
 function isConcreteKind(node: mixed, kind: string): boolean {
-  return (
-    typeof node === 'object' &&
-    node !== null &&
-    node.kind === kind
-  );
+  return typeof node === 'object' && node !== null && node.kind === kind;
 }
 
 module.exports = QueryBuilder;

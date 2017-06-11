@@ -8,59 +8,75 @@
  *
  * @providesModule commitRelayModernMutation
  * @flow
+ * @format
  */
 
 'use strict';
 
 const invariant = require('invariant');
 const isRelayModernEnvironment = require('isRelayModernEnvironment');
+const setRelayModernMutationConfigs = require('setRelayModernMutationConfigs');
+const warning = require('warning');
 
 import type {Disposable} from 'RelayCombinedEnvironmentTypes';
 import type {GraphQLTaggedNode} from 'RelayModernGraphQLTag';
 import type {PayloadError, UploadableMap} from 'RelayNetworkTypes';
-import type {Environment, RecordSourceSelectorProxy} from 'RelayStoreTypes';
+import type {Environment, SelectorStoreUpdater} from 'RelayStoreTypes';
 import type {RelayMutationConfig} from 'RelayTypes';
 import type {Variables} from 'RelayTypes';
 
-export type MutationConfig = {|
+export type MutationConfig<T> = {|
   configs?: Array<RelayMutationConfig>,
   mutation: GraphQLTaggedNode,
   variables: Variables,
   uploadables?: UploadableMap,
-  onCompleted?: ?(response: ?Object) => void,
+  onCompleted?: ?(response: T, errors: ?Array<PayloadError>) => void,
   onError?: ?(error: Error) => void,
-  optimisticUpdater?: ?(store: RecordSourceSelectorProxy) => void,
+  optimisticUpdater?: ?SelectorStoreUpdater,
   optimisticResponse?: ?() => Object,
-  updater?: ?(store: RecordSourceSelectorProxy) => void,
+  updater?: ?SelectorStoreUpdater,
 |};
 
 /**
  * Higher-level helper function to execute a mutation against a specific
  * environment.
  */
-function commitRelayModernMutation(
+function commitRelayModernMutation<T>(
   environment: Environment,
-  config: MutationConfig
+  config: MutationConfig<T>,
 ): Disposable {
   invariant(
     isRelayModernEnvironment(environment),
     'commitRelayModernMutation: expect `environment` to be an instance of ' +
-    '`RelayModernEnvironment`.'
+      '`RelayModernEnvironment`.',
   );
-  const {
-    createOperationSelector,
-    getOperation,
-  } = environment.unstable_internal;
+  const {createOperationSelector, getOperation} = environment.unstable_internal;
   const mutation = getOperation(config.mutation);
-  const {
-    onError,
-    optimisticResponse,
-    optimisticUpdater,
-    updater,
-    variables,
-    uploadables,
-  } = config;
+  let {optimisticUpdater, updater} = config;
+  const {configs, onError, optimisticResponse, variables, uploadables} = config;
   const operation = createOperationSelector(mutation, variables);
+  if (
+    optimisticResponse &&
+    mutation.query.selections &&
+    mutation.query.selections.length === 1 &&
+    mutation.query.selections[0].kind === 'LinkedField'
+  ) {
+    const mutationRoot = mutation.query.selections[0].name;
+    warning(
+      optimisticResponse()[mutationRoot],
+      'commitRelayModernMutatuion: Expected result from optimisticResponse()' +
+        ' to be wrapped in mutation name `%s`',
+      mutationRoot,
+    );
+  }
+  if (configs) {
+    ({optimisticUpdater, updater} = setRelayModernMutationConfigs(
+      configs,
+      mutation,
+      optimisticUpdater,
+      updater,
+    ));
+  }
   return environment.sendMutation({
     onError,
     operation,
@@ -72,7 +88,7 @@ function commitRelayModernMutation(
       const {onCompleted} = config;
       if (onCompleted) {
         const snapshot = environment.lookup(operation.fragment);
-        onCompleted(snapshot.data, errors);
+        onCompleted((snapshot.data: $FlowFixMe), errors);
       }
     },
   });

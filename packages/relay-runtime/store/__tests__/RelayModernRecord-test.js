@@ -5,12 +5,13 @@
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ * @format
  */
 
 'use strict';
 
-jest
-  .autoMockOff();
+jest.autoMockOff();
 
 const RelayModernRecord = require('RelayModernRecord');
 const RelayStoreUtils = require('RelayStoreUtils');
@@ -67,7 +68,7 @@ describe('RelayModernRecord', () => {
     });
   });
 
-  describe('getLinkedRecordIDs()', () => {
+  describe('getLinkedRecordIDsByStorageKey()', () => {
     let record;
 
     beforeEach(() => {
@@ -85,33 +86,41 @@ describe('RelayModernRecord', () => {
     });
 
     it('returns undefined when the link is unknown', () => {
-      expect(RelayModernRecord.getLinkedRecordIDs(record, 'colors')).toBe(undefined);
+      expect(
+        RelayModernRecord.getLinkedRecordIDsByStorageKey(record, 'colors'),
+      ).toBe(undefined);
     });
 
     it('returns null when the link is non-existent', () => {
-      expect(RelayModernRecord.getLinkedRecordIDs(record, 'enemies')).toBe(null);
+      expect(
+        RelayModernRecord.getLinkedRecordIDsByStorageKey(record, 'enemies'),
+      ).toBe(null);
     });
 
     it('returns the linked record IDs when they exist', () => {
-      expect(RelayModernRecord.getLinkedRecordIDs(record, 'friends{"first":10}'))
-        .toEqual(['beast', 'greg', null]);
+      expect(
+        RelayModernRecord.getLinkedRecordIDsByStorageKey(
+          record,
+          'friends{"first":10}',
+        ),
+      ).toEqual(['beast', 'greg', null]);
     });
 
     it('throws if the field is actually a scalar', () => {
-      expect(
-        () => RelayModernRecord.getLinkedRecordIDs(record, 'name')
+      expect(() =>
+        RelayModernRecord.getLinkedRecordIDsByStorageKey(record, 'name'),
       ).toFailInvariant(
-        'RelayModernRecord.getLinkedRecordIDs(): Expected `4.name` to contain ' +
-        'an array of linked IDs, got `"Mark"`.'
+        'RelayModernRecord.getLinkedRecordIDsByStorageKey(): Expected `4.name` to contain ' +
+          'an array of linked IDs, got `"Mark"`.',
       );
     });
 
     it('throws if the field is a singular link', () => {
-      expect(
-        () => RelayModernRecord.getLinkedRecordIDs(record, 'hometown')
+      expect(() =>
+        RelayModernRecord.getLinkedRecordIDsByStorageKey(record, 'hometown'),
       ).toFailInvariant(
-        'RelayModernRecord.getLinkedRecordIDs(): Expected `4.hometown` to contain ' +
-        'an array of linked IDs, got `{"__ref":"mpk"}`.'
+        'RelayModernRecord.getLinkedRecordIDsByStorageKey(): Expected `4.hometown` to contain ' +
+          'an array of linked IDs, got `{"__ref":"mpk"}`.',
       );
     });
   });
@@ -132,13 +141,14 @@ describe('RelayModernRecord', () => {
         [ID_KEY]: '4',
       };
       const storageKey = 'friends{"first":10}';
-      RelayModernRecord.setLinkedRecordIDs(
-        record,
-        storageKey,
-        ['beast', 'greg', null]
-      );
-      expect(RelayModernRecord.getLinkedRecordIDs(record, storageKey))
-        .toEqual(['beast', 'greg', null]);
+      RelayModernRecord.setLinkedRecordIDs(record, storageKey, [
+        'beast',
+        'greg',
+        null,
+      ]);
+      expect(
+        RelayModernRecord.getLinkedRecordIDsByStorageKey(record, storageKey),
+      ).toEqual(['beast', 'greg', null]);
     });
   });
 
@@ -164,47 +174,57 @@ describe('RelayModernRecord', () => {
     });
 
     it('returns a scalar value', () => {
-      expect(RelayModernRecord.getValue(record, 'name')).toBe('Mark');
+      expect(RelayModernRecord.getValueByStorageKey(record, 'name')).toBe(
+        'Mark',
+      );
     });
 
     it('returns a (list) scalar value', () => {
       // Note that lists can be scalars too. The definition of scalar value is
       // "not a singular or plural link", and means that no query can traverse
       // into it.
-      expect(RelayModernRecord.getValue(record, 'favoriteColors'))
-        .toEqual(['red', 'green', 'blue']);
+      expect(
+        RelayModernRecord.getValueByStorageKey(record, 'favoriteColors'),
+      ).toEqual(['red', 'green', 'blue']);
     });
 
     it('returns a (custom object) scalar value', () => {
       // Objects can be scalars too. The definition of scalar value is
       // "not a singular or plural link", and means that no query can traverse
       // into it.
-      expect(RelayModernRecord.getValue(record, 'other'))
-        .toEqual({customScalar: true});
+      expect(RelayModernRecord.getValueByStorageKey(record, 'other')).toEqual({
+        customScalar: true,
+      });
     });
 
     it('returns null when the field is non-existent', () => {
-      expect(RelayModernRecord.getValue(record, 'blockbusterMembership')).toBe(null);
+      expect(
+        RelayModernRecord.getValueByStorageKey(record, 'blockbusterMembership'),
+      ).toBe(null);
     });
 
     it('returns undefined when the field is unknown', () => {
-      expect(RelayModernRecord.getValue(record, 'horoscope')).toBe(undefined);
+      expect(RelayModernRecord.getValueByStorageKey(record, 'horoscope')).toBe(
+        undefined,
+      );
     });
 
     it('throws on encountering a linked record', () => {
-      expect(() => RelayModernRecord.getValue(record, 'hometown'))
-        .toFailInvariant(
-          'RelayModernRecord.getValue(): Expected a scalar (non-link) value for ' +
-          '`4.hometown` but found a linked record.'
-        );
+      expect(() =>
+        RelayModernRecord.getValueByStorageKey(record, 'hometown'),
+      ).toFailInvariant(
+        'RelayModernRecord.getValueByStorageKey(): Expected a scalar (non-link) value for ' +
+          '`4.hometown` but found a linked record.',
+      );
     });
 
     it('throws on encountering a plural linked record', () => {
-      expect(() => RelayModernRecord.getValue(record, 'friends{"first":10}'))
-        .toFailInvariant(
-          'RelayModernRecord.getValue(): Expected a scalar (non-link) value for ' +
-          '`4.friends{"first":10}` but found plural linked records.'
-        );
+      expect(() =>
+        RelayModernRecord.getValueByStorageKey(record, 'friends{"first":10}'),
+      ).toFailInvariant(
+        'RelayModernRecord.getValueByStorageKey(): Expected a scalar (non-link) value for ' +
+          '`4.friends{"first":10}` but found plural linked records.',
+      );
     });
   });
 

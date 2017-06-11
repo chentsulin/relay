@@ -5,6 +5,8 @@
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ * @format
  */
 
 'use strict';
@@ -18,6 +20,8 @@ const RelayTestSchema = require('RelayTestSchema');
 const getGoldenMatchers = require('getGoldenMatchers');
 const prettyStringify = require('prettyStringify');
 
+const {transformASTSchema} = require('ASTConvert');
+
 describe('RelayRelayDirectiveTransform', () => {
   beforeEach(() => {
     jasmine.addMatchers(getGoldenMatchers(__filename));
@@ -25,13 +29,13 @@ describe('RelayRelayDirectiveTransform', () => {
 
   it('matches expected output', () => {
     expect('fixtures/relay-directive-transform').toMatchGolden(text => {
-      const schema = RelayRelayDirectiveTransform.transformSchema(
-        RelayTestSchema
-      );
+      const schema = transformASTSchema(RelayTestSchema, [
+        RelayRelayDirectiveTransform.SCHEMA_EXTENSION,
+      ]);
       const ast = RelayParser.parse(schema, text);
       const context = ast.reduce(
         (ctx, node) => ctx.add(node),
-        new RelayCompilerContext(schema)
+        new RelayCompilerContext(schema),
       );
       const nextContext = RelayRelayDirectiveTransform.transform(context);
       const documents = [];

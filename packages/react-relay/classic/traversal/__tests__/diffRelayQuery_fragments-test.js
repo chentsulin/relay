@@ -7,15 +7,16 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
 
+jest.enableAutomock();
+
 require('configureForRelayOSS');
 
-jest
-  .unmock('GraphQLRange')
-  .unmock('GraphQLSegment');
+jest.unmock('GraphQLRange').unmock('GraphQLSegment');
 
 const Relay = require('Relay');
 const RelayConnectionInterface = require('RelayConnectionInterface');
@@ -33,7 +34,7 @@ describe('diffRelayQuery - fragments', () => {
   let HAS_NEXT_PAGE, HAS_PREV_PAGE, PAGE_INFO;
 
   const rootCallMap = {
-    'viewer': {'': 'client:1'},
+    viewer: {'': 'client:1'},
   };
 
   beforeEach(() => {
@@ -52,7 +53,8 @@ describe('diffRelayQuery - fragments', () => {
     const writer = new RelayRecordWriter(records, {}, false);
     const tracker = new RelayQueryTracker();
 
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         node(id:"123") {
           ... on User {
@@ -60,7 +62,8 @@ describe('diffRelayQuery - fragments', () => {
           }
         }
       }
-    `);
+    `,
+    );
     const payload = {
       node: {
         id: '123',
@@ -85,13 +88,15 @@ describe('diffRelayQuery - fragments', () => {
         firstName
       }
     `;
-    const writeQuery = getNode(Relay.QL`
+    const writeQuery = getNode(
+      Relay.QL`
       query {
         node(id:"123") {
           ${writeFragment}
         }
       }
-    `);
+    `,
+    );
     const payload = {
       node: {
         id: '123',
@@ -101,26 +106,30 @@ describe('diffRelayQuery - fragments', () => {
     };
     writePayload(store, writer, writeQuery, payload, tracker);
 
-    const readFragment = getNode(Relay.QL`
+    const readFragment = getNode(
+      Relay.QL`
       fragment on User {
         firstName
         lastName
       }
-    `);
+    `,
+    );
 
     const fragmentReference = new RelayFragmentReference(
       () => readFragment.getConcreteQueryNode(),
-      {}
+      {},
     );
     fragmentReference.defer();
 
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         node(id:"123") {
           ${fragmentReference}
         }
       }
-    `);
+    `,
+    );
 
     const diffQueries = diffRelayQuery(query, store, tracker);
     expect(diffQueries.length).toBe(1);
@@ -130,7 +139,9 @@ describe('diffRelayQuery - fragments', () => {
     const originalCompositeHash = readFragment.getCompositeHash();
     expect(fragmentRef.getSourceCompositeHash()).toBe(originalCompositeHash);
 
-    expect(diffQueries[0]).toEqualQueryRoot(getNode(Relay.QL`
+    expect(diffQueries[0]).toEqualQueryRoot(
+      getNode(
+        Relay.QL`
       query {
         node(id:"123") {
           ... on User {
@@ -138,7 +149,9 @@ describe('diffRelayQuery - fragments', () => {
           }
         }
       }
-    `));
+    `,
+      ),
+    );
   });
 
   it('tracks fragments for null linked fields', () => {
@@ -148,7 +161,8 @@ describe('diffRelayQuery - fragments', () => {
     const tracker = new RelayQueryTracker();
 
     // Create the first query with a selection on a linked field.
-    const firstQuery = getNode(Relay.QL`
+    const firstQuery = getNode(
+      Relay.QL`
       query {
         node(id:"123") {
           ... on User {
@@ -158,7 +172,8 @@ describe('diffRelayQuery - fragments', () => {
           }
         }
       }
-    `);
+    `,
+    );
 
     const firstPayload = {
       node: {
@@ -176,7 +191,8 @@ describe('diffRelayQuery - fragments', () => {
 
     // Create a second query that requests a different selection on the null
     // linked field.
-    const secondQuery = getNode(Relay.QL`
+    const secondQuery = getNode(
+      Relay.QL`
       query {
         node(id:"123") {
           ... on User {
@@ -186,7 +202,8 @@ describe('diffRelayQuery - fragments', () => {
           }
         }
       }
-    `);
+    `,
+    );
 
     // Everything can be diffed out, linked field is null.
     const diffQueries = diffRelayQuery(secondQuery, store, tracker);
@@ -205,7 +222,8 @@ describe('diffRelayQuery - fragments', () => {
     const writer = new RelayRecordWriter(records, {}, false);
     const tracker = new RelayQueryTracker();
 
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         node(id:"123") {
           ... on User {
@@ -216,7 +234,8 @@ describe('diffRelayQuery - fragments', () => {
           }
         }
       }
-    `);
+    `,
+    );
     const payload = {
       node: {
         id: '123',
@@ -236,7 +255,8 @@ describe('diffRelayQuery - fragments', () => {
     const writer = new RelayRecordWriter(records, {}, false);
     const tracker = new RelayQueryTracker();
 
-    const writeQuery = getNode(Relay.QL`
+    const writeQuery = getNode(
+      Relay.QL`
       query {
         node(id:"123") {
           ... on User {
@@ -247,7 +267,8 @@ describe('diffRelayQuery - fragments', () => {
           }
         }
       }
-    `);
+    `,
+    );
     const payload = {
       node: {
         id: '123',
@@ -257,7 +278,8 @@ describe('diffRelayQuery - fragments', () => {
     };
     writePayload(store, writer, writeQuery, payload, tracker);
 
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         node(id:"123") {
           ... on User {
@@ -269,10 +291,13 @@ describe('diffRelayQuery - fragments', () => {
           }
         }
       }
-    `);
+    `,
+    );
     const diffQueries = diffRelayQuery(query, store, tracker);
     expect(diffQueries.length).toBe(1);
-    expect(diffQueries[0]).toEqualQueryRoot(getNode(Relay.QL`
+    expect(diffQueries[0]).toEqualQueryRoot(
+      getNode(
+        Relay.QL`
       query {
         node(id:"123") {
           ... on User {
@@ -283,7 +308,9 @@ describe('diffRelayQuery - fragments', () => {
           }
         }
       }
-    `));
+    `,
+      ),
+    );
   });
 
   it('removes non-matching fragments if connection fields are fetched', () => {
@@ -312,7 +339,8 @@ describe('diffRelayQuery - fragments', () => {
         },
       },
     };
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         viewer {
           newsFeed(first: 1) {
@@ -333,44 +361,44 @@ describe('diffRelayQuery - fragments', () => {
           }
         }
       }
-    `);
+    `,
+    );
     writePayload(store, writer, query, payload, tracker);
 
     const diffQueries = diffRelayQuery(query, store, tracker);
     expect(diffQueries.length).toBe(0);
   });
 
-  it(
-    'refetches non-matching fragments if connection fields are missing',
-    () => {
-      const records = {};
-      const store = new RelayRecordStore({records}, {rootCallMap});
-      const writer = new RelayRecordWriter(records, rootCallMap, false);
-      const tracker = new RelayQueryTracker();
+  it('refetches non-matching fragments if connection fields are missing', () => {
+    const records = {};
+    const store = new RelayRecordStore({records}, {rootCallMap});
+    const writer = new RelayRecordWriter(records, rootCallMap, false);
+    const tracker = new RelayQueryTracker();
 
-      const payload = {
-        viewer: {
-          newsFeed: {
-            edges: [
-              {
-                cursor: 'c1',
-                node: {
-                  id: 's1',
-                  __typename: 'Story',
-                  message: {
-                    text: 's1', // missing `ranges`
-                  },
+    const payload = {
+      viewer: {
+        newsFeed: {
+          edges: [
+            {
+              cursor: 'c1',
+              node: {
+                id: 's1',
+                __typename: 'Story',
+                message: {
+                  text: 's1', // missing `ranges`
                 },
               },
-            ],
-            [PAGE_INFO]: {
-              [HAS_NEXT_PAGE]: true,
-              [HAS_PREV_PAGE]: false,
             },
+          ],
+          [PAGE_INFO]: {
+            [HAS_NEXT_PAGE]: true,
+            [HAS_PREV_PAGE]: false,
           },
         },
-      };
-      const writeQuery = getNode(Relay.QL`
+      },
+    };
+    const writeQuery = getNode(
+      Relay.QL`
         query {
           viewer {
             newsFeed(first: 1) {
@@ -391,10 +419,12 @@ describe('diffRelayQuery - fragments', () => {
             }
           }
         }
-      `);
-      writePayload(store, writer, writeQuery, payload, tracker);
+      `,
+    );
+    writePayload(store, writer, writeQuery, payload, tracker);
 
-      const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
         query {
           viewer {
             newsFeed(first: 1) {
@@ -416,10 +446,13 @@ describe('diffRelayQuery - fragments', () => {
             }
           }
         }
-      `);
-      const diffQueries = diffRelayQuery(query, store, tracker);
-      expect(diffQueries.length).toBe(1);
-      expect(diffQueries[0]).toEqualQueryRoot(getNode(Relay.QL`
+      `,
+    );
+    const diffQueries = diffRelayQuery(query, store, tracker);
+    expect(diffQueries.length).toBe(1);
+    expect(diffQueries[0]).toEqualQueryRoot(
+      getNode(
+        Relay.QL`
         query {
           node(id:"s1") {
             ... on Story {
@@ -438,9 +471,10 @@ describe('diffRelayQuery - fragments', () => {
             }
           }
         }
-      `));
-    }
-  );
+      `,
+      ),
+    );
+  });
 
   describe('fragments inside connections', () => {
     let records;
@@ -460,13 +494,7 @@ describe('diffRelayQuery - fragments', () => {
           },
         },
       };
-      writePayload(
-        store,
-        writer,
-        query,
-        payload,
-        queryTracker
-      );
+      writePayload(store, writer, query, payload, queryTracker);
     }
 
     beforeEach(() => {
@@ -481,7 +509,8 @@ describe('diffRelayQuery - fragments', () => {
           {cursor: 'c1', node: {id: 's1', __typename: 'Story'}},
           {cursor: 'c2', node: {id: 's2', __typename: 'Story'}},
         ],
-        getNode(Relay.QL`
+        getNode(
+          Relay.QL`
           query {
             viewer {
               newsFeed(first: 2) {
@@ -493,7 +522,8 @@ describe('diffRelayQuery - fragments', () => {
               }
             }
           }
-        `)
+        `,
+        ),
       );
     });
 
@@ -532,20 +562,22 @@ describe('diffRelayQuery - fragments', () => {
             },
           },
         ],
-        getNode(feedQuery, {count: 1, after: null})
+        getNode(feedQuery, {count: 1, after: null}),
       );
 
       // Query for 3 stories with text
       const diffQueries = diffRelayQuery(
         getNode(feedQuery, {count: 3, after: null}),
         store,
-        queryTracker
+        queryTracker,
       );
       expect(diffQueries.length).toBe(2);
       expect(diffQueries[0]).toEqualQueryRoot(
-        getNode(feedQuery, {count: 1, after: 'c2'})
+        getNode(feedQuery, {count: 1, after: 'c2'}),
       );
-      expect(diffQueries[1]).toEqualQueryRoot(getNode(Relay.QL`
+      expect(diffQueries[1]).toEqualQueryRoot(
+        getNode(
+          Relay.QL`
         query {
           node(id: "s2") {
             ... on FeedUnit {
@@ -560,11 +592,14 @@ describe('diffRelayQuery - fragments', () => {
             }
           }
         }
-      `));
+      `,
+        ),
+      );
     });
 
     it('skips tracked fragments', () => {
-      const query = getNode(Relay.QL`
+      const query = getNode(
+        Relay.QL`
         query {
           node(id: "123") {
             ... on User {
@@ -580,7 +615,8 @@ describe('diffRelayQuery - fragments', () => {
             }
           }
         }
-      `);
+      `,
+      );
       const payload = {
         node: {
           id: '123',
@@ -602,29 +638,15 @@ describe('diffRelayQuery - fragments', () => {
           },
         },
       };
-      writePayload(
-        store,
-        writer,
-        query,
-        payload,
-        queryTracker
-      );
+      writePayload(store, writer, query, payload, queryTracker);
 
       // All fields present, nothing to diff.
-      expect(diffRelayQuery(
-        query,
-        store,
-        queryTracker
-      ).length).toBe(0);
+      expect(diffRelayQuery(query, store, queryTracker).length).toBe(0);
 
       // Removing a field should not result in a diff query since the edge is
       // tracked.
       delete records.node1.name;
-      expect(diffRelayQuery(
-        query,
-        store,
-        queryTracker
-      ).length).toBe(0);
+      expect(diffRelayQuery(query, store, queryTracker).length).toBe(0);
     });
   });
 });

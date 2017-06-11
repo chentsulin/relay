@@ -7,9 +7,12 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
+
+jest.enableAutomock();
 
 require('configureForRelayOSS');
 
@@ -28,7 +31,11 @@ describe('RelayRenderer.abort', () => {
   beforeEach(() => {
     jest.resetModules();
 
-    const MockComponent = React.createClass({render: () => <div />});
+    class MockComponent extends React.Component {
+      render() {
+        return <div />;
+      }
+    }
     MockContainer = Relay.createContainer(MockComponent, {
       fragments: {},
     });
@@ -44,7 +51,7 @@ describe('RelayRenderer.abort', () => {
           queryConfig={queryConfig}
           environment={environment}
         />,
-        container
+        container,
       );
       const index = environment.primeCache.mock.calls.length - 1;
       return {

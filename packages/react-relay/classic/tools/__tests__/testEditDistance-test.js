@@ -7,9 +7,12 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
+
+jest.disableAutomock();
 
 const testEditDistance = require('testEditDistance');
 
@@ -59,15 +62,15 @@ describe('testEditDistance()', () => {
       testEditDistance(
         'String involving multiple changes.',
         'strni ginvolvinG mmultiple cangs!',
-        7
-      )
+        7,
+      ),
     ).toBe(false);
     expect(
       testEditDistance(
         'String involving multiple changes.',
         'strni ginvolvinG mmultiple cangs!',
-        8
-      )
+        8,
+      ),
     ).toBe(true);
   });
 });

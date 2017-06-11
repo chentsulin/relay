@@ -5,11 +5,12 @@
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ * @format
  */
 
 'use strict';
 
-const Deferred = require('Deferred');
 const RelayInMemoryRecordSource = require('RelayInMemoryRecordSource');
 const RelayMarkSweepStore = require('RelayMarkSweepStore');
 const RelayModernEnvironment = require('RelayModernEnvironment');
@@ -76,55 +77,98 @@ function createMockEnvironment(options: {
   // Mock the network layer
   let pendingFetches = [];
   const fetch = (query, variables, cacheConfig) => {
-    const deferred = new Deferred();
-    pendingFetches.push({cacheConfig, deferred, query, variables});
-    return deferred.getPromise();
+    let resolve;
+    let reject;
+    const promise = new Promise((_resolve, _reject) => {
+      resolve = _resolve;
+      reject = _reject;
+    });
+    pendingFetches.push({
+      cacheConfig,
+      promise,
+      resolve,
+      reject,
+      query,
+      variables,
+    });
+    return {
+      kind: 'promise',
+      promise,
+    };
   };
+
+  if (!schema) {
+    global.__RELAYOSS__ = true;
+  }
 
   // Helper to compile a query with the given schema (or the test schema by
   // default).
-  const compile = (text) => {
-    return RelayModernTestUtils.generateAndCompile(text, schema || RelayTestSchema);
+  const compile = text => {
+    return RelayModernTestUtils.generateAndCompile(
+      text,
+      schema || RelayTestSchema,
+    );
   };
 
   // Helper to determine if a given query/variables pair is pending
   const isLoading = (query, variables, cacheConfig) => {
-    return pendingFetches.some(pending => (
-      pending.query === query &&
-      areEqual(pending.variables, variables) &&
-      areEqual(pending.cacheConfig, cacheConfig)
-    ));
+    return pendingFetches.some(
+      pending =>
+        pending.query === query &&
+        areEqual(pending.variables, variables) &&
+        areEqual(pending.cacheConfig, cacheConfig),
+    );
   };
 
   // Helpers to reject or resolve the payload for an individual query
   const reject = (query, error) => {
-    const pendingFetch = pendingFetches.find(pending => pending.query === query);
+    const pendingFetch = pendingFetches.find(
+      pending => pending.query === query,
+    );
     invariant(
       pendingFetch,
       'MockEnvironment#reject(): Cannot reject query `%s`, it has not been fetched yet.',
-      query.name
+      query.name,
     );
     if (typeof error === 'string') {
       error = new Error(error);
     }
     pendingFetches = pendingFetches.filter(pending => pending !== pendingFetch);
-    pendingFetch.deferred.reject(error);
+    pendingFetch.reject(error);
     jest.runOnlyPendingTimers();
+    return new Promise(resolve => {
+      pendingFetch.promise.catch(() => {
+        // setImmediate so all handlers for pendingFetch are called before
+        // tests are run
+        setImmediate(resolve);
+      });
+    });
   };
   const resolve = (query, payload) => {
     invariant(
-      typeof payload === 'object' && payload !== null && payload.hasOwnProperty('data'),
-      'MockEnvironment#resolve(): Expected payload to be an object with a `data` key.'
+      typeof payload === 'object' &&
+        payload !== null &&
+        payload.hasOwnProperty('data'),
+      'MockEnvironment#resolve(): Expected payload to be an object with a `data` key.',
     );
-    const pendingFetch = pendingFetches.find(pending => pending.query === query);
+    const pendingFetch = pendingFetches.find(
+      pending => pending.query === query,
+    );
     invariant(
       pendingFetch,
       'MockEnvironment#resolve(): Cannot resolve query `%s`, it has not been fetched yet.',
-      query.name
+      query.name,
     );
     pendingFetches = pendingFetches.filter(pending => pending !== pendingFetch);
-    pendingFetch.deferred.resolve(payload);
+    pendingFetch.resolve(payload);
     jest.runOnlyPendingTimers();
+    return new Promise(_resolve => {
+      pendingFetch.promise.then(() => {
+        // setImmediate so all handlers for pendingFetch are called before
+        // tests are run
+        setImmediate(_resolve);
+      });
+    });
   };
 
   // Initialize a store debugger to help resolve test issues

@@ -7,15 +7,16 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
 
+jest.enableAutomock();
+
 require('configureForRelayOSS');
 
-jest
-  .unmock('GraphQLRange')
-  .unmock('GraphQLSegment');
+jest.unmock('GraphQLRange').unmock('GraphQLSegment');
 
 const GraphQLMutatorConstants = require('GraphQLMutatorConstants');
 const Relay = require('Relay');
@@ -70,8 +71,16 @@ describe('RelayStoreData', function() {
             const expTimes = expected + ' time' + (expected === 1 ? '' : 's');
             const actTimes = value + ' time' + (value === 1 ? '' : 's');
             const not = eachPass ? 'not ' : '';
-            message = 'Expected `' + methodName + '` ' + not + 'to be called ' +
-              expTimes + ', was called ' + actTimes + '.';
+            message =
+              'Expected `' +
+              methodName +
+              '` ' +
+              not +
+              'to be called ' +
+              expTimes +
+              ', was called ' +
+              actTimes +
+              '.';
             return eachPass;
           });
           return {pass, message};
@@ -80,27 +89,27 @@ describe('RelayStoreData', function() {
       toBeCalledWithNodeFields: (util, customEqualityTesters) => ({
         compare: (actual, nodeFields) => {
           let message;
-          const pass = Object.keys(nodeFields).every(
-            expectedID => Object.keys(nodeFields[expectedID]).every(
-              expectedFieldName => {
-                message =
-                  'Expected function to be called with (' +
-                  expectedID + ', ' +
-                  expectedFieldName + ', ' +
-                  nodeFields[expectedID][expectedFieldName] + ').';
-                return actual.mock.calls.some(
-                  ([actualID, actualFieldName, actualFieldValue]) => (
-                    actualID === expectedID &&
-                    actualFieldName === expectedFieldName &&
-                    util.equals(
-                      actualFieldValue,
-                      nodeFields[expectedID][actualFieldName],
-                      customEqualityTesters
-                    )
-                  )
-                );
-              }
-            )
+          const pass = Object.keys(nodeFields).every(expectedID =>
+            Object.keys(nodeFields[expectedID]).every(expectedFieldName => {
+              message =
+                'Expected function to be called with (' +
+                expectedID +
+                ', ' +
+                expectedFieldName +
+                ', ' +
+                nodeFields[expectedID][expectedFieldName] +
+                ').';
+              return actual.mock.calls.some(
+                ([actualID, actualFieldName, actualFieldValue]) =>
+                  actualID === expectedID &&
+                  actualFieldName === expectedFieldName &&
+                  util.equals(
+                    actualFieldValue,
+                    nodeFields[expectedID][actualFieldName],
+                    customEqualityTesters,
+                  ),
+              );
+            }),
           );
           return {pass, message};
         },
@@ -152,7 +161,7 @@ describe('RelayStoreData', function() {
     expect(queryWriter.writeRootCall).toBeCalledWith(
       'username',
       'yuzhi',
-      '123'
+      '123',
     );
     expect(queryWriter.writeField).toBeCalledWithNodeFields({
       '123': {
@@ -189,7 +198,8 @@ describe('RelayStoreData', function() {
   });
 
   it('caches linked records', () => {
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         node(id:"123") {
           id
@@ -199,7 +209,8 @@ describe('RelayStoreData', function() {
           }
         }
       }
-    `);
+    `,
+    );
     const response = {
       node: {
         __typename: 'User',
@@ -236,7 +247,8 @@ describe('RelayStoreData', function() {
   });
 
   it('caches plural fields', () => {
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         node(id:"123") {
           id
@@ -245,15 +257,13 @@ describe('RelayStoreData', function() {
           }
         }
       }
-    `);
+    `,
+    );
     const response = {
       node: {
         __typename: 'User',
         id: '123',
-        screennames: [
-          {service: 'GTALK'},
-          {service: 'TWITTER'},
-        ],
+        screennames: [{service: 'GTALK'}, {service: 'TWITTER'}],
       },
     };
     storeData.handleQueryPayload(query, response);
@@ -270,10 +280,7 @@ describe('RelayStoreData', function() {
         __dataID__: '123',
         __typename: 'User',
         id: '123',
-        screennames: [
-          {__dataID__: 'client:1'},
-          {__dataID__: 'client:2'},
-        ],
+        screennames: [{__dataID__: 'client:1'}, {__dataID__: 'client:2'}],
       },
       'client:1': {
         __dataID__: 'client:1',
@@ -289,7 +296,8 @@ describe('RelayStoreData', function() {
   });
 
   it('caches connection fields', () => {
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         node(id:"123") {
           id
@@ -307,7 +315,8 @@ describe('RelayStoreData', function() {
           }
         }
       }
-    `);
+    `,
+    );
     const response = transformRelayQueryPayload(query, {
       node: {
         __typename: 'User',
@@ -384,7 +393,8 @@ describe('RelayStoreData', function() {
   });
 
   it('caches connection fields with no edges', () => {
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         node(id:"123") {
           id
@@ -402,7 +412,8 @@ describe('RelayStoreData', function() {
           }
         }
       }
-    `);
+    `,
+    );
     const response = transformRelayQueryPayload(query, {
       node: {
         __typename: 'User',
@@ -452,7 +463,8 @@ describe('RelayStoreData', function() {
     storeData.handleQueryPayload(query, response);
     const {mutationWriter} = cacheManager.mocks;
 
-    const mutationQuery = getNode(Relay.QL`
+    const mutationQuery = getNode(
+      Relay.QL`
       mutation {
         feedbackLike(input:$input) {
           clientMutationId
@@ -462,7 +474,8 @@ describe('RelayStoreData', function() {
           }
         }
       }
-    `);
+    `,
+    );
     const payload = {
       [CLIENT_MUTATION_ID]: 'abc',
       feedback: {
@@ -470,11 +483,10 @@ describe('RelayStoreData', function() {
         doesViewerLike: true,
       },
     };
-    storeData.handleUpdatePayload(
-      mutationQuery,
-      payload,
-      {configs: [], isOptimisticUpdate: false}
-    );
+    storeData.handleUpdatePayload(mutationQuery, payload, {
+      configs: [],
+      isOptimisticUpdate: false,
+    });
 
     expect(mutationWriter).toContainCalledMethods({
       writeNode: 0,
@@ -489,7 +501,8 @@ describe('RelayStoreData', function() {
   });
 
   it('caches mutation that inserts an edge', () => {
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         node(id:"123") {
           id
@@ -508,7 +521,8 @@ describe('RelayStoreData', function() {
           }
         }
       }
-    `);
+    `,
+    );
     const response = transformRelayQueryPayload(query, {
       node: {
         __typename: 'Story',
@@ -533,14 +547,17 @@ describe('RelayStoreData', function() {
     storeData.handleQueryPayload(query, response);
     const {mutationWriter} = cacheManager.mocks;
 
-    const configs = [{
-      type: RelayMutationType.RANGE_ADD,
-      connectionName: 'comments',
-      edgeName: 'feedbackCommentEdge',
-      rangeBehaviors: {'': GraphQLMutatorConstants.PREPEND},
-    }];
+    const configs = [
+      {
+        type: RelayMutationType.RANGE_ADD,
+        connectionName: 'comments',
+        edgeName: 'feedbackCommentEdge',
+        rangeBehaviors: {'': GraphQLMutatorConstants.PREPEND},
+      },
+    ];
 
-    const mutationQuery = getNode(Relay.QL`
+    const mutationQuery = getNode(
+      Relay.QL`
       mutation {
         commentCreate(input:$input) {
           clientMutationId
@@ -561,7 +578,8 @@ describe('RelayStoreData', function() {
           }
         }
       }
-    `);
+    `,
+    );
     const payload = {
       [CLIENT_MUTATION_ID]: 'abc',
       feedback: {
@@ -581,11 +599,10 @@ describe('RelayStoreData', function() {
         },
       },
     };
-    storeData.handleUpdatePayload(
-      mutationQuery,
-      payload,
-      {configs, isOptimisticUpdate: false}
-    );
+    storeData.handleUpdatePayload(mutationQuery, payload, {
+      configs,
+      isOptimisticUpdate: false,
+    });
 
     expect(mutationWriter).toContainCalledMethods({
       writeNode: 0,
@@ -611,7 +628,8 @@ describe('RelayStoreData', function() {
   });
 
   it('caches mutation that deletes an edge', () => {
-    const query = getNode(Relay.QL`
+    const query = getNode(
+      Relay.QL`
       query {
         node(id:"123") {
           id
@@ -630,7 +648,8 @@ describe('RelayStoreData', function() {
           }
         }
       }
-    `);
+    `,
+    );
     const response = transformRelayQueryPayload(query, {
       node: {
         __typename: 'Story',
@@ -655,13 +674,16 @@ describe('RelayStoreData', function() {
     storeData.handleQueryPayload(query, response);
     const {mutationWriter} = cacheManager.mocks;
 
-    const configs = [{
-      type: RelayMutationType.RANGE_DELETE,
-      pathToConnection: ['feedback', 'comments'],
-      deletedIDFieldName: 'deletedCommentId',
-    }];
+    const configs = [
+      {
+        type: RelayMutationType.RANGE_DELETE,
+        pathToConnection: ['feedback', 'comments'],
+        deletedIDFieldName: 'deletedCommentId',
+      },
+    ];
 
-    const mutationQuery = getNode(Relay.QL`
+    const mutationQuery = getNode(
+      Relay.QL`
       mutation {
         commentDelete(input:$input) {
           clientMutationId
@@ -674,7 +696,8 @@ describe('RelayStoreData', function() {
           }
         }
       }
-    `);
+    `,
+    );
     const payload = {
       [CLIENT_MUTATION_ID]: 'abc',
       deletedCommentId: '1',
@@ -685,11 +708,10 @@ describe('RelayStoreData', function() {
         },
       },
     };
-    storeData.handleUpdatePayload(
-      mutationQuery,
-      payload,
-      {configs, isOptimisticUpdate: false}
-    );
+    storeData.handleUpdatePayload(mutationQuery, payload, {
+      configs,
+      isOptimisticUpdate: false,
+    });
 
     expect(mutationWriter).toContainCalledMethods({
       writeNode: 1,

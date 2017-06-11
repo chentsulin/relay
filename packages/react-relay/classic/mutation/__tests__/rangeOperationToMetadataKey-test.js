@@ -7,9 +7,12 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
+
+jest.disableAutomock();
 
 const rangeOperationToMetadataKey = require('rangeOperationToMetadataKey');
 

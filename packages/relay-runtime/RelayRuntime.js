@@ -8,6 +8,7 @@
  *
  * @providesModule RelayRuntime
  * @flow
+ * @format
  */
 
 'use strict';
@@ -19,6 +20,7 @@ const RelayMarkSweepStore = require('RelayMarkSweepStore');
 const RelayModernEnvironment = require('RelayModernEnvironment');
 const RelayModernGraphQLTag = require('RelayModernGraphQLTag');
 const RelayNetwork = require('RelayNetwork');
+const RelayQueryResponseCache = require('RelayQueryResponseCache');
 const RelayViewerHandler = require('RelayViewerHandler');
 
 const commitLocalUpdate = require('commitLocalUpdate');
@@ -33,6 +35,22 @@ export type {
   ConcreteFragment,
 } from 'RelayConcreteNode';
 
+// As early as possible, check for the existence of the JavaScript globals which
+// Relay Runtime relies upon, and produce a clear message if they do not exist.
+if (__DEV__) {
+  if (
+    typeof Map !== 'function' ||
+    typeof Set !== 'function' ||
+    typeof Promise !== 'function' ||
+    typeof Object.assign !== 'function'
+  ) {
+    throw new Error(
+      'relay-runtime requires Map, Set, Promise, and Object.assign to exist. ' +
+        'Use a polyfill to provide these for older browsers.',
+    );
+  }
+}
+
 /**
  * The public interface to Relay Runtime.
  */
@@ -40,6 +58,7 @@ module.exports = {
   // Core API
   Environment: RelayModernEnvironment,
   Network: RelayNetwork,
+  QueryResponseCache: RelayQueryResponseCache,
   RecordSource: RelayInMemoryRecordSource,
   Store: RelayMarkSweepStore,
 

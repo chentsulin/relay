@@ -7,9 +7,12 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
+
+jest.enableAutomock();
 
 require('configureForRelayOSS');
 
@@ -33,7 +36,11 @@ describe('RelayRenderer.onReadyStateChange', () => {
   beforeEach(() => {
     jest.resetModules();
 
-    const MockComponent = React.createClass({render: () => <div />});
+    class MockComponent extends React.Component {
+      render() {
+        return <div />;
+      }
+    }
     MockContainer = Relay.createContainer(MockComponent, {
       fragments: {},
     });
@@ -54,7 +61,7 @@ describe('RelayRenderer.onReadyStateChange', () => {
         environment={environment}
         onReadyStateChange={onReadyStateChange}
       />,
-      container
+      container,
     );
     const defaultState = {
       aborted: false,
@@ -73,7 +80,7 @@ describe('RelayRenderer.onReadyStateChange', () => {
             jest.runAllTimers();
 
             expect(onReadyStateChange.mock.calls.map(args => args[0])).toEqual(
-              expected.map(deltaState => ({...defaultState, ...deltaState}))
+              expected.map(deltaState => ({...defaultState, ...deltaState})),
             );
             return {
               pass: true,
@@ -87,17 +94,17 @@ describe('RelayRenderer.onReadyStateChange', () => {
   it('does nothing before `prime` starts', () => {
     expect(() => {
       // Nothing.
-    }).toTriggerReadyStateChanges([
-      // Nothing.
-    ]);
+    }).toTriggerReadyStateChanges(
+      [
+        // Nothing.
+      ],
+    );
   });
 
   it('is not ready or done after a request', () => {
     expect(request => {
       request.block();
-    }).toTriggerReadyStateChanges([
-      {done: false, ready: false},
-    ]);
+    }).toTriggerReadyStateChanges([{done: false, ready: false}]);
   });
 
   it('is ready but not done when required data is resolved', () => {
@@ -160,9 +167,7 @@ describe('RelayRenderer.onReadyStateChange', () => {
     const error = new Error('Expected error.');
     expect(request => {
       request.fail(error);
-    }).toTriggerReadyStateChanges([
-      {done: false, error, ready: false},
-    ]);
+    }).toTriggerReadyStateChanges([{done: false, error, ready: false}]);
   });
 
   it('does nothing when aborted from query configuration change', () => {
@@ -174,18 +179,18 @@ describe('RelayRenderer.onReadyStateChange', () => {
           environment={environment}
           onReadyStateChange={onReadyStateChange}
         />,
-        container
+        container,
       );
-    }).toTriggerReadyStateChanges([
-      // Nothing.
-    ]);
+    }).toTriggerReadyStateChanges(
+      [
+        // Nothing.
+      ],
+    );
   });
 
   it('is aborted and not mounted when aborted from unmounting', () => {
     expect(request => {
       ReactDOM.unmountComponentAtNode(container);
-    }).toTriggerReadyStateChanges([
-      {aborted: true, mounted: false},
-    ]);
+    }).toTriggerReadyStateChanges([{aborted: true, mounted: false}]);
   });
 });

@@ -8,6 +8,7 @@
  *
  * @providesModule RelayNetworkLogger
  * @flow
+ * @format
  */
 
 'use strict';
@@ -23,27 +24,29 @@ import type {
   SubscribeFunction,
   QueryPayload,
   UploadableMap,
+  SyncOrPromise,
 } from 'RelayNetworkTypes';
 import type {Observer} from 'RelayStoreTypes';
-import type {
-  Variables,
-} from 'RelayTypes';
+import type {Variables} from 'RelayTypes';
 
-export type GraphiQLPrinter = (batch: ConcreteBatch, variables: Variables) => string;
+export type GraphiQLPrinter = (
+  batch: ConcreteBatch,
+  variables: Variables,
+) => string;
 
 let queryID = 1;
 
 const RelayNetworkLogger = {
   wrapFetch(
     fetch: FetchFunction,
-    graphiQLPrinter: GraphiQLPrinter
+    graphiQLPrinter?: GraphiQLPrinter,
   ): FetchFunction {
     return (
       operation: ConcreteBatch,
       variables: Variables,
       cacheConfig: ?CacheConfig,
       uploadables?: UploadableMap,
-    ): Promise<QueryPayload> => {
+    ): SyncOrPromise<QueryPayload> => {
       const id = queryID++;
       const name = operation.name;
 
@@ -54,11 +57,13 @@ const RelayNetworkLogger = {
       const onSettled = (error: ?Error, response: ?QueryPayload): void => {
         console.groupCollapsed(`%c${idName}`, error ? 'color:red' : '');
         console.timeEnd && console.timeEnd(idName);
-        console.log('GraphiQL:', graphiQLPrinter(operation, variables));
+        if (graphiQLPrinter) {
+          console.log('GraphiQL:', graphiQLPrinter(operation, variables));
+        }
         console.log('Cache Config:', cacheConfig);
         console.log('Variables:', prettyStringify(variables));
         if (error) {
-          console.error('Error:', error);
+          console.log('Error:', error);
         }
         if (response) {
           console.log('Response:', response);
@@ -67,21 +72,30 @@ const RelayNetworkLogger = {
       };
 
       const request = fetch(operation, variables, cacheConfig, uploadables);
-      request.then(
-        response => {
-          onSettled(null, response);
-        },
-        error => {
-          onSettled(error, null);
-        },
-      );
+      switch (request.kind) {
+        case 'data':
+          onSettled(null, request.data);
+          break;
+        case 'error':
+          onSettled(request.error, null);
+          break;
+        case 'promise':
+          request.promise.then(
+            response => {
+              onSettled(null, response);
+            },
+            error => {
+              onSettled(error, null);
+            },
+          );
+      }
       return request;
     };
   },
 
   wrapSubscribe(
     subscribe: SubscribeFunction,
-    graphiQLPrinter: GraphiQLPrinter
+    graphiQLPrinter?: GraphiQLPrinter,
   ): SubscribeFunction {
     return (
       operation: ConcreteBatch,
@@ -94,9 +108,15 @@ const RelayNetworkLogger = {
 
       const idName = `[${id}] Relay Modern: ${name}`;
 
-      const onResponse = (error: ?Error, response: ?QueryPayload, status: ?string): void => {
+      const onResponse = (
+        error: ?Error,
+        response: ?QueryPayload,
+        status: ?string,
+      ): void => {
         console.groupCollapsed(`%c${idName}`, error ? 'color:red' : '');
-        console.log('GraphiQL:', graphiQLPrinter(operation, variables));
+        if (graphiQLPrinter) {
+          console.log('GraphiQL:', graphiQLPrinter(operation, variables));
+        }
         console.log('Cache Config:', cacheConfig);
         console.log('Variables:', prettyStringify(variables));
         if (status) {

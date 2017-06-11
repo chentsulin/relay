@@ -8,13 +8,13 @@
  *
  * @providesModule RelayIRTransforms
  * @flow
+ * @format
  */
 
 'use strict';
 
 const RelayApplyFragmentArgumentTransform = require('RelayApplyFragmentArgumentTransform');
 const RelayConnectionTransform = require('RelayConnectionTransform');
-const RelayExportTransform = require('RelayExportTransform');
 const RelayFieldHandleTransform = require('RelayFieldHandleTransform');
 const RelayFilterDirectivesTransform = require('RelayFilterDirectivesTransform');
 const RelayFlattenTransform = require('RelayFlattenTransform');
@@ -29,14 +29,15 @@ const RelayViewerHandleTransform = require('RelayViewerHandleTransform');
 import type CompilerContext from 'RelayCompilerContext';
 import type {GraphQLSchema} from 'graphql';
 
-export type SchemaTransform = (schema: GraphQLSchema) => GraphQLSchema;
-export type IRTransform = (context: CompilerContext, schema: GraphQLSchema) => CompilerContext;
+export type IRTransform = (
+  context: CompilerContext,
+  schema: GraphQLSchema,
+) => CompilerContext;
 
 // Transforms applied to the code used to process a query response.
-const SCHEMA_TRANSFORMS: Array<SchemaTransform> = [
-  RelayConnectionTransform.transformSchema,
-  RelayExportTransform.transformSchema,
-  RelayRelayDirectiveTransform.transformSchema,
+const schemaExtensions: Array<string> = [
+  RelayConnectionTransform.SCHEMA_EXTENSION,
+  RelayRelayDirectiveTransform.SCHEMA_EXTENSION,
 ];
 
 // Transforms applied to fragments used for reading data from a store
@@ -45,9 +46,10 @@ const FRAGMENT_TRANSFORMS: Array<IRTransform> = [
   RelayViewerHandleTransform.transform,
   RelayRelayDirectiveTransform.transform,
   RelayFieldHandleTransform.transform,
-  (ctx: CompilerContext) => RelayFlattenTransform.transform(ctx, {
-    flattenAbstractTypes: true,
-  }),
+  (ctx: CompilerContext) =>
+    RelayFlattenTransform.transform(ctx, {
+      flattenAbstractTypes: true,
+    }),
   RelaySkipRedundantNodesTransform.transform,
 ];
 
@@ -56,14 +58,14 @@ const FRAGMENT_TRANSFORMS: Array<IRTransform> = [
 /* $FlowFixMe(>=0.44.0 site=react_native_fb) Flow error found while deploying
  * v0.44.0. Remove this comment to see the error */
 const QUERY_TRANSFORMS: Array<IRTransform> = [
-  (ctx: CompilerContext) => RelayConnectionTransform.transform(ctx, {
-    generateRequisiteFields: true,
-  }),
+  (ctx: CompilerContext) =>
+    RelayConnectionTransform.transform(ctx, {
+      generateRequisiteFields: true,
+    }),
   RelayViewerHandleTransform.transform,
   RelayApplyFragmentArgumentTransform.transform,
   RelaySkipClientFieldTransform.transform,
   RelaySkipUnreachableNodeTransform.transform,
-  RelayExportTransform.transform,
   RelayRelayDirectiveTransform.transform,
   RelayGenerateRequisiteFieldsTransform.transform,
 ];
@@ -71,10 +73,11 @@ const QUERY_TRANSFORMS: Array<IRTransform> = [
 // Transforms applied to the code used to process a query response.
 const CODEGEN_TRANSFORMS: Array<IRTransform> = [
   RelayFilterDirectivesTransform.transform,
-  (ctx: CompilerContext) => RelayFlattenTransform.transform(ctx, {
-    flattenAbstractTypes: true,
-    flattenFragmentSpreads: true,
-  }),
+  (ctx: CompilerContext) =>
+    RelayFlattenTransform.transform(ctx, {
+      flattenAbstractTypes: true,
+      flattenFragmentSpreads: true,
+    }),
   RelaySkipRedundantNodesTransform.transform,
 ];
 
@@ -90,5 +93,5 @@ module.exports = {
   fragmentTransforms: FRAGMENT_TRANSFORMS,
   printTransforms: PRINT_TRANSFORMS,
   queryTransforms: QUERY_TRANSFORMS,
-  schemaTransforms: SCHEMA_TRANSFORMS,
+  schemaExtensions,
 };

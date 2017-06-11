@@ -8,23 +8,28 @@
  *
  * @flow
  * @providesModule RelayPublishQueue
+ * @format
  */
 
 'use strict';
 
 const RelayInMemoryRecordSource = require('RelayInMemoryRecordSource');
+const RelayModernRecord = require('RelayModernRecord');
+const RelayReader = require('RelayReader');
 const RelayRecordSourceMutator = require('RelayRecordSourceMutator');
 const RelayRecordSourceProxy = require('RelayRecordSourceProxy');
 const RelayRecordSourceSelectorProxy = require('RelayRecordSourceSelectorProxy');
 
 const invariant = require('invariant');
+const normalizeRelayPayload = require('normalizeRelayPayload');
 
+import type {SelectorData} from 'RelayCombinedEnvironmentTypes';
 import type {HandlerProvider} from 'RelayDefaultHandlerProvider';
 import type {RelayResponsePayload} from 'RelayNetworkTypes';
 import type {
   HandleFieldPayload,
   MutableRecordSource,
-  Selector,
+  OperationSelector,
   SelectorStoreUpdater,
   Store,
   StoreUpdater,
@@ -32,18 +37,20 @@ import type {
 
 type Payload = {
   fieldPayloads: ?Array<HandleFieldPayload>,
-  selector: Selector,
+  operation: OperationSelector,
   source: MutableRecordSource,
   updater: ?SelectorStoreUpdater,
 };
 
-type OptimisticUpdate = {|
-  storeUpdater: StoreUpdater,
-|} | {|
-  selectorStoreUpdater: ?SelectorStoreUpdater,
-  selector: Selector,
-  response: ?Object,
-|};
+type OptimisticUpdate =
+  | {|
+      storeUpdater: StoreUpdater,
+    |}
+  | {|
+      selectorStoreUpdater: ?SelectorStoreUpdater,
+      operation: OperationSelector,
+      response: ?Object,
+    |};
 
 /**
  * Coordinates the concurrent modification of a `Store` due to optimistic and
@@ -77,10 +84,7 @@ class RelayPublishQueue {
   // rebase them.
   _appliedOptimisticUpdates: Set<OptimisticUpdate>;
 
-  constructor(
-    store: Store,
-    handlerProvider?: ?HandlerProvider
-  ) {
+  constructor(store: Store, handlerProvider?: ?HandlerProvider) {
     this._backup = new RelayInMemoryRecordSource();
     this._handlerProvider = handlerProvider || null;
     this._pendingBackupRebase = false;
@@ -97,9 +101,9 @@ class RelayPublishQueue {
   applyUpdate(updater: OptimisticUpdate): void {
     invariant(
       !this._appliedOptimisticUpdates.has(updater) &&
-      !this._pendingOptimisticUpdates.has(updater),
+        !this._pendingOptimisticUpdates.has(updater),
       'RelayPublishQueue: Cannot apply the same update function more than ' +
-      'once concurrently.'
+        'once concurrently.',
     );
     this._pendingOptimisticUpdates.add(updater);
   }
@@ -130,12 +134,12 @@ class RelayPublishQueue {
    * Schedule applying a payload to the store on the next `run()`.
    */
   commitPayload(
-    selector: Selector,
+    operation: OperationSelector,
     {fieldPayloads, source}: RelayResponsePayload,
     updater?: ?SelectorStoreUpdater,
   ): void {
     this._pendingBackupRebase = true;
-    this._pendingPayloads.add({fieldPayloads, selector, source, updater});
+    this._pendingPayloads.add({fieldPayloads, operation, source, updater});
   }
 
   /**
@@ -166,33 +170,40 @@ class RelayPublishQueue {
     if (!this._pendingPayloads.size) {
       return;
     }
-    this._pendingPayloads.forEach(({fieldPayloads, selector, source, updater}) => {
-      const mutator = new RelayRecordSourceMutator(
-        this._store.getSource(),
-        source
-      );
-      const store = new RelayRecordSourceProxy(mutator);
-      const selectorStore = new RelayRecordSourceSelectorProxy(store, selector);
-      if (fieldPayloads && fieldPayloads.length) {
-        fieldPayloads.forEach(fieldPayload => {
-          const handler =
-            this._handlerProvider && this._handlerProvider(fieldPayload.handle);
-          invariant(
-            handler,
-            'RelayModernEnvironment: Expected a handler to be provided for ' +
-              'handle `%s`.',
-            fieldPayload.handle,
-          );
-          handler.update(store, fieldPayload);
-        });
-      }
-      if (updater) {
-        updater(selectorStore);
-      }
-      // Publish the server data first so that it is reflected in the mutation
-      // backup created during the rebase
-      this._store.publish(source);
-    });
+    this._pendingPayloads.forEach(
+      ({fieldPayloads, operation, source, updater}) => {
+        const mutator = new RelayRecordSourceMutator(
+          this._store.getSource(),
+          source,
+        );
+        const store = new RelayRecordSourceProxy(mutator);
+        const selectorStore = new RelayRecordSourceSelectorProxy(
+          store,
+          operation.fragment,
+        );
+        if (fieldPayloads && fieldPayloads.length) {
+          fieldPayloads.forEach(fieldPayload => {
+            const handler =
+              this._handlerProvider &&
+              this._handlerProvider(fieldPayload.handle);
+            invariant(
+              handler,
+              'RelayModernEnvironment: Expected a handler to be provided for ' +
+                'handle `%s`.',
+              fieldPayload.handle,
+            );
+            handler.update(store, fieldPayload);
+          });
+        }
+        if (updater) {
+          const selectorData = lookupSelector(source, operation.fragment);
+          updater(selectorStore, selectorData);
+        }
+        // Publish the server data first so that it is reflected in the mutation
+        // backup created during the rebase
+        this._store.publish(source);
+      },
+    );
     this._pendingPayloads.clear();
   }
 
@@ -204,7 +215,7 @@ class RelayPublishQueue {
     this._pendingUpdaters.forEach(updater => {
       const mutator = new RelayRecordSourceMutator(
         this._store.getSource(),
-        sink
+        sink,
       );
       const store = new RelayRecordSourceProxy(mutator);
       updater(store);
@@ -224,15 +235,26 @@ class RelayPublishQueue {
         sink,
         this._backup,
       );
-      const store = new RelayRecordSourceProxy(mutator);
+      const store = new RelayRecordSourceProxy(mutator, this._handlerProvider);
 
       // rerun all updaters in case we are running a rebase
       if (this._pendingBackupRebase && this._appliedOptimisticUpdates.size) {
         this._appliedOptimisticUpdates.forEach(optimisticUpdate => {
-          if (optimisticUpdate.selector) {
-            const {selectorStoreUpdater, selector, response} = optimisticUpdate;
-            const selectorStore = store.commitPayload(selector, response);
-            selectorStoreUpdater && selectorStoreUpdater(selectorStore);
+          if (optimisticUpdate.operation) {
+            const {
+              selectorStoreUpdater,
+              operation,
+              response,
+            } = optimisticUpdate;
+            const selectorStore = store.commitPayload(operation, response);
+            // TODO: Fix commitPayload so we don't have to run normalize twice
+            let selectorData, source;
+            if (response) {
+              ({source} = normalizeRelayPayload(operation.root, response));
+              selectorData = lookupSelector(source, operation.fragment);
+            }
+            selectorStoreUpdater &&
+              selectorStoreUpdater(selectorStore, selectorData);
           } else {
             const {storeUpdater} = optimisticUpdate;
             storeUpdater(store);
@@ -243,10 +265,21 @@ class RelayPublishQueue {
       // apply any new updaters
       if (this._pendingOptimisticUpdates.size) {
         this._pendingOptimisticUpdates.forEach(optimisticUpdate => {
-          if (optimisticUpdate.selector) {
-            const {selectorStoreUpdater, selector, response} = optimisticUpdate;
-            const selectorStore = store.commitPayload(selector, response);
-            selectorStoreUpdater && selectorStoreUpdater(selectorStore);
+          if (optimisticUpdate.operation) {
+            const {
+              selectorStoreUpdater,
+              operation,
+              response,
+            } = optimisticUpdate;
+            const selectorStore = store.commitPayload(operation, response);
+            // TODO: Fix commitPayload so we don't have to run normalize twice
+            let selectorData, source;
+            if (response) {
+              ({source} = normalizeRelayPayload(operation.root, response));
+              selectorData = lookupSelector(source, operation.fragment);
+            }
+            selectorStoreUpdater &&
+              selectorStoreUpdater(selectorStore, selectorData);
           } else {
             const {storeUpdater} = optimisticUpdate;
             storeUpdater(store);
@@ -259,6 +292,18 @@ class RelayPublishQueue {
       this._store.publish(sink);
     }
   }
+}
+
+function lookupSelector(source, selector): ?SelectorData {
+  const selectorData = RelayReader.read(source, selector, RelayModernRecord)
+    .data;
+  if (__DEV__) {
+    const deepFreeze = require('deepFreeze');
+    if (selectorData) {
+      deepFreeze(selectorData);
+    }
+  }
+  return selectorData;
 }
 
 module.exports = RelayPublishQueue;

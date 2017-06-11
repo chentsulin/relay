@@ -8,6 +8,7 @@
  *
  * @providesModule RelayMarkSweepStore
  * @flow
+ * @format
  */
 
 'use strict';
@@ -103,7 +104,11 @@ class RelayMarkSweepStore implements Store {
   }
 
   lookup(selector: Selector): Snapshot {
-    const snapshot = RelayReader.read(this._recordSource, selector);
+    const snapshot = RelayReader.read(
+      this._recordSource,
+      selector,
+      RelayModernRecord,
+    );
     if (__DEV__) {
       deepFreeze(snapshot);
     }
@@ -118,29 +123,20 @@ class RelayMarkSweepStore implements Store {
   }
 
   publish(source: RecordSource): void {
-    updateTargetFromSource(
-      this._recordSource,
-      source,
-      this._updatedRecordIDs
-    );
+    updateTargetFromSource(this._recordSource, source, this._updatedRecordIDs);
   }
 
   resolve(
     target: MutableRecordSource,
     selector: Selector,
-    callback: AsyncLoadCallback
+    callback: AsyncLoadCallback,
   ): void {
-    RelayAsyncLoader.load(
-      this._recordSource,
-      target,
-      selector,
-      callback
-    );
+    RelayAsyncLoader.load(this._recordSource, target, selector, callback);
   }
 
   subscribe(
     snapshot: Snapshot,
-    callback: (snapshot: Snapshot) => void
+    callback: (snapshot: Snapshot) => void,
   ): Disposable {
     const subscription = {callback, snapshot};
     const dispose = () => {
@@ -155,7 +151,11 @@ class RelayMarkSweepStore implements Store {
     if (!hasOverlappingIDs(snapshot, this._updatedRecordIDs)) {
       return;
     }
-    const {data, seenRecords} = RelayReader.read(this._recordSource, snapshot);
+    const {data, seenRecords} = RelayReader.read(
+      this._recordSource,
+      snapshot,
+      RelayModernRecord,
+    );
     const nextData = recycleNodesInto(snapshot.data, data);
     const nextSnapshot = {
       ...snapshot,
@@ -186,11 +186,7 @@ class RelayMarkSweepStore implements Store {
     const references = new Set();
     // Mark all records that are traversable from a root
     this._roots.forEach(selector => {
-      RelayReferenceMarker.mark(
-        this._recordSource,
-        selector,
-        references
-      );
+      RelayReferenceMarker.mark(this._recordSource, selector, references);
     });
     // Short-circuit if *nothing* is referenced
     if (!references.size) {

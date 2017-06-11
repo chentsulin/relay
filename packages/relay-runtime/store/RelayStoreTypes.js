@@ -8,6 +8,7 @@
  *
  * @providesModule RelayStoreTypes
  * @flow
+ * @format
  */
 
 'use strict';
@@ -22,10 +23,16 @@ import type {
   CUnstableEnvironmentCore,
   Disposable,
   Record,
+  SelectorData,
 } from 'RelayCombinedEnvironmentTypes';
-import type {ConcreteBatch, ConcreteFragment, ConcreteSelectableNode} from 'RelayConcreteNode';
+import type {
+  ConcreteBatch,
+  ConcreteFragment,
+  ConcreteSelectableNode,
+} from 'RelayConcreteNode';
 import type {DataID} from 'RelayInternalTypes';
 import type {GraphQLTaggedNode} from 'RelayModernGraphQLTag';
+import type {PayloadData} from 'RelayNetworkTypes';
 import type {
   PayloadError,
   RelayResponsePayload,
@@ -45,7 +52,9 @@ export type FragmentMap = CFragmentMap<TFragment>;
 export type OperationSelector = COperationSelector<TNode, TOperation>;
 export type RelayContext = CRelayContext<TEnvironment>;
 export type Selector = CSelector<TNode>;
-export type Snapshot = CSnapshot<TNode>;
+export type TSnapshot<TRecord> = CSnapshot<TNode, TRecord>;
+export type Snapshot = TSnapshot<Record>;
+export type ProxySnapshot = TSnapshot<RecordProxy>;
 export type UnstableEnvironmentCore = CUnstableEnvironmentCore<
   TEnvironment,
   TFragment,
@@ -54,17 +63,21 @@ export type UnstableEnvironmentCore = CUnstableEnvironmentCore<
   TOperation,
 >;
 
+export interface IRecordSource<TRecord> {
+  get(dataID: DataID): ?TRecord,
+}
+
 /**
  * A read-only interface for accessing cached graph data.
  */
-export interface RecordSource {
+export interface RecordSource extends IRecordSource<Record> {
   get(dataID: DataID): ?Record,
   getRecordIDs(): Array<DataID>,
   getStatus(dataID: DataID): RecordState,
   has(dataID: DataID): boolean,
   load(
     dataID: DataID,
-    callback: (error: ?Error, record: ?Record) => void
+    callback: (error: ?Error, record: ?Record) => void,
   ): void,
   size(): number,
 }
@@ -120,7 +133,7 @@ export interface Store {
   resolve(
     target: MutableRecordSource,
     selector: Selector,
-    callback: AsyncLoadCallback
+    callback: AsyncLoadCallback,
   ): void,
 
   /**
@@ -137,7 +150,7 @@ export interface Store {
    */
   subscribe(
     snapshot: Snapshot,
-    callback: (snapshot: Snapshot) => void
+    callback: (snapshot: Snapshot) => void,
   ): Disposable,
 }
 
@@ -152,11 +165,23 @@ export interface RecordProxy {
   getDataID(): DataID,
   getLinkedRecord(name: string, args?: ?Variables): ?RecordProxy,
   getLinkedRecords(name: string, args?: ?Variables): ?Array<?RecordProxy>,
-  getOrCreateLinkedRecord(name: string, typeName: string, args?: ?Variables): RecordProxy,
+  getOrCreateLinkedRecord(
+    name: string,
+    typeName: string,
+    args?: ?Variables,
+  ): RecordProxy,
   getType(): string,
   getValue(name: string, args?: ?Variables): mixed,
-  setLinkedRecord(record: RecordProxy, name: string, args?: ?Variables): RecordProxy,
-  setLinkedRecords(records: Array<?RecordProxy>, name: string, args?: ?Variables): RecordProxy,
+  setLinkedRecord(
+    record: RecordProxy,
+    name: string,
+    args?: ?Variables,
+  ): RecordProxy,
+  setLinkedRecords(
+    records: Array<?RecordProxy>,
+    name: string,
+    args?: ?Variables,
+  ): RecordProxy,
   setValue(value: mixed, name: string, args?: ?Variables): RecordProxy,
 }
 
@@ -166,7 +191,7 @@ export interface RecordProxy {
  * allowing different implementations that may e.g. create a changeset of
  * the modifications.
  */
-export interface RecordSourceProxy {
+export interface RecordSourceProxy extends IRecordSource<RecordProxy> {
   create(dataID: DataID, typeName: string): RecordProxy,
   delete(dataID: DataID): void,
   get(dataID: DataID): ?RecordProxy,
@@ -177,27 +202,41 @@ export interface RecordSourceProxy {
  * Extends the RecordSourceProxy interface with methods for accessing the root
  * fields of a Selector.
  */
-export interface RecordSourceSelectorProxy {
+export interface RecordSourceSelectorProxy extends IRecordSource<RecordProxy> {
   create(dataID: DataID, typeName: string): RecordProxy,
   delete(dataID: DataID): void,
   get(dataID: DataID): ?RecordProxy,
   getRoot(): RecordProxy,
   getRootField(fieldName: string): ?RecordProxy,
   getPluralRootField(fieldName: string): ?Array<?RecordProxy>,
+  getResponse(): ?Object,
+}
+
+export interface IRecordReader<TRecord> {
+  getDataID(record: TRecord): DataID,
+  getType(record: TRecord): string,
+  getValue(record: TRecord, name: string, args?: ?Variables): mixed,
+  getLinkedRecordID(record: TRecord, name: string, args?: ?Variables): ?DataID,
+  getLinkedRecordIDs(
+    record: TRecord,
+    name: string,
+    args?: ?Variables,
+  ): ?Array<?DataID>,
 }
 
 /**
  * The public API of Relay core. Represents an encapsulated environment with its
  * own in-memory cache.
  */
-export interface Environment extends CEnvironment<
-  TEnvironment,
-  TFragment,
-  TGraphQLTaggedNode,
-  TNode,
-  TOperation,
-  TPayload,
-> {
+export interface Environment
+  extends CEnvironment<
+    TEnvironment,
+    TFragment,
+    TGraphQLTaggedNode,
+    TNode,
+    TOperation,
+    TPayload,
+  > {
   /**
    * Apply an optimistic update to the environment. The mutation can be reverted
    * by calling `dispose()` on the returned value.
@@ -220,6 +259,14 @@ export interface Environment extends CEnvironment<
    * intended for updating fields from client schema extensions.
    */
   commitUpdate(updater: StoreUpdater): void,
+
+  /**
+   * Commit a payload to the environment using the given operation selector.
+   */
+  commitPayload(
+    operationSelector: OperationSelector,
+    payload: PayloadData,
+  ): void,
 
   /**
    * Get the environment's internal Store.
@@ -288,10 +335,7 @@ export type UpdatedRecords = {[dataID: DataID]: boolean};
  * field payload.
  */
 export type Handler = {
-  update: (
-    store: RecordSourceProxy,
-    fieldPayload: HandleFieldPayload,
-  ) => void,
+  update: (store: RecordSourceProxy, fieldPayload: HandleFieldPayload) => void,
 };
 
 /**
@@ -320,6 +364,10 @@ export type StoreUpdater = (store: RecordSourceProxy) => void;
 
 /**
  * Similar to StoreUpdater, but accepts a proxy tied to a specific selector in
- * order to easily access the root fields of a query/mutation.
+ * order to easily access the root fields of a query/mutation as well as a
+ * second argument of the response object of the mutation.
  */
-export type SelectorStoreUpdater = (store: RecordSourceSelectorProxy) => void;
+export type SelectorStoreUpdater = (
+  store: RecordSourceSelectorProxy,
+  data: ?SelectorData,
+) => void;

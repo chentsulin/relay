@@ -21,13 +21,16 @@ const SCHEMA_PATH = path.resolve(__dirname, '../../packages/relay-compiler/testu
 
 const babelOptions = getBabelOptions({
   env: 'test',
+  // Tests use a Promise polfill so they can use jest.runAllTimers().
+  autoImport: true,
   moduleMap: {
+    'immutable': 'immutable',
     'React': 'react',
     'reactComponentExpect': 'react-dom/lib/reactComponentExpect',
     'ReactDOM': 'react-dom',
     'ReactDOMServer': 'react-dom/server',
     'ReactTestRenderer': 'react-test-renderer',
-    'ReactTestUtils': 'react-addons-test-utils',
+    'ReactTestUtils': 'react-dom/test-utils',
     'StaticContainer.react': 'react-static-container',
   },
   plugins: [
@@ -39,7 +42,6 @@ const babelOptions = getBabelOptions({
       schema: SCHEMA_PATH,
     }],
     require('babel-plugin-transform-async-to-generator'),
-    require('babel-plugin-transform-regenerator'),
   ],
 });
 
@@ -55,7 +57,6 @@ module.exports = {
   getCacheKey: createCacheKeyFunction([
     __filename,
     SCHEMA_PATH,
-    path.join(__dirname, '..', 'babel-relay-plugin', 'package.json'),
     path.join(path.dirname(require.resolve('babel-preset-fbjs')), 'package.json'),
     path.join(__dirname, '..', 'getBabelOptions.js'),
   ]),

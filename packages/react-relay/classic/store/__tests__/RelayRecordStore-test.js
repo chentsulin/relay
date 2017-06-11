@@ -7,9 +7,12 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
+
+jest.enableAutomock();
 
 require('configureForRelayOSS');
 
@@ -159,7 +162,8 @@ describe('RelayRecordStore', () => {
       const records = {};
       const store = new RelayRecordStore({records});
       const writer = new RelayRecordWriter(records, {}, false);
-      const query = getNode(Relay.QL`
+      const query = getNode(
+        Relay.QL`
         query {
           viewer {
             actor {
@@ -167,12 +171,13 @@ describe('RelayRecordStore', () => {
             }
           }
         }
-      `);
+      `,
+      );
       const actorID = '123';
       const path = RelayQueryPath.getPath(
         RelayQueryPath.create(query),
         query.getFieldByStorageKey('actor'),
-        actorID
+        actorID,
       );
       writer.putRecord(actorID, 'Type', path);
       expect(store.getPathToRecord(actorID)).toBe(undefined);
@@ -182,7 +187,8 @@ describe('RelayRecordStore', () => {
       const records = {};
       const store = new RelayRecordStore({records});
       const writer = new RelayRecordWriter(records, {}, false);
-      const query = getNode(Relay.QL`
+      const query = getNode(
+        Relay.QL`
         query {
           viewer {
             actor {
@@ -192,17 +198,18 @@ describe('RelayRecordStore', () => {
             }
           }
         }
-      `);
+      `,
+      );
       const actorID = '123';
       const addressID = 'client:1';
       const path = RelayQueryPath.getPath(
         RelayQueryPath.getPath(
           RelayQueryPath.create(query),
           query.getFieldByStorageKey('actor'),
-          actorID
+          actorID,
         ),
         query.getFieldByStorageKey('actor').getFieldByStorageKey('address'),
-        addressID
+        addressID,
       );
       writer.putRecord(addressID, 'Type', path);
       expect(store.getPathToRecord(addressID)).toMatchPath(path);
@@ -229,7 +236,7 @@ describe('RelayRecordStore', () => {
     });
 
     it('returns null if the field is deleted', () => {
-      const records = {'4': {'name': null}};
+      const records = {'4': {name: null}};
       const store = new RelayRecordStore({records});
       expect(store.getField('4', 'name')).toBe(null);
     });
@@ -383,7 +390,7 @@ describe('RelayRecordStore', () => {
   describe('getLinkedRecordIDs()', () => {
     it('throws if the data is an unexpected format', () => {
       const records = {
-        'story': {
+        story: {
           actors: ['not an object'],
         },
       };
@@ -421,10 +428,7 @@ describe('RelayRecordStore', () => {
         '4': {
           id: '4',
           __dataID__: '4',
-          actors: [
-            {__dataID__: 'item:1'},
-            {__dataID__: 'item:2'},
-          ],
+          actors: [{__dataID__: 'item:1'}, {__dataID__: 'item:2'}],
         },
       };
       const store = new RelayRecordStore({records});
@@ -444,7 +448,7 @@ describe('RelayRecordStore', () => {
         '4': {
           id: '4',
           __dataID__: '4',
-          'friends': {
+          friends: {
             __dataID__: 'client:1',
           },
         },
@@ -485,7 +489,7 @@ describe('RelayRecordStore', () => {
       store.getRangeMetadata('client:1', []);
       expect([
         'RelayRecordStore.getRangeMetadata(): Expected range to exist if ' +
-        '`edges` has been fetched.',
+          '`edges` has been fetched.',
       ]).toBeWarnedNTimes(1);
     });
 
@@ -495,10 +499,9 @@ describe('RelayRecordStore', () => {
       mockRange.retrieveRangeInfoForQuery.mockReturnValue({
         requestedEdgeIDs: ['edge:1'],
       });
-      const metadata = store.getRangeMetadata(
-        'client:1',
-        [{name: 'first', value: 1}]
-      );
+      const metadata = store.getRangeMetadata('client:1', [
+        {name: 'first', value: 1},
+      ]);
       expect(metadata.filteredEdges).toEqual([]);
     });
 
@@ -531,10 +534,12 @@ describe('RelayRecordStore', () => {
         {name: 'first', value: '1'},
         {name: 'after', value: 'edge:1'},
       ]);
-      expect(rangeInfo.filteredEdges).toEqual([{
-        edgeID: 'edge:1',
-        nodeID: 'node:1',
-      }]);
+      expect(rangeInfo.filteredEdges).toEqual([
+        {
+          edgeID: 'edge:1',
+          nodeID: 'node:1',
+        },
+      ]);
       expect(rangeInfo.filterCalls).toEqual([
         {name: 'orderby', value: ['TOP_STORIES']},
       ]);
@@ -627,11 +632,11 @@ describe('RelayRecordStore', () => {
   describe('getConnectionIDsForField()', () => {
     it('returns null/undefined for non-existent records', () => {
       const records = {
-        'deleted': null,
+        deleted: null,
       };
       const store = new RelayRecordStore({records});
       expect(store.getConnectionIDsForField('unfetched', 'news_feed')).toBe(
-        undefined
+        undefined,
       );
       expect(store.getConnectionIDsForField('deleted', 'news_feed')).toBe(null);
     });
@@ -648,7 +653,7 @@ describe('RelayRecordStore', () => {
       const records = {
         '1': {
           __dataID__: '1',
-          'photos': {
+          photos: {
             __dataID__: '2',
           },
           'photos{orderby:"likes"}': {
@@ -676,7 +681,7 @@ describe('RelayRecordStore', () => {
 
       const store = new RelayRecordStore(
         {records},
-        {rootCallMap, cachedRootCallMap}
+        {rootCallMap, cachedRootCallMap},
       );
       expect(store.getDataID('viewer')).toBe(id);
     });
@@ -690,7 +695,7 @@ describe('RelayRecordStore', () => {
 
       const store = new RelayRecordStore(
         {records},
-        {rootCallMap, cachedRootCallMap}
+        {rootCallMap, cachedRootCallMap},
       );
       expect(store.getDataID('viewer')).toBe(id);
     });
@@ -698,16 +703,16 @@ describe('RelayRecordStore', () => {
 
   describe('removeRecord', () => {
     it('completely removes the data from the store', () => {
-      const cachedRecords = {'a': {__dataID__: 'a'}};
-      const queuedRecords = {'a': {__dataID__: 'a'}};
-      const records = {'a': {__dataID__: 'a'}};
+      const cachedRecords = {a: {__dataID__: 'a'}};
+      const queuedRecords = {a: {__dataID__: 'a'}};
+      const records = {a: {__dataID__: 'a'}};
       const nodeConnectionMap = {
         a: {'client:1': true},
       };
       const store = new RelayRecordStore(
         {cachedRecords, queuedRecords, records},
         null,
-        nodeConnectionMap
+        nodeConnectionMap,
       );
       expect(cachedRecords.hasOwnProperty('a')).toBe(true);
       expect(queuedRecords.hasOwnProperty('a')).toBe(true);
@@ -724,7 +729,7 @@ describe('RelayRecordStore', () => {
   describe('hasFragmentData()', () => {
     it('returns true when a fragment has been marked as resolved', () => {
       const records = {
-        'a': {'__resolvedFragmentMap__': {'fragID': true}},
+        a: {__resolvedFragmentMap__: {fragID: true}},
       };
       const store = new RelayRecordStore({records});
       expect(store.hasFragmentData('a', 'fragID')).toBe(true);
@@ -733,9 +738,9 @@ describe('RelayRecordStore', () => {
     it('returns false when a fragment has not been marked as resolved', () => {
       const records = {
         // No resolved fragment map at all
-        'a': {},
+        a: {},
         // Map does not contain a key corresponding to our fragment
-        'b': {'__resolvedFragmentMap__': {'otherFragID': true}},
+        b: {__resolvedFragmentMap__: {otherFragID: true}},
       };
       const store = new RelayRecordStore({records});
       expect(store.hasFragmentData('a', 'fragID')).toBe(false);

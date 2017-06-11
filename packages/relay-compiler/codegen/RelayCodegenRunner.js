@@ -8,6 +8,7 @@
  *
  * @providesModule RelayCodegenRunner
  * @flow
+ * @format
  */
 
 'use strict';
@@ -26,10 +27,10 @@ import type {DocumentNode, GraphQLSchema} from 'graphql';
 /* eslint-disable no-console-disallow */
 
 interface FileWriter {
-  writeAll(): Promise<Map<string, CodegenDirectory>>
+  writeAll(): Promise<Map<string, CodegenDirectory>>,
 }
 
-type ParserConfig = {|
+export type ParserConfig = {|
   baseDir: string,
   getFileFilter?: (baseDir: string) => FileFilter,
   getParser: (baseDir: string) => FileParser,
@@ -42,9 +43,9 @@ type ParserConfigs = {
 };
 type Parsers = {
   [parser: string]: FileParser,
-}
+};
 
-type WriterConfig = {
+export type WriterConfig = {
   parser: string,
   baseParsers?: Array<string>,
   getWriter: (
@@ -86,9 +87,10 @@ class RelayCodegenRunner {
 
     for (const writer in options.writerConfigs) {
       const config = options.writerConfigs[writer];
-      config.baseParsers && config.baseParsers.forEach(
-        parser => this.parserWriters[parser].add(writer)
-      );
+      config.baseParsers &&
+        config.baseParsers.forEach(parser =>
+          this.parserWriters[parser].add(writer),
+        );
       this.parserWriters[config.parser].add(writer);
     }
   }
@@ -148,11 +150,7 @@ class RelayCodegenRunner {
     // this maybe should be await parser.parseFiles(files);
     parser.parseFiles(files);
     const tEnd = Date.now();
-    console.log(
-      'Parsed %s in %s',
-      parserName,
-      toSeconds(tStart, tEnd),
-    );
+    console.log('Parsed %s in %s', parserName, toSeconds(tStart, tEnd));
   }
 
   // We cannot do incremental writes right now.
@@ -162,23 +160,47 @@ class RelayCodegenRunner {
     const tStart = Date.now();
     const {getWriter, parser, baseParsers} = this.writerConfigs[writerName];
 
-
     let baseDocuments = ImmutableMap();
     if (baseParsers) {
       baseParsers.forEach(baseParserName => {
-        baseDocuments = baseDocuments.merge(this.parsers[baseParserName].documents());
+        baseDocuments = baseDocuments.merge(
+          this.parsers[baseParserName].documents(),
+        );
       });
     }
 
     // always create a new writer: we have to write everything anyways
     const documents = this.parsers[parser].documents();
     const schema = this.parserConfigs[parser].getSchema();
-    const writer = getWriter(this.onlyValidate, schema, documents, baseDocuments);
-    const outputDirectories = await writer.writeAll();
+    const writer = getWriter(
+      this.onlyValidate,
+      schema,
+      documents,
+      baseDocuments,
+    );
+
+    let outputDirectories = null;
+
+    try {
+      outputDirectories = await writer.writeAll();
+    } catch (e) {
+      if (e.isRelayUserError) {
+        // TODO could use chalk here for red output
+        console.log('Error: ' + e.message);
+      } else {
+        throw e;
+      }
+      return true;
+    }
+
     const tWritten = Date.now();
 
     function combineChanges(accessor) {
       const combined = [];
+      invariant(
+        outputDirectories,
+        'RelayCodegenRunner: Expected outputDirectories to be set',
+      );
       for (const dir of outputDirectories.values()) {
         combined.push(...accessor(dir.changes));
       }
@@ -200,13 +222,9 @@ class RelayCodegenRunner {
       console.log('Unchanged: %s files', unchanged.length);
     }
 
-    console.log(
-      'Written %s in %s',
-      writerName,
-      toSeconds(tStart, tWritten),
-    );
+    console.log('Written %s in %s', writerName, toSeconds(tStart, tWritten));
 
-    const hasChanges = (created.length + updated.length + deleted.length) > 0;
+    const hasChanges = created.length + updated.length + deleted.length > 0;
     return hasChanges;
   }
 
@@ -233,7 +251,7 @@ class RelayCodegenRunner {
       parserConfig.getFileFilter
         ? parserConfig.getFileFilter(parserConfig.baseDir)
         : anyFileFilter,
-      async (files) => {
+      async files => {
         invariant(
           this.parsers[parserName],
           'Trying to watch an uncompiled parser config: %s',
@@ -244,16 +262,23 @@ class RelayCodegenRunner {
           return;
         }
         const dependentWriters = [];
-        this.parserWriters[parserName].forEach(writer => dependentWriters.push(writer));
-        if (!this.parsers[parserName]) {
-          // have to load the parser and make sure all of its dependents are set
-          await this.parseEverything(parserName);
-        } else {
-          this.parseFileChanges(parserName, files);
-        }
+        this.parserWriters[parserName].forEach(writer =>
+          dependentWriters.push(writer),
+        );
 
-        await Promise.all(dependentWriters.map((writer) => this.write(writer)));
-      }
+        try {
+          if (!this.parsers[parserName]) {
+            // have to load the parser and make sure all of its dependents are set
+            await this.parseEverything(parserName);
+          } else {
+            this.parseFileChanges(parserName, files);
+          }
+          await Promise.all(dependentWriters.map(writer => this.write(writer)));
+        } catch (error) {
+          console.log('Error: ' + error);
+        }
+        console.log('Watching for changes to %s...', parserName);
+      },
     );
     console.log('Watching for changes to %s...', parserName);
   }

@@ -8,6 +8,7 @@
  *
  * @providesModule RelayFileWriter
  * @flow
+ * @format
  */
 
 'use strict';
@@ -29,11 +30,8 @@ const {isOperationDefinitionAST} = require('RelaySchemaUtils');
 const {Map: ImmutableMap} = require('immutable');
 
 import type {CompilerTransforms} from 'RelayCompiler';
-import type {SchemaTransform} from 'RelayIRTransforms';
-import type {
-  DocumentNode,
-  GraphQLSchema,
-} from 'graphql';
+import type {DocumentNode, GraphQLSchema} from 'graphql';
+import type {FormatModule} from 'writeRelayGeneratedFile';
 
 type GenerateExtraFiles = (
   getOutputDirectory: (path?: string) => CodegenDirectory,
@@ -42,15 +40,16 @@ type GenerateExtraFiles = (
 
 export type WriterConfig = {
   baseDir: string,
-  buildCommand: string,
+  formatModule: FormatModule,
   compilerTransforms: CompilerTransforms,
   generateExtraFiles?: GenerateExtraFiles,
   outputDir?: string,
   persistQuery?: (text: string) => Promise<string>,
   platform?: string,
   fragmentsWithLegacyFlowTypes?: Set<string>,
-  schemaTransforms: Array<SchemaTransform>,
+  schemaExtensions: Array<string>,
   relayRuntimeModule?: string,
+  inputFieldWhiteListForFlow?: Array<string>,
 };
 
 /* eslint-disable no-console-disallow */
@@ -83,7 +82,7 @@ class RelayFileWriter {
     // Can't convert to IR unless the schema already has Relay-local extensions
     const transformedSchema = ASTConvert.transformASTSchema(
       this._baseSchema,
-      this._config.schemaTransforms,
+      this._config.schemaExtensions,
     );
     const extendedSchema = ASTConvert.extendASTSchema(
       transformedSchema,
@@ -102,10 +101,9 @@ class RelayFileWriter {
     const definitionDirectories = new Map();
     const allOutputDirectories: Map<string, CodegenDirectory> = new Map();
     const addCodegenDir = dirPath => {
-      const codegenDir = new CodegenDirectory(
-        dirPath,
-        {onlyValidate: this._onlyValidate},
-      );
+      const codegenDir = new CodegenDirectory(dirPath, {
+        onlyValidate: this._onlyValidate,
+      });
       allOutputDirectories.set(dirPath, codegenDir);
       return codegenDir;
     };
@@ -150,10 +148,7 @@ class RelayFileWriter {
         'RelayFileWriter: Could not determine source directory for definition: %s',
         definitionName,
       );
-      const generatedPath = path.join(
-        definitionDir,
-        '__generated__',
-      );
+      const generatedPath = path.join(definitionDir, '__generated__');
       let cachedDir = allOutputDirectories.get(generatedPath);
       if (!cachedDir) {
         cachedDir = addCodegenDir(generatedPath);
@@ -170,46 +165,48 @@ class RelayFileWriter {
 
     let tGenerated;
     try {
-      await Promise.all(nodes.map(async (node) => {
-        if (baseDefinitionNames.has(node.name)) {
-          // don't add definitions that were part of base context
-          return;
-        }
-        if (
-          this._config.fragmentsWithLegacyFlowTypes &&
-          this._config.fragmentsWithLegacyFlowTypes.has(node.name)
-        ) {
-          const legacyFlowTypes = printFlowTypes(node);
-          if (legacyFlowTypes) {
-            writeLegacyFlowFile(
-              getGeneratedDirectory(node.name),
-              node.name,
-              legacyFlowTypes,
-              this._config.buildCommand,
-              this._config.platform,
-            );
+      await Promise.all(
+        nodes.map(async node => {
+          if (baseDefinitionNames.has(node.name)) {
+            // don't add definitions that were part of base context
+            return;
           }
-        }
+          if (
+            this._config.fragmentsWithLegacyFlowTypes &&
+            this._config.fragmentsWithLegacyFlowTypes.has(node.name)
+          ) {
+            const legacyFlowTypes = printFlowTypes(node);
+            if (legacyFlowTypes) {
+              writeLegacyFlowFile(
+                getGeneratedDirectory(node.name),
+                node.name,
+                legacyFlowTypes,
+                this._config.platform,
+              );
+            }
+          }
 
-        const flowTypes = node.kind === 'Fragment' ?
-          RelayFlowGenerator.generate(node) :
-          printFlowTypes(node);
-        const compiledNode = compiledDocumentMap.get(node.name);
-        invariant(
-          compiledNode,
-          'RelayCompiler: did not compile definition: %s',
-          node.name,
-        );
-        await writeRelayGeneratedFile(
-          getGeneratedDirectory(compiledNode.name),
-          compiledNode,
-          this._config.buildCommand,
-          flowTypes,
-          this.skipPersist ? null : this._config.persistQuery,
-          this._config.platform,
-          this._config.relayRuntimeModule || 'relay-runtime'
-        );
-      }));
+          const flowTypes = RelayFlowGenerator.generate(
+            node,
+            this._config.inputFieldWhiteListForFlow,
+          );
+          const compiledNode = compiledDocumentMap.get(node.name);
+          invariant(
+            compiledNode,
+            'RelayCompiler: did not compile definition: %s',
+            node.name,
+          );
+          await writeRelayGeneratedFile(
+            getGeneratedDirectory(compiledNode.name),
+            compiledNode,
+            this._config.formatModule,
+            flowTypes,
+            this.skipPersist ? null : this._config.persistQuery,
+            this._config.platform,
+            this._config.relayRuntimeModule || 'relay-runtime',
+          );
+        }),
+      );
       tGenerated = Date.now();
 
       if (this._config.generateExtraFiles) {
@@ -217,20 +214,17 @@ class RelayFileWriter {
         invariant(
           configDirectory,
           'RelayFileWriter: cannot generate extra files without specifying ' +
-          ' an outputDir in the config.'
+            ' an outputDir in the config.',
         );
 
-        this._config.generateExtraFiles(
-          dir => {
-            const outputDirectory = dir || configDirectory;
-            let outputDir = allOutputDirectories.get(outputDirectory);
-            if (!outputDir) {
-              outputDir = addCodegenDir(outputDirectory);
-            }
-            return outputDir;
-          },
-          transformedQueryContext,
-        );
+        this._config.generateExtraFiles(dir => {
+          const outputDirectory = dir || configDirectory;
+          let outputDir = allOutputDirectories.get(outputDirectory);
+          if (!outputDir) {
+            outputDir = addCodegenDir(outputDirectory);
+          }
+          return outputDir;
+        }, transformedQueryContext);
       }
 
       // clean output directories
@@ -242,8 +236,7 @@ class RelayFileWriter {
       let details;
       try {
         details = JSON.parse(error.message);
-      } catch (_) {
-      }
+      } catch (_) {}
       if (details && details.name === 'GraphQL2Exception' && details.message) {
         console.log('ERROR writing modules:\n' + details.message);
       } else {

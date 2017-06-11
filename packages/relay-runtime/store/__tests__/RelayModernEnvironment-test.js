@@ -5,12 +5,13 @@
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ * @format
  */
 
 'use strict';
 
-jest
-  .autoMockOff();
+jest.autoMockOff();
 
 const Deferred = require('Deferred');
 const RelayModernEnvironment = require('RelayModernEnvironment');
@@ -49,10 +50,11 @@ describe('RelayModernEnvironment', () => {
   describe('check()', () => {
     let ParentQuery;
     let environment;
-    let selector;
+    let operationSelector;
 
     beforeEach(() => {
-      ({ParentQuery} = generateAndCompile(`
+      ({ParentQuery} = generateAndCompile(
+        `
         query ParentQuery($size: Int!) {
           me {
             id
@@ -62,45 +64,36 @@ describe('RelayModernEnvironment', () => {
             }
           }
         }
-      `));
+      `,
+      ));
       environment = new RelayModernEnvironment(config);
-      selector = {
-        dataID: ROOT_ID,
-        node: ParentQuery.query,
-        variables: {size: 32},
-      };
+      operationSelector = createOperationSelector(ParentQuery, {size: 32});
     });
 
     it('returns true if all data exists in the environment', () => {
-      environment.commitPayload(
-        selector,
-        {
-          me: {
-            id: '4',
-            name: 'Zuck',
-            profilePicture: {
-              uri: 'https://...',
-            },
+      environment.commitPayload(operationSelector, {
+        me: {
+          id: '4',
+          name: 'Zuck',
+          profilePicture: {
+            uri: 'https://...',
           },
-        }
-      );
-      expect(environment.check(selector)).toBe(true);
+        },
+      });
+      expect(environment.check(operationSelector.fragment)).toBe(true);
     });
 
     it('returns false if data is missing from the environment', () => {
-      environment.commitPayload(
-        selector,
-        {
-          me: {
-            id: '4',
-            name: 'Zuck',
-            profilePicture: {
-              uri: undefined,
-            },
+      environment.commitPayload(operationSelector, {
+        me: {
+          id: '4',
+          name: 'Zuck',
+          profilePicture: {
+            uri: undefined,
           },
-        }
-      );
-      expect(environment.check(selector)).toBe(false);
+        },
+      });
+      expect(environment.check(operationSelector.fragment)).toBe(false);
     });
   });
 
@@ -109,7 +102,8 @@ describe('RelayModernEnvironment', () => {
     let environment;
 
     beforeEach(() => {
-      ({ParentQuery} = generateAndCompile(`
+      ({ParentQuery} = generateAndCompile(
+        `
         query ParentQuery {
           me {
             id
@@ -120,21 +114,16 @@ describe('RelayModernEnvironment', () => {
           id
           name
         }
-      `));
+      `,
+      ));
       environment = new RelayModernEnvironment(config);
-      environment.commitPayload(
-        {
-          dataID: ROOT_ID,
-          node: ParentQuery.query,
-          variables: {},
+      const operationSelector = createOperationSelector(ParentQuery, {});
+      environment.commitPayload(operationSelector, {
+        me: {
+          id: '4',
+          name: 'Zuck',
         },
-        {
-          me: {
-            id: '4',
-            name: 'Zuck',
-          },
-        }
-      );
+      });
     });
 
     it('returns the results of executing a query', () => {
@@ -164,7 +153,8 @@ describe('RelayModernEnvironment', () => {
     }
 
     beforeEach(() => {
-      ({ParentQuery} = generateAndCompile(`
+      ({ParentQuery} = generateAndCompile(
+        `
         query ParentQuery {
           me {
             id
@@ -175,21 +165,16 @@ describe('RelayModernEnvironment', () => {
           id
           name
         }
-      `));
+      `,
+      ));
       environment = new RelayModernEnvironment(config);
-      environment.commitPayload(
-        {
-          dataID: ROOT_ID,
-          node: ParentQuery.query,
-          variables: {},
+      const operationSelector = createOperationSelector(ParentQuery, {});
+      environment.commitPayload(operationSelector, {
+        me: {
+          id: '4',
+          name: 'Zuck',
         },
-        {
-          me: {
-            id: '4',
-            name: 'Zuck',
-          },
-        }
-      );
+      });
     });
 
     it('calls the callback if data changes', () => {
@@ -230,7 +215,8 @@ describe('RelayModernEnvironment', () => {
     let environment;
 
     beforeEach(() => {
-      ({ParentQuery} = generateAndCompile(`
+      ({ParentQuery} = generateAndCompile(
+        `
         query ParentQuery {
           me {
             id
@@ -241,21 +227,16 @@ describe('RelayModernEnvironment', () => {
           id
           name
         }
-      `));
+      `,
+      ));
       environment = new RelayModernEnvironment(config);
-      environment.commitPayload(
-        {
-          dataID: ROOT_ID,
-          node: ParentQuery.query,
-          variables: {},
+      const operationSelector = createOperationSelector(ParentQuery, {});
+      environment.commitPayload(operationSelector, {
+        me: {
+          id: '4',
+          name: 'Zuck',
         },
-        {
-          me: {
-            id: '4',
-            name: 'Zuck',
-          },
-        }
-      );
+      });
     });
 
     it('retains data when not disposed', () => {
@@ -308,12 +289,14 @@ describe('RelayModernEnvironment', () => {
     let environment;
 
     beforeEach(() => {
-      ({UserFragment} = generateAndCompile(`
+      ({UserFragment} = generateAndCompile(
+        `
         fragment UserFragment on User {
           id
           name
         }
-      `));
+      `,
+      ));
       environment = new RelayModernEnvironment(config);
     });
 
@@ -363,44 +346,36 @@ describe('RelayModernEnvironment', () => {
   describe('commitPayload()', () => {
     let ActorQuery;
     let environment;
+    let operationSelector;
 
     beforeEach(() => {
-      ({ActorQuery} = generateAndCompile(`
+      ({ActorQuery} = generateAndCompile(
+        `
         query ActorQuery {
           me {
             name
           }
         }
-      `));
+      `,
+      ));
+      operationSelector = createOperationSelector(ActorQuery, {});
       store.notify = jest.fn(store.notify.bind(store));
       store.publish = jest.fn(store.publish.bind(store));
       environment = new RelayModernEnvironment(config);
     });
 
     it('applies server updates', () => {
-      const selector = {
-        dataID: ROOT_ID,
-        node: ActorQuery.fragment,
-        variables: {},
-      };
       const callback = jest.fn();
-      const snapshot = environment.lookup(selector);
+      const snapshot = environment.lookup(operationSelector.fragment);
       environment.subscribe(snapshot, callback);
 
-      environment.commitPayload(
-        {
-          dataID: ROOT_ID,
-          node: ActorQuery.query,
-          variables: {},
+      environment.commitPayload(operationSelector, {
+        me: {
+          id: '4',
+          __typename: 'User',
+          name: 'Zuck',
         },
-        {
-          me: {
-            id: '4',
-            __typename: 'User',
-            name: 'Zuck',
-          },
-        }
-      );
+      });
       expect(callback.mock.calls.length).toBe(1);
       expect(callback.mock.calls[0][0].data).toEqual({
         me: {
@@ -410,13 +385,8 @@ describe('RelayModernEnvironment', () => {
     });
 
     it('rebases optimistic updates', () => {
-      const selector = {
-        dataID: ROOT_ID,
-        node: ActorQuery.fragment,
-        variables: {},
-      };
       const callback = jest.fn();
-      const snapshot = environment.lookup(selector);
+      const snapshot = environment.lookup(operationSelector.fragment);
       environment.subscribe(snapshot, callback);
 
       environment.applyUpdate(store => {
@@ -427,20 +397,13 @@ describe('RelayModernEnvironment', () => {
         }
       });
 
-      environment.commitPayload(
-        {
-          dataID: ROOT_ID,
-          node: ActorQuery.query,
-          variables: {},
+      environment.commitPayload(operationSelector, {
+        me: {
+          id: '4',
+          __typename: 'User',
+          name: 'Zuck',
         },
-        {
-          me: {
-            id: '4',
-            __typename: 'User',
-            name: 'Zuck',
-          },
-        }
-      );
+      });
       expect(callback.mock.calls.length).toBe(1);
       expect(callback.mock.calls[0][0].data).toEqual({
         me: {
@@ -463,7 +426,8 @@ describe('RelayModernEnvironment', () => {
     let variables;
 
     beforeEach(() => {
-      ({ActorQuery: query} = generateAndCompile(`
+      ({ActorQuery: query} = generateAndCompile(
+        `
         query ActorQuery($fetchSize: Boolean!) {
           me {
             name
@@ -472,7 +436,8 @@ describe('RelayModernEnvironment', () => {
             }
           }
         }
-      `));
+      `,
+      ));
       variables = {fetchSize: false};
       operation = createOperationSelector(query, {
         ...variables,
@@ -484,7 +449,10 @@ describe('RelayModernEnvironment', () => {
       onNext = jest.fn();
       callbacks = {onCompleted, onError, onNext};
       deferred = new Deferred();
-      fetch = jest.fn(() => deferred.getPromise());
+      fetch = jest.fn(() => ({
+        kind: 'promise',
+        promise: deferred.getPromise(),
+      }));
       environment = new RelayModernEnvironment({
         network: RelayNetwork.create(fetch),
         store,
@@ -598,7 +566,8 @@ describe('RelayModernEnvironment', () => {
     let variables;
 
     beforeEach(() => {
-      ({ActorQuery: query} = generateAndCompile(`
+      ({ActorQuery: query} = generateAndCompile(
+        `
         query ActorQuery($fetchSize: Boolean!) {
           me {
             name
@@ -607,7 +576,8 @@ describe('RelayModernEnvironment', () => {
             }
           }
         }
-      `));
+      `,
+      ));
       variables = {fetchSize: false};
       operation = createOperationSelector(query, {
         ...variables,
@@ -628,10 +598,14 @@ describe('RelayModernEnvironment', () => {
               return;
             }
             // Reuse RelayNetwork's helper for response processing
-            RelayNetwork
-              .create(() => Promise.resolve(data))
+            RelayNetwork.create(() => ({
+              kind: 'promise',
+              promise: Promise.resolve(data),
+            }))
               .request(query, variables, cacheConfig)
-              .then(payload => observer.onNext && observer.onNext(payload))
+              .promise.then(
+                payload => observer.onNext && observer.onNext(payload),
+              )
               .catch(error => observer.onError && observer.onError(error));
           },
           complete() {
@@ -778,6 +752,7 @@ describe('RelayModernEnvironment', () => {
 
   describe('sendMutation()', () => {
     let CreateCommentMutation;
+    let CreateCommentWithSpreadMutation;
     let CommentFragment;
     let deferred;
     let fetch;
@@ -790,8 +765,10 @@ describe('RelayModernEnvironment', () => {
     beforeEach(() => {
       ({
         CreateCommentMutation,
+        CreateCommentWithSpreadMutation,
         CommentFragment,
-      } = generateAndCompile(`
+      } = generateAndCompile(
+        `
         mutation CreateCommentMutation($input: CommentCreateInput!) {
           commentCreate(input: $input) {
             comment {
@@ -802,13 +779,23 @@ describe('RelayModernEnvironment', () => {
             }
           }
         }
+
         fragment CommentFragment on Comment {
           id
           body {
             text
           }
         }
-      `));
+
+        mutation CreateCommentWithSpreadMutation($input: CommentCreateInput!) {
+          commentCreate(input: $input) {
+            comment {
+              ...CommentFragment
+            }
+          }
+        }
+      `,
+      ));
       variables = {
         input: {
           clientMutationId: '0',
@@ -818,7 +805,10 @@ describe('RelayModernEnvironment', () => {
       operation = createOperationSelector(CreateCommentMutation, variables);
 
       deferred = new Deferred();
-      fetch = jest.fn(() => deferred.getPromise());
+      fetch = jest.fn(() => ({
+        kind: 'promise',
+        promise: deferred.getPromise(),
+      }));
       environment = new RelayModernEnvironment({
         network: RelayNetwork.create(fetch),
         store,
@@ -854,7 +844,7 @@ describe('RelayModernEnvironment', () => {
         onCompleted,
         onError,
         operation,
-        optimisticUpdater: (store) => {
+        optimisticUpdater: store => {
           const comment = store.create(commentID, 'Comment');
           comment.setValue(commentID, 'id');
           const body = store.create(commentID + '.text', 'Text');
@@ -888,7 +878,7 @@ describe('RelayModernEnvironment', () => {
         onCompleted,
         onError,
         operation,
-        optimisticUpdater: (store) => {
+        optimisticUpdater: store => {
           const comment = store.create(commentID, 'Comment');
           comment.setValue(commentID, 'id');
           const body = store.create(commentID + '.text', 'Text');
@@ -919,7 +909,7 @@ describe('RelayModernEnvironment', () => {
         onCompleted,
         onError,
         operation,
-        optimisticUpdater: (store) => {
+        optimisticUpdater: store => {
           const comment = store.create(commentID, 'Comment');
           comment.setValue(commentID, 'id');
           const body = store.create(commentID + '.text', 'Text');
@@ -969,7 +959,7 @@ describe('RelayModernEnvironment', () => {
         onCompleted,
         onError,
         operation,
-        updater: (store) => {
+        updater: store => {
           const comment = store.get(commentID);
           const body = comment.getLinkedRecord('body');
           body.setValue(body.getValue('text').toUpperCase(), 'text');
@@ -1017,7 +1007,7 @@ describe('RelayModernEnvironment', () => {
         onCompleted,
         onError,
         operation,
-        optimisticUpdater: (store) => {
+        optimisticUpdater: store => {
           const comment = store.create(commentID, 'Comment');
           comment.setValue(commentID, 'id');
           const body = store.create(commentID + '.text', 'Text');
@@ -1036,6 +1026,49 @@ describe('RelayModernEnvironment', () => {
       expect(callback.mock.calls[0][0].data).toEqual(undefined);
     });
 
+    it('commits optimistic response with fragment spread', () => {
+      operation = createOperationSelector(
+        CreateCommentWithSpreadMutation,
+        variables,
+      );
+
+      const commentID = 'comment';
+      const selector = {
+        dataID: commentID,
+        node: CommentFragment,
+        variables: {},
+      };
+      const snapshot = environment.lookup(selector);
+      const callback = jest.fn();
+      environment.subscribe(snapshot, callback);
+
+      environment.sendMutation({
+        onCompleted,
+        onError,
+        operation,
+        optimisticResponse: () => ({
+          commentCreate: {
+            comment: {
+              id: commentID,
+              body: {
+                text: 'Give Relay',
+              },
+            },
+          },
+        }),
+      });
+
+      expect(onCompleted).not.toBeCalled();
+      expect(onError).not.toBeCalled();
+      expect(callback.mock.calls.length).toBe(1);
+      expect(callback.mock.calls[0][0].data).toEqual({
+        id: commentID,
+        body: {
+          text: 'Give Relay',
+        },
+      });
+    });
+
     it('does not commit the server payload if disposed', () => {
       const commentID = 'comment';
       const selector = {
@@ -1051,7 +1084,7 @@ describe('RelayModernEnvironment', () => {
         onCompleted,
         onError,
         operation,
-        optimisticUpdater: (store) => {
+        optimisticUpdater: store => {
           const comment = store.create(commentID, 'Comment');
           comment.setValue(commentID, 'id');
           const body = store.create(commentID + '.text', 'Text');

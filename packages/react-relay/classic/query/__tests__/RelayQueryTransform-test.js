@@ -7,9 +7,12 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
+
+jest.enableAutomock();
 
 require('configureForRelayOSS');
 
@@ -43,7 +46,8 @@ describe('RelayQueryTransform', () => {
         }
       }
     `;
-    query = getNode(Relay.QL`
+    query = getNode(
+      Relay.QL`
       query {
         node(id:"4") {
           id
@@ -61,7 +65,10 @@ describe('RelayQueryTransform', () => {
           }
         }
       }
-    `, null, variables);
+    `,
+      null,
+      variables,
+    );
   });
 
   it('returns original input', () => {

@@ -8,10 +8,12 @@
  *
  * @flow
  * @providesModule RelayViewerHandleTransform
+ * @format
  */
 
 'use strict';
 
+const GraphQL = require('graphql');
 const RelayCompilerContext = require('RelayCompilerContext');
 const RelayIRTransformer = require('RelayIRTransformer');
 
@@ -21,8 +23,11 @@ const {getRawType} = require('RelaySchemaUtils');
 import type {LinkedField} from 'RelayIR';
 import type {GraphQLSchema} from 'graphql';
 
+const {GraphQLObjectType} = GraphQL;
+
 type State = {};
 
+const ID = 'id';
 const VIEWER_HANDLE = 'viewer';
 const VIEWER_TYPE = 'Viewer';
 
@@ -31,10 +36,14 @@ const VIEWER_TYPE = 'Viewer';
  */
 function transform(
   context: RelayCompilerContext,
-  schema: GraphQLSchema
+  schema: GraphQLSchema,
 ): RelayCompilerContext {
   const viewerType = schema.getType(VIEWER_TYPE);
-  if (viewerType == null) {
+  if (
+    viewerType == null ||
+    !(viewerType instanceof GraphQLObjectType) ||
+    viewerType.getFields()[ID] != null
+  ) {
     return context;
   }
   return RelayIRTransformer.transform(
@@ -42,7 +51,7 @@ function transform(
     {
       LinkedField: visitLinkedField,
     },
-    () => ({})
+    () => ({}),
   );
 }
 
@@ -63,9 +72,9 @@ function visitLinkedField(field: LinkedField, state: State): ?LinkedField {
   } else if (!handles) {
     handles = [viewerHandle];
   }
-  return handles !== transformedNode.handles ?
-    {...transformedNode, handles} :
-    transformedNode;
+  return handles !== transformedNode.handles
+    ? {...transformedNode, handles}
+    : transformedNode;
 }
 
 module.exports = {transform};

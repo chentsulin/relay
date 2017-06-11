@@ -5,6 +5,8 @@
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ * @format
  */
 
 'use strict';
@@ -20,6 +22,7 @@ describe('RelayConnectionTransform', () => {
   let RelayTestSchema;
   let getGoldenMatchers;
   let parseGraphQLText;
+  let transformASTSchema;
 
   beforeEach(() => {
     jest.resetModules();
@@ -31,6 +34,8 @@ describe('RelayConnectionTransform', () => {
     getGoldenMatchers = require('getGoldenMatchers');
     parseGraphQLText = require('parseGraphQLText');
 
+    ({transformASTSchema} = require('ASTConvert'));
+
     jasmine.addMatchers(getGoldenMatchers(__filename));
   });
 
@@ -39,9 +44,9 @@ describe('RelayConnectionTransform', () => {
 
     return text => {
       try {
-        const schema = RelayConnectionTransform.transformSchema(
-          RelayTestSchema,
-        );
+        const schema = transformASTSchema(RelayTestSchema, [
+          RelayConnectionTransform.SCHEMA_EXTENSION,
+        ]);
         const {definitions} = parseGraphQLText(schema, text);
         let context = new RelayCompilerContext(schema).addAll(definitions);
         context = RelayConnectionTransform.transform(context, options);

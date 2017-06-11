@@ -7,9 +7,12 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
+
+jest.enableAutomock();
 
 require('configureForRelayOSS');
 
@@ -34,7 +37,11 @@ describe('RelayRenderer', function() {
   beforeEach(() => {
     jest.resetModules();
 
-    const MockComponent = React.createClass({render: () => <div />});
+    class MockComponent extends React.Component {
+      render() {
+        return <div />;
+      }
+    }
     MockContainer = Relay.createContainer(MockComponent, {
       fragments: {},
     });
@@ -48,7 +55,7 @@ describe('RelayRenderer', function() {
         queryConfig={queryConfig}
         environment={environment}
       />,
-      container
+      container,
     );
   });
 
@@ -64,7 +71,7 @@ describe('RelayRenderer', function() {
         queryConfig={queryConfig}
         environment={environment}
       />,
-      container
+      container,
     );
     expect(getRelayQueries.mock.calls).toEqual([[MockContainer, queryConfig]]);
     expect(environment.primeCache.mock.calls.length).toBe(1);
@@ -79,14 +86,18 @@ describe('RelayRenderer', function() {
         queryConfig={queryConfig}
         environment={environment}
       />,
-      container
+      container,
     );
     expect(getRelayQueries.mock.calls[0]).toEqual([MockContainer, queryConfig]);
     expect(environment.primeCache.mock.calls.length).toBe(1);
   });
 
   it('primes new queries when `Component` changes', () => {
-    const AnotherComponent = React.createClass({render: () => <div />});
+    class AnotherComponent extends React.Component {
+      render() {
+        return <div />;
+      }
+    }
     const AnotherContainer = Relay.createContainer(AnotherComponent, {
       fragments: {},
     });
@@ -96,7 +107,7 @@ describe('RelayRenderer', function() {
         queryConfig={queryConfig}
         environment={environment}
       />,
-      container
+      container,
     );
     expect(getRelayQueries.mock.calls).toEqual([
       [MockContainer, queryConfig],
@@ -113,7 +124,7 @@ describe('RelayRenderer', function() {
         queryConfig={anotherQueryConfig}
         environment={environment}
       />,
-      container
+      container,
     );
     expect(getRelayQueries.mock.calls).toEqual([
       [MockContainer, queryConfig],
@@ -130,7 +141,7 @@ describe('RelayRenderer', function() {
         queryConfig={queryConfig}
         environment={anotherRelayEnvironment}
       />,
-      container
+      container,
     );
     expect(getRelayQueries.mock.calls).toEqual([
       [MockContainer, queryConfig],
@@ -148,7 +159,7 @@ describe('RelayRenderer', function() {
         environment={environment}
         forceFetch={true}
       />,
-      container
+      container,
     );
     expect(getRelayQueries).toBeCalledWith(MockContainer, queryConfig);
     expect(environment.forceFetch).toBeCalled();
@@ -167,7 +178,7 @@ describe('RelayRenderer', function() {
         onForceFetch={onForceFetch}
         onPrimeCache={onPrimeCache}
       />,
-      container
+      container,
     );
     expect(onForceFetch).toBeCalled();
     expect(onPrimeCache).not.toBeCalled();
@@ -186,7 +197,7 @@ describe('RelayRenderer', function() {
         onForceFetch={onForceFetch}
         onPrimeCache={onPrimeCache}
       />,
-      container
+      container,
     );
     expect(onForceFetch).not.toBeCalled();
     expect(onPrimeCache).toBeCalled();

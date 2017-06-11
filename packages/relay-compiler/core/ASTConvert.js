@@ -8,10 +8,12 @@
  *
  * @providesModule ASTConvert
  * @flow
+ * @format
  */
 
 'use strict';
 
+const GraphQL = require('graphql');
 const RelayParser = require('RelayParser');
 const RelayValidator = require('RelayValidator');
 
@@ -22,7 +24,6 @@ const {
 const {extendSchema, visit} = require('graphql');
 
 import type {Fragment, Root} from 'RelayIR';
-import type {SchemaTransform} from 'RelayIRTransforms';
 import type {
   DefinitionNode,
   DocumentNode,
@@ -99,8 +100,8 @@ function convertASTDocumentsWithBase(
   }
 
   const definitionsToConvert = [];
-  requiredDefinitions.forEach(
-    definition => definitionsToConvert.push(definition)
+  requiredDefinitions.forEach(definition =>
+    definitionsToConvert.push(definition),
   );
   return convertASTDefinitions(schema, definitionsToConvert, validationRules);
 }
@@ -125,8 +126,8 @@ function convertASTDefinitions(
   };
   // Will throw an error if there are validation issues
   RelayValidator.validate(validationAST, schema, validationRules);
-  return operationDefinitions.map(
-    definition => RelayParser.transform(schema, definition),
+  return operationDefinitions.map(definition =>
+    RelayParser.transform(schema, definition),
   );
 }
 
@@ -141,13 +142,12 @@ function definitionsFromDocuments(
 }
 
 function transformASTSchema(
-  baseSchema: GraphQLSchema,
-  schemaTransforms: Array<SchemaTransform>,
+  schema: GraphQLSchema,
+  schemaExtensions: Array<string>,
 ): GraphQLSchema {
-  return schemaTransforms.reduce(
-    (acc, transform) => transform(acc),
-    baseSchema,
-  );
+  return schemaExtensions.length > 0
+    ? GraphQL.extendSchema(schema, GraphQL.parse(schemaExtensions.join('\n')))
+    : schema;
 }
 
 function extendASTSchema(
@@ -167,7 +167,8 @@ function extendASTSchema(
 
   return extendSchema(baseSchema, {
     kind: 'Document',
-    // Flow doesn't recognize that TypeSystemDefinitionNode is a subset of DefinitionNode
+    // Flow doesn't recognize that TypeSystemDefinitionNode is a subset of
+    // DefinitionNode
     definitions: (schemaExtensions: Array<$FlowFixMe>),
   });
 }

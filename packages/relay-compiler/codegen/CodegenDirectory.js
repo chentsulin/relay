@@ -8,6 +8,7 @@
  *
  * @providesModule CodegenDirectory
  * @flow
+ * @format
  */
 
 'use strict';
@@ -55,15 +56,18 @@ class CodegenDirectory {
   _dir: string;
   onlyValidate: boolean;
 
-  constructor(dir: string, options: {
-    onlyValidate?: boolean,
-  } = {}) {
+  constructor(
+    dir: string,
+    options: {
+      onlyValidate?: boolean,
+    } = {},
+  ) {
     this.onlyValidate = !!options.onlyValidate;
     if (fs.existsSync(dir)) {
       invariant(
         fs.statSync(dir).isDirectory(),
         'Expected `%s` to be a directory.',
-        dir
+        dir,
       );
     } else if (!this.onlyValidate) {
       fs.mkdirSync(dir);
@@ -124,9 +128,13 @@ class CodegenDirectory {
     }
   }
 
+  /**
+   * Deletes all non-generated files, except for invisible "dot" files (ie.
+   * files with names starting with ".").
+   */
   deleteExtraFiles(): void {
     fs.readdirSync(this._dir).forEach(actualFile => {
-      if (!this._files.has(actualFile)) {
+      if (!this._files.has(actualFile) && !/^\./.test(actualFile)) {
         if (!this.onlyValidate) {
           fs.unlinkSync(path.join(this._dir, actualFile));
         }

@@ -8,16 +8,14 @@
  *
  * @providesModule RelayInMemoryRecordSource
  * @flow
+ * @format
  */
 
 'use strict';
 
 const RelayRecordState = require('RelayRecordState');
 
-import type {
-  Record,
-  RecordMap,
-} from 'RelayCombinedEnvironmentTypes';
+import type {Record, RecordMap} from 'RelayCombinedEnvironmentTypes';
 import type {DataID} from 'RelayInternalTypes';
 import type {RecordState} from 'RelayRecordState';
 import type {MutableRecordSource} from 'RelayStoreTypes';
@@ -29,9 +27,9 @@ const {EXISTENT, NONEXISTENT, UNKNOWN} = RelayRecordState;
  * `RelayStoreTypes`) that holds all records in memory.
  */
 class RelayInMemoryRecordSource implements MutableRecordSource {
-  _records: RecordMap;
+  _records: RecordMap<Record>;
 
-  constructor(records?: RecordMap) {
+  constructor(records?: RecordMap<Record>) {
     this._records = records || {};
   }
 
@@ -55,9 +53,7 @@ class RelayInMemoryRecordSource implements MutableRecordSource {
     if (!this._records.hasOwnProperty(dataID)) {
       return UNKNOWN;
     }
-    return this._records[dataID] == null ?
-      NONEXISTENT :
-      EXISTENT;
+    return this._records[dataID] == null ? NONEXISTENT : EXISTENT;
   }
 
   has(dataID: DataID): boolean {
@@ -66,7 +62,7 @@ class RelayInMemoryRecordSource implements MutableRecordSource {
 
   load(
     dataID: DataID,
-    callback: (error: ?Error, record: ?Record) => void
+    callback: (error: ?Error, record: ?Record) => void,
   ): void {
     callback(null, this.get(dataID));
   }

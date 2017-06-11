@@ -204,20 +204,22 @@ query {
 // 備註：這是 `Map` 初始化的虛擬程式碼以讓結構
 // 更明顯。
 Map {
-	// `story(id: "1")`
-	1: Map {
-		author: Link(2),
-		comments: [Link(3)],
-	},
-	// `story.author`
-	2: Map {
-		name: 'Yuzhi',
-		photo: 'http://.../photo1.jpg',
-	},
-	// `story.comments[0]`
-	3: Map {
-		author: Link(2),
-	},
+  // `story(id: "1")`
+  1: Map {
+    text: 'got GraphQL?',
+    author: Link(2),
+    comments: [Link(3)],
+  },
+  // `story.author`
+  2: Map {
+    name: 'Yuzhi',
+    photo: 'http://.../photo1.jpg',
+  },
+  // `story.comments[0]`
+  3: Map {
+    text: 'Here\'s how to get one!',
+    author: Link(2),
+  },
 }
 ```
 

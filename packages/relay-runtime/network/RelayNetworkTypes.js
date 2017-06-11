@@ -8,6 +8,7 @@
  *
  * @providesModule RelayNetworkTypes
  * @flow
+ * @format
  */
 
 'use strict';
@@ -41,6 +42,20 @@ export interface Network {
 
 export type PayloadData = {[key: string]: mixed};
 
+export type SyncOrPromise<T> =
+  | {|
+      kind: 'error',
+      error: Error,
+    |}
+  | {|
+      kind: 'data',
+      data: T,
+    |}
+  | {|
+      kind: 'promise',
+      promise: Promise<T>,
+    |};
+
 export type PayloadError = {
   message: string,
   locations?: Array<{
@@ -53,20 +68,20 @@ export type PayloadError = {
  * The shape of a GraphQL response as dictated by the
  * [spec](http://facebook.github.io/graphql/#sec-Response)
  */
-export type QueryPayload = {
+export type QueryPayload = {|
   data?: ?PayloadData,
   errors?: Array<PayloadError>,
-};
+|};
 
 /**
  * The shape of data that is returned by the Relay network layer for a given
  * query.
  */
-export type RelayResponsePayload = {
+export type RelayResponsePayload = {|
   fieldPayloads?: ?Array<HandleFieldPayload>,
   source: MutableRecordSource,
   errors: ?Array<PayloadError>,
-};
+|};
 
 /**
  * A function that executes a GraphQL operation with request/response semantics,
@@ -77,7 +92,7 @@ export type FetchFunction = (
   variables: Variables,
   cacheConfig: ?CacheConfig,
   uploadables?: UploadableMap,
-) => Promise<QueryPayload>;
+) => SyncOrPromise<QueryPayload>;
 
 /**
  * A function that executes a GraphQL operation with request/subscription
@@ -112,7 +127,7 @@ export type RequestResponseFunction = (
   variables: Variables,
   cacheConfig?: ?CacheConfig,
   uploadables?: UploadableMap,
-) => Promise<RelayResponsePayload>;
+) => SyncOrPromise<RelayResponsePayload>;
 
 export type Uploadable = File | Blob;
 // $FlowFixMe this is compatible with classic api see D4658012

@@ -7,9 +7,12 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
+
+jest.enableAutomock();
 
 require('configureForRelayOSS');
 
@@ -99,7 +102,7 @@ describe('RelayQueryResultObservable', () => {
     const subscription = observer.subscribe(subscriber);
     subscription.dispose();
     expect(() => subscription.dispose()).toFailInvariant(
-      'RelayQueryResultObservable: Subscriptions may only be disposed once.'
+      'RelayQueryResultObservable: Subscriptions may only be disposed once.',
     );
   });
 
@@ -108,11 +111,7 @@ describe('RelayQueryResultObservable', () => {
     const subscriber = genMockSubscriber();
     observer.subscribe(subscriber);
 
-    expect(readRelayQueryData).toBeCalledWith(
-      storeData,
-      query,
-      '123'
-    );
+    expect(readRelayQueryData).toBeCalledWith(storeData, query, '123');
     expect(subscriber.onNext).toBeCalledWith(results);
     expect(subscriber.onError).not.toBeCalled();
   });
@@ -134,10 +133,7 @@ describe('RelayQueryResultObservable', () => {
 
   it('updates all subscribers when data changes', () => {
     const observer = observeRelayQueryData('123');
-    const subscribers = [
-      genMockSubscriber(),
-      genMockSubscriber(),
-    ];
+    const subscribers = [genMockSubscriber(), genMockSubscriber()];
     subscribers.forEach(subscriber => {
       observer.subscribe(subscriber);
       subscriber.mockClear();

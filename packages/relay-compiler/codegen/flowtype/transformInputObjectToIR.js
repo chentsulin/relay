@@ -8,6 +8,7 @@
  *
  * TODO @joesavona: enable flow
  * @providesModule transformInputObjectToIR
+ * @format
  */
 
 'use strict';
@@ -20,22 +21,17 @@ const {
   GraphQLScalarType,
 } = require('graphql');
 
-import type {
-  LinkedField,
-  ScalarField,
-} from 'RelayIR';
+import type {LinkedField, ScalarField} from 'RelayIR';
 
 /**
  * Transforms a GraphQLInputObjectType to a RelayIR LinkedField.
  */
-function transformInputObjectToIR(
-  node: {
-    // $FlowFixMe
-    kind: string,
-    name: string,
-    type: GraphQLNonNull | GraphQLInputObjectType,
-  }
-): LinkedField {
+function transformInputObjectToIR(node: {
+  // $FlowFixMe
+  kind: string,
+  name: string,
+  type: GraphQLNonNull | GraphQLInputObjectType,
+}): LinkedField {
   const type = getRawType(node.type);
   const fields = type.getFields();
   // If the node is the root (an Argument), use the name of the type so it is
@@ -61,24 +57,21 @@ function transformInputObjectToIR(
  * Transforms a field (GraphQLInputObjectType or GraphQLScalarType) to a
  * RelayIR ScalarField or LinkedField.
  */
-function transformFieldToIR(
-  node: {
-    kind: string,
-    name: string,
-    type: GraphQLInputObjectType | GraphQLScalarType,
-  }
-): LinkedField | ScalarField {
+function transformFieldToIR(node: {
+  kind: string,
+  name: string,
+  type: GraphQLInputObjectType | GraphQLScalarType,
+}): LinkedField | ScalarField {
   const type = getRawType(node.type);
   if (type instanceof GraphQLInputObjectType) {
     return transformInputObjectToIR(node);
-  } else if (
-    type instanceof GraphQLEnumType ||
-    type instanceof GraphQLScalarType
-  ) {
-    return transformScalarToIR(node.name, type);
-  } else {
-    throw 'Unhandled node type';
   }
+
+  if (type instanceof GraphQLEnumType || type instanceof GraphQLScalarType) {
+    return transformScalarToIR(node.name, type);
+  }
+
+  throw new Error('Unhandled node type');
 }
 
 /**
@@ -86,7 +79,7 @@ function transformFieldToIR(
  */
 function transformScalarToIR(
   name: string,
-  type: GraphQLEnumType | GraphQLScalarType
+  type: GraphQLEnumType | GraphQLScalarType,
 ): ScalarField {
   return {
     alias: null,

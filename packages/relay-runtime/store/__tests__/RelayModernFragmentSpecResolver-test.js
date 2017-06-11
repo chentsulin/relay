@@ -5,15 +5,17 @@
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ * @format
  */
 
 'use strict';
 
-jest
-  .autoMockOff();
+jest.autoMockOff();
 
 const RelayModernFragmentSpecResolver = require('RelayModernFragmentSpecResolver');
 const {createMockEnvironment} = require('RelayModernMockEnvironment');
+const {createOperationSelector} = require('RelayModernOperationSelector');
 const {ROOT_ID} = require('RelayStoreUtils');
 const RelayModernTestUtils = require('RelayModernTestUtils');
 
@@ -37,7 +39,11 @@ describe('RelayModernFragmentSpecResolver', () => {
   function setPhotoUri(id, size, uri) {
     environment.applyUpdate(store => {
       const user = store.get(id);
-      const profilePicture = user.getOrCreateLinkedRecord('profilePicture', 'Image', {size});
+      const profilePicture = user.getOrCreateLinkedRecord(
+        'profilePicture',
+        'Image',
+        {size},
+      );
       profilePicture.setValue(uri, 'uri');
     });
   }
@@ -46,7 +52,8 @@ describe('RelayModernFragmentSpecResolver', () => {
     jasmine.addMatchers(RelayModernTestUtils.matchers);
 
     environment = createMockEnvironment();
-    ({UserFragment, UserQuery, UsersFragment} = environment.mock.compile(`
+    ({UserFragment, UserQuery, UsersFragment} = environment.mock.compile(
+      `
       query UserQuery($id: ID! $size: Int $fetchSize: Boolean!) {
         node(id: $id) {
           ...UserFragment
@@ -67,13 +74,14 @@ describe('RelayModernFragmentSpecResolver', () => {
           uri
         }
       }
-    `));
+    `,
+    ));
     environment.commitPayload(
-      {
-        dataID: ROOT_ID,
-        node: UserQuery.query,
-        variables: {fetchSize: false, id: '4', size: null},
-      },
+      createOperationSelector(UserQuery, {
+        fetchSize: false,
+        id: '4',
+        size: null,
+      }),
       {
         node: {
           id: '4',
@@ -83,11 +91,11 @@ describe('RelayModernFragmentSpecResolver', () => {
       },
     );
     environment.commitPayload(
-      {
-        dataID: ROOT_ID,
-        node: UserQuery.query,
-        variables: {fetchSize: false, id: 'beast', size: null},
-      },
+      createOperationSelector(UserQuery, {
+        fetchSize: false,
+        id: 'beast',
+        size: null,
+      }),
       {
         node: {
           id: 'beast',
@@ -429,10 +437,12 @@ describe('RelayModernFragmentSpecResolver', () => {
         jest.fn(),
       );
       expect(resolver.resolve()).toEqual({
-        user: [{
-          id: '4',
-          name: 'Zuck',
-        }],
+        user: [
+          {
+            id: '4',
+            name: 'Zuck',
+          },
+        ],
       });
     });
 
@@ -447,10 +457,12 @@ describe('RelayModernFragmentSpecResolver', () => {
       setName('4', 'Mark'); // Zuck -> Mark
       expect(callback).toBeCalled();
       expect(resolver.resolve()).toEqual({
-        user: [{
-          id: '4',
-          name: 'Mark',
-        }],
+        user: [
+          {
+            id: '4',
+            name: 'Mark',
+          },
+        ],
       });
     });
 
@@ -466,10 +478,12 @@ describe('RelayModernFragmentSpecResolver', () => {
       setName('4', 'Mark'); // Zuck -> Mark
       expect(callback).not.toBeCalled();
       expect(resolver.resolve()).toEqual({
-        user: [{
-          id: '4',
-          name: 'Zuck', // does not reflect latest changes
-        }],
+        user: [
+          {
+            id: '4',
+            name: 'Zuck', // does not reflect latest changes
+          },
+        ],
       });
     });
 
@@ -515,10 +529,12 @@ describe('RelayModernFragmentSpecResolver', () => {
         setName('4', 'Mark'); // Zuck -> Mark
         expect(callback).toBeCalled();
         expect(resolver.resolve()).toEqual({
-          user: [{
-            id: '4',
-            name: 'Mark', // reflects updated value
-          }],
+          user: [
+            {
+              id: '4',
+              name: 'Mark', // reflects updated value
+            },
+          ],
         });
       });
 
@@ -532,10 +548,12 @@ describe('RelayModernFragmentSpecResolver', () => {
       it('resolves fragment data if a prop changes', () => {
         resolver.setProps({user: [beast]}); // zuck -> beast
         expect(resolver.resolve()).toEqual({
-          user: [{
-            id: 'beast',
-            name: 'Beast',
-          }],
+          user: [
+            {
+              id: 'beast',
+              name: 'Beast',
+            },
+          ],
         });
       });
 
@@ -552,10 +570,12 @@ describe('RelayModernFragmentSpecResolver', () => {
         setName('beast', 'BEAST'); // all caps
         expect(callback).toBeCalled();
         expect(resolver.resolve()).toEqual({
-          user: [{
-            id: 'beast',
-            name: 'BEAST', // reflects updated value
-          }],
+          user: [
+            {
+              id: 'beast',
+              name: 'BEAST', // reflects updated value
+            },
+          ],
         });
       });
 
@@ -566,23 +586,28 @@ describe('RelayModernFragmentSpecResolver', () => {
         setName('beast', 'BEAST'); // all caps
         expect(callback).not.toBeCalled();
         expect(resolver.resolve()).toEqual({
-          user: [{
-            id: 'beast',
-            name: 'Beast', // does not update
-          }],
+          user: [
+            {
+              id: 'beast',
+              name: 'Beast', // does not update
+            },
+          ],
         });
       });
 
       it('resolves added items', () => {
         resolver.setProps({user: [zuck, beast]}); // add beast
         expect(resolver.resolve()).toEqual({
-          user: [{
-            id: '4',
-            name: 'Zuck',
-          }, {
-            id: 'beast',
-            name: 'Beast',
-          }],
+          user: [
+            {
+              id: '4',
+              name: 'Zuck',
+            },
+            {
+              id: 'beast',
+              name: 'Beast',
+            },
+          ],
         });
       });
 
@@ -594,13 +619,16 @@ describe('RelayModernFragmentSpecResolver', () => {
         setName('beast', 'BEAST'); // all caps
         expect(callback).toBeCalled();
         expect(resolver.resolve()).toEqual({
-          user: [{
-            id: '4',
-            name: 'Zuck',
-          }, {
-            id: 'beast',
-            name: 'BEAST', // updated value
-          }],
+          user: [
+            {
+              id: '4',
+              name: 'Zuck',
+            },
+            {
+              id: 'beast',
+              name: 'BEAST', // updated value
+            },
+          ],
         });
       });
 
@@ -609,13 +637,16 @@ describe('RelayModernFragmentSpecResolver', () => {
         setName('4', 'Mark'); // Zuck -> Mark
         expect(callback).toBeCalled();
         expect(resolver.resolve()).toEqual({
-          user: [{
-            id: '4',
-            name: 'Mark',
-          }, {
-            id: 'beast',
-            name: 'Beast',
-          }],
+          user: [
+            {
+              id: '4',
+              name: 'Mark',
+            },
+            {
+              id: 'beast',
+              name: 'Beast',
+            },
+          ],
         });
       });
 
@@ -670,13 +701,15 @@ describe('RelayModernFragmentSpecResolver', () => {
         expect(callback).not.toBeCalled();
         expect(dispose).toBeCalled();
         expect(resolver.resolve()).toEqual({
-          user: [{
-            id: '4',
-            name: 'Zuck',
-            profilePicture: {
-              uri: 'https://4.jpg',
+          user: [
+            {
+              id: '4',
+              name: 'Zuck',
+              profilePicture: {
+                uri: 'https://4.jpg',
+              },
             },
-          }],
+          ],
         });
       });
 
@@ -690,13 +723,15 @@ describe('RelayModernFragmentSpecResolver', () => {
         setPhotoUri('4', 1, 'https://zuck.jpg');
         expect(callback).toBeCalled();
         expect(resolver.resolve()).toEqual({
-          user: [{
-            id: '4',
-            name: 'Zuck',
-            profilePicture: {
-              uri: 'https://zuck.jpg',
+          user: [
+            {
+              id: '4',
+              name: 'Zuck',
+              profilePicture: {
+                uri: 'https://zuck.jpg',
+              },
             },
-          }],
+          ],
         });
       });
     });

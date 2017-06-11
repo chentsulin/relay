@@ -8,16 +8,16 @@
  *
  * @providesModule RelayCore
  * @flow
+ * @format
  */
 
 'use strict';
 
 const RelayModernFragmentSpecResolver = require('RelayModernFragmentSpecResolver');
 
-const {
-  getFragment,
-  getOperation,
-} = require('RelayModernGraphQLTag');
+const warning = require('warning');
+
+const {getFragment, getOperation} = require('RelayModernGraphQLTag');
 const {createOperationSelector} = require('RelayModernOperationSelector');
 const {
   areEqualSelectors,
@@ -28,22 +28,36 @@ const {
   getVariablesFromObject,
 } = require('RelayModernSelector');
 
-import type {
-  FragmentSpecResolver,
-  Props,
-} from 'RelayCombinedEnvironmentTypes';
-import type {
-  FragmentMap,
-  RelayContext,
-} from 'RelayStoreTypes';
+import type {FragmentSpecResolver, Props} from 'RelayCombinedEnvironmentTypes';
+import type {FragmentMap, RelayContext} from 'RelayStoreTypes';
 
 function createFragmentSpecResolver(
   context: RelayContext,
+  containerName: string,
   fragments: FragmentMap,
   props: Props,
   callback: () => void,
 ): FragmentSpecResolver {
-  return new RelayModernFragmentSpecResolver(context, fragments, props, callback);
+  if (__DEV__) {
+    const fragmentNames = Object.keys(fragments);
+    fragmentNames.forEach(fragmentName => {
+      const propValue = props[fragmentName];
+      warning(
+        propValue !== undefined,
+        'createFragmentSpecResolver: Expected prop `%s` to be supplied to `%s`, but ' +
+          'got `undefined`. Pass an explicit `null` if this is intentional.',
+        fragmentName,
+        containerName,
+      );
+    });
+  }
+
+  return new RelayModernFragmentSpecResolver(
+    context,
+    fragments,
+    props,
+    callback,
+  );
 }
 
 module.exports = {
