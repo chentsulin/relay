@@ -12,8 +12,6 @@
 
 'use strict';
 
-jest.disableAutomock();
-
 require('configureForRelayOSS');
 
 const Relay = require('Relay');
@@ -48,7 +46,7 @@ describe('filterRelayQuery()', () => {
     `,
     );
 
-    jasmine.addMatchers(RelayTestUtils.matchers);
+    expect.extend(RelayTestUtils.matchers);
   });
 
   it('returns the original query if nothing is filtered out', () => {

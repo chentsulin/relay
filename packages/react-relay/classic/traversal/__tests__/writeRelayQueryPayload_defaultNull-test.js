@@ -12,11 +12,9 @@
 
 'use strict';
 
-jest.enableAutomock();
+jest.mock('generateClientID').mock('warning');
 
 require('configureForRelayOSS');
-
-jest.unmock('GraphQLRange').unmock('GraphQLSegment').mock('warning');
 
 const Relay = require('Relay');
 const RelayRecordStore = require('RelayRecordStore');
@@ -28,7 +26,7 @@ describe('writeRelayQueryPayload()', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    jasmine.addMatchers(RelayTestUtils.matchers);
+    expect.extend(RelayTestUtils.matchers);
   });
 
   describe('default null', () => {

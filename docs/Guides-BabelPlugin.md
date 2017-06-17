@@ -42,7 +42,7 @@ Relay.QL`
 ```javascript
 {
   "plugins": [
-    "./plugins/babelRelayPlugin"
+    "relay"
   ],
   "presets": [
     "react-native"
@@ -50,28 +50,7 @@ Relay.QL`
 }
 ```
 
-原因是如果 `babel-relay-plugin` 沒有在 `es2015-template-literals` transform 之前執行，它不會正確地轉換 Relay.QL template literals。而且在 Babel 6，你不能控制 plugin 的順序。所以在 React Native 中，它的 `.babelrc` 中的 plugins 會在專案的 `.babelrc` 之前載入，要不複寫整個 transform 清單而使用 Babel Relay Plugin 是不可能的。
-
-
-## 進階用法
-
-如果你不是使用 starter kit，你會需要設定 `babel` 以使用 `babel-relay-plugin`。步驟如下：
-
-```javascript
-// `babel-relay-plugin` 回傳一個用來建立 plugin 實體的函式
-const getBabelRelayPlugin = require('babel-relay-plugin');
-
-// 載入先前儲存的 schema 資料 (參閱下面的「Schema JSON」)
-const schemaData = require('schema.json');
-
-// 建立一個 plugin 實體
-const plugin = getBabelRelayPlugin(schemaData);
-
-// 藉由 babel 使用 plugin 來編譯程式碼
-return babel.transform(source, {
-  plugins: [plugin],
-});
-```
+原因是如果 `babel-plugin-relay` 沒有在 `es2015-template-literals` transform 之前執行，它不會正確地轉換 Relay.QL template literals。而且在 Babel 6，你不能控制 plugin 的順序。所以在 React Native 中，它的 `.babelrc` 中的 plugins 會在專案的 `.babelrc` 之前載入，要不複寫整個 transform 清單而使用 Babel Relay Plugin 是不可能的。
 
 ## Schema JSON
 
@@ -149,6 +128,7 @@ fetch(SERVER, {
   );
 });
 ```
+<<<<<<< HEAD
 
 ## 額外的選項
 
@@ -179,3 +159,5 @@ babel.transform(source, {
   ],
 });
 ```
+=======
+>>>>>>> origin/master

@@ -12,16 +12,15 @@
 
 'use strict';
 
-jest.autoMockOff();
-
 const React = require('React');
 const ReactRelayFragmentContainer = require('ReactRelayFragmentContainer');
 const ReactRelayPropTypes = require('ReactRelayPropTypes');
 const ReactTestRenderer = require('ReactTestRenderer');
 const RelayModernTestUtils = require('RelayModernTestUtils');
-const {ROOT_ID} = require('RelayStoreUtils');
+
 const {createMockEnvironment} = require('RelayModernMockEnvironment');
 const {createOperationSelector} = require('RelayModernOperationSelector');
+const {ROOT_ID} = require('RelayStoreUtils');
 
 describe('ReactRelayFragmentContainer', () => {
   let TestComponent;
@@ -76,7 +75,7 @@ describe('ReactRelayFragmentContainer', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    jasmine.addMatchers(RelayModernTestUtils.matchers);
+    expect.extend(RelayModernTestUtils.matchers);
 
     environment = createMockEnvironment();
     ({UserFragment, UserQuery} = environment.mock.compile(
@@ -522,5 +521,45 @@ describe('ReactRelayFragmentContainer', () => {
     expect(render.mock.calls[0][0].obj).toBe(nextObj);
     expect(environment.lookup).not.toBeCalled();
     expect(environment.subscribe).not.toBeCalled();
+  });
+
+  it('does not proxy instance methods', () => {
+    class TestNoProxy extends React.Component {
+      render() {
+        return <div />;
+      }
+
+      instanceMethod(arg) {
+        return arg + arg;
+      }
+    }
+
+    const TestNoProxyContainer = ReactRelayFragmentContainer.createContainer(
+      TestNoProxy,
+      {
+        user: () => UserFragment,
+      },
+    );
+
+    let containerRef;
+    let componentRef;
+
+    ReactTestRenderer.create(
+      <ContextSetter environment={environment} variables={{}}>
+        <TestNoProxyContainer
+          user={null}
+          ref={ref => {
+            containerRef = ref;
+          }}
+          componentRef={ref => {
+            componentRef = ref;
+          }}
+        />
+      </ContextSetter>,
+    );
+
+    expect(componentRef.instanceMethod('foo')).toEqual('foofoo');
+
+    expect(() => containerRef.instanceMethod('foo')).toThrow();
   });
 });

@@ -7,11 +7,10 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @format
+ * @emails oncall+relay
  */
 
 'use strict';
-
-jest.autoMockOff();
 
 const React = require('React');
 const ReactRelayPropTypes = require('ReactRelayPropTypes');
@@ -55,16 +54,12 @@ describe('ReactRelayQueryRenderer', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    jasmine.addMatchers({
-      toBeRendered() {
-        return {
-          compare(readyState) {
-            const calls = render.mock.calls;
-            expect(calls.length).toBe(1);
-            expect(calls[0][0]).toEqual(readyState);
-            return {pass: true};
-          },
-        };
+    expect.extend({
+      toBeRendered(readyState) {
+        const calls = render.mock.calls;
+        expect(calls.length).toBe(1);
+        expect(calls[0][0]).toEqual(readyState);
+        return {pass: true};
       },
     });
 
@@ -166,12 +161,7 @@ describe('ReactRelayQueryRenderer', () => {
           },
         },
       };
-      const fetch = () => {
-        return {
-          kind: 'data',
-          data: response,
-        };
-      };
+      const fetch = () => response;
       store = new RelayMarkSweepStore(new RelayInMemoryRecordSource());
       environment = new RelayModernEnvironment({
         network: RelayNetwork.create(fetch),

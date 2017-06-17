@@ -166,7 +166,59 @@ module.exports = createFragmentContainer(
 
 請記得在組合 fragment 時，被組合的 fragment 的類別必須符合在 parent 上嵌入它的欄位。例如，嵌入一個 `Story` 類型的 fragment 到 parent 裡面 `User` 類型的欄位中沒有意義。如果你做錯了，Relay 和 GraphQL 將會提供有用的錯誤訊息 (而如果它們不是非常有用，請讓我們知道！)。
 
-## Render Container
+### Calling Component Instance Methods
+
+React component classes may have methods, often accessed via [refs](https://facebook.github.io/react/docs/refs-and-the-dom.html).
+Since Relay composes these component instances in a container, you need to use the `componentRef` prop to access them:
+
+Consider an input with a server-defined placeholder text and an imperative method to focus the input node:
+
+```javascript
+module.exports = createFragmentContainer(
+  class TodoInput extends React.Component {
+    focus() {
+      this.input.focus();
+    }
+
+    render() {
+      return <input
+        ref={node => { this.input = node; }}
+        placeholder={this.props.data.suggestedNextTitle}
+      />;
+    }
+  },
+  graphql`
+    fragment TodoInput on TodoList {
+      suggestedNextTitle
+    }
+  `,
+);
+```
+
+To call this method on the underlying component, first provide a `componentRef` function to the Relay container. This differs from providing a [`ref`](https://facebook.github.io/react/docs/refs-and-the-dom.html) function which would provide a reference to the Relay container itself, not the underlying React Component.
+
+```javascript
+module.exports = createFragmentContainer(
+  class TodoListView extends React.Component {
+    render() {
+      return <div onClick={() => this.input.focus()}>
+        <TodoInput
+          data={this.props.data}
+          componentRef={ref => { this.input = ref; }}
+        />
+      </div>;
+    }
+  },
+  graphql`
+    fragment TodoListView on TodoList {
+      ...TodoInput
+    }
+  `,
+);
+```
+
+
+## Rendering Containers
 
 我們前面已經學到，Relay fragment container 把資料需求宣告為 GraphQL fragment。
 我們幾乎已經準備好讓 Relay 來滿足這些 component 的資料需求並 render 它們。不過，這還有一個問題。為了使用 GraphQL 實際地抓取資料，我們需要一個 query root。舉例來說，我們需要把 `<TodoList>` fragment 包在一個 GraphQL query。

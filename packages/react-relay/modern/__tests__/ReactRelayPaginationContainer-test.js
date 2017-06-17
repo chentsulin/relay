@@ -12,8 +12,6 @@
 
 'use strict';
 
-jest.autoMockOff();
-
 const React = require('React');
 const ReactRelayPaginationContainer = require('ReactRelayPaginationContainer');
 const ReactRelayPropTypes = require('ReactRelayPropTypes');
@@ -88,7 +86,7 @@ describe('ReactRelayPaginationContainer', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    jest.addMatchers(RelayModernTestUtils.matchers);
+    expect.extend(RelayModernTestUtils.matchers);
 
     environment = createMockEnvironment({
       handlerProvider: () => RelayConnectionHandler,

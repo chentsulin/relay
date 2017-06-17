@@ -12,8 +12,6 @@
 
 'use strict';
 
-jest.disableAutomock();
-
 require('configureForRelayOSS');
 
 const Relay = require('Relay');
@@ -59,7 +57,7 @@ describe('RelayRoute', () => {
       return MockRoute;
     };
 
-    jasmine.addMatchers(RelayTestUtils.matchers);
+    expect.extend(RelayTestUtils.matchers);
   });
 
   it('can be created using inheritance', () => {

@@ -12,8 +12,6 @@
 
 'use strict';
 
-jest.disableAutomock();
-
 require('configureForRelayOSS');
 
 const Relay = require('Relay');
@@ -29,7 +27,7 @@ describe('RelayQueryMutation', () => {
   beforeEach(() => {
     jest.resetModules();
 
-    jasmine.addMatchers(RelayTestUtils.matchers);
+    expect.extend(RelayTestUtils.matchers);
 
     input = JSON.stringify({
       [RelayConnectionInterface.CLIENT_MUTATION_ID]: 'mutation:id',

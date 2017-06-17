@@ -12,8 +12,6 @@
 
 'use strict';
 
-jest.disableAutomock();
-
 const RelayTestUtils = require('RelayTestUtils');
 
 const validateMutationConfig = require('validateMutationConfig');
@@ -22,7 +20,7 @@ describe('validateMutationConfig()', () => {
   let config;
 
   beforeEach(() => {
-    jasmine.addMatchers(RelayTestUtils.matchers);
+    expect.extend(RelayTestUtils.matchers);
   });
 
   describe('validating a `FIELDS_CHANGE` config', () => {
