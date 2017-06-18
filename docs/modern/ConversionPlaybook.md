@@ -7,24 +7,24 @@ permalink: docs/conversion-playbook.html
 next: conversion-scripts
 ---
 
-Incrementally modernize your Relay Classic app in these steps:
+Incrementally modernize your Relay Classic app in these steps：
 
-## Step 0: Install Relay v1.0
+## 步驟 0：安裝 Relay v1.0
 
-Install the latest version of Relay from the [getting started guide](./relay-modern.html).
+參考[入門指南](./relay-modern.html)安裝最新版的 Relay。
 
-## Step 1: Incrementally convert to Relay Compat
+## 步驟 1：漸漸地轉換到 Relay Compat
 
-Start converting your components and mutations to use the Relay Modern APIs from the `'react-relay/compat'` module (`createFragmentContainer`, `createRefetchContainer`, `createPaginationContainer`, `commitMutation`). It will be easier to go from the leaf components up. The [conversion scripts](https://github.com/relayjs/relay-codemod) should make this step less tedious.
+開始讓你的 component 和 mutation 使用從 `'react-relay/compat'` 模組來的 Relay Modern API (`createFragmentContainer`, `createRefetchContainer`, `createPaginationContainer`, `commitMutation`)。從底層 component 往上進行會比較容易。這個[轉換腳本](https://github.com/relayjs/relay-codemod)應該能使這個步驟不會那麼繁瑣。
 
-## Step 2: Introduce <QueryRenderer>
+## 步驟 2：導入 <QueryRenderer>
 
-Once all the components and mutations have been converted to use the Relay Modern APIs, convert to using `QueryRenderer` instead of using `Relay.Renderer` or `Relay.RootContainer`. You may supply `Store` from `'react-relay/classic'` as the `environment` for most cases.
+一旦所有的 component 和 mutation 都已經換成使用 Relay Modern API，就可以用 `QueryRenderer` 來取代 `Relay.Renderer` 和 `Relay.RootContainer`。大部分的情況你可以提供 `'react-relay/classic'` 的 `Store` 作為 `environment`。
 
-## Step 3: Introduce Relay Modern runtime
+## 步驟 3：導入 Relay Modern runtime
 
-Once a few or all of your views are using `QueryRenderer`, `Store` from `'react-relay/classic'` could be replaced with a `RelayModernEnvironment`. Keep in mind that `RelayModernEnvironment` and `Store` do not share any data. You might want to hold off on this step until views that have significant data overlap can be switched over at the same time. This step is what unlocks the perf wins for your app. Apps using the `RelayModernEnvironment` get to send persisted query IDs instead of the full query strings to the server, as well as much more optimized data normalizing and processing.
+一旦你的幾個或是全部的 view 都已經在使用 `QueryRenderer`，可以用 `RelayModernEnvironment` 取代 `'react-relay/classic'` 的 `Store`。請記住 `RelayModernEnvironment` and `Store` 不會共享任何資料。你可能會想要暫停在這個步驟直到有大量資料重疊的 view 可以同時被轉換過去。這步驟是解鎖應用程式效能優勢的關鍵。使用 `RelayModernEnvironment` 的應用程式就能送 persisted query ID 到伺服器來取代完整的 query 字串，以及其他更多的最佳化的資料正規化與處理。
 
-## Step 4: Clean up by replacing Relay Compat with Relay Modern.
+## 步驟 4：用 Relay Modern 取代 Relay Compat
 
-Switch the `'react-relay/compat'` references in your app to `'react-relay'`. This is more of a clean-up step that prevents your app from pulling in unnecessary `'react-relay/classic'` code.
+把應用程式裡的 `'react-relay/compat'` 都換成 `'react-relay'`。這更是一個清理步驟，避免你的應用程式加進不需要的 `'react-relay/classic'` 程式碼。
